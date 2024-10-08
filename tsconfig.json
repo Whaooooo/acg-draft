@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES6", // Update target to ES2017 or higher
+    "lib": ["ES6", "DOM"],
+    "module": "esnext",
+    "moduleResolution": "node",
+    "strict": true,
+    "esModuleInterop": true,
+    "outDir": "./dist",
+    "rootDir": "src",
+    "jsx": "preserve",
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "sourceMap": true
+  },
+  "include": ["src/**/*"]
+}
