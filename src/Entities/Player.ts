@@ -7,10 +7,22 @@ import { EntityName } from '../Enums/EntityPaths';
 import * as THREE from 'three';
 
 export class Player extends MovableEntity {
+    public playerId: number;
+    public cooldown: boolean;
+    public name: EntityName;
 
-    constructor(game: Game, assetName: EntityName, pos?: THREE.Vector3, qua?: THREE.Quaternion, iFFNumber?: number) {
-        super(game, assetName, pos, qua, iFFNumber);
-        // Additional initialization if needed
+    constructor(game: Game,
+                assetName: EntityName,
+                pos?: THREE.Vector3,
+                qua?: THREE.Quaternion,
+                velocity?: THREE.Vector3,
+                acceleration?: THREE.Vector3,
+                iFFNumber?: number,
+                playerId: number = 0) {
+        super(game, assetName, pos, qua, velocity, acceleration, iFFNumber);
+        this.playerId = playerId;
+        this.cooldown = true;
+        this.name = assetName;
     }
 
     public update(deltaTime: number): void {
@@ -18,6 +30,8 @@ export class Player extends MovableEntity {
 
         // Handle input
         this.handleInput(deltaTime);
+
+        this.targets = this.game.targetManager.getLockList(this);
 
         // Call the parent update to move the entity
         super.update(deltaTime);
@@ -28,7 +42,7 @@ export class Player extends MovableEntity {
         const inputManager = this.game.inputManager;
 
         // Movement speed
-        const moveSpeed = 0.1;
+        const moveSpeed = 1.0;
 
         // Reset acceleration
         this.acceleration.set(0, 0, 0);
@@ -48,7 +62,7 @@ export class Player extends MovableEntity {
         }
 
         // Fire weapon
-        if (inputManager.isKeyPressed('Space')) {
+        if (inputManager.isKeyPressed('Space') && this.cooldown) {
             this.fireWeapon();
         }
     }
@@ -66,24 +80,25 @@ export class Player extends MovableEntity {
         // ...
 
         // Play firing sound
-        this.game.soundManager.playSound('missileLaunch');
+        this.game.playSound(this, 'fox2');
+        const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.entity.quaternion);
 
         // Create and add projectile to the game
         const projectile = new Projectile(
             this.game,
-            'f22_stdm',
+            this.name,
             this.entity.position.clone(),
             this.entity.quaternion.clone(),
+            forward.multiplyScalar(100).clone(),
+            undefined,
             this.iFFNumber,
             this.targets[0]// No specific target
         );
 
         // Set initial velocity
-        const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.entity.quaternion);
-        projectile.velocity.copy(forward.multiplyScalar(100)); // Adjust speed as necessary
 
-        // Add to scene and game
-        projectile.addToScene(this.game.scene);
+
+
         this.game.projectiles.push(projectile);
     }
 }

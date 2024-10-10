@@ -6,14 +6,15 @@ import { EntityName } from '../Enums/EntityPaths';
 import {MovableEntity} from "../Core/MovableEntity";
 
 export class NPC extends MovableEntity {
-    constructor(
-        game: Game,
-        assetName: EntityName,
-        pos?: THREE.Vector3,
-        qua?: THREE.Quaternion,
-        iFFNumber?: number,
-    ) {
-        super(game, assetName, pos, qua, iFFNumber);
+    constructor(game: Game,
+                assetName: EntityName,
+                pos?: THREE.Vector3,
+                qua?: THREE.Quaternion,
+                velocity?: THREE.Vector3,
+                acceleration?: THREE.Vector3,
+                iFFNumber?: number,
+                playerId: number = 0) {
+        super(game, assetName, pos, qua, velocity, acceleration, iFFNumber);
     }
 
     public update(deltaTime: number): void {

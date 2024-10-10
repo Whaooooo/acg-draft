@@ -8,6 +8,14 @@ import { LoadingBar } from './Utils/LoadingBar';
 import { Projectile } from './Entities/Projectile';
 import { InputManager } from './Managers/InputManager';
 import { SoundManager } from './Managers/SoundManager';
+import { CameraManager } from './Managers/CameraManager';
+import { SceneManager } from './Managers/SceneManager';
+import { LightManager } from './Managers/LightManager';
+import { RendererManager } from './Managers/RendererManager';
+import {SoundEnum} from "./Enums/SoundPaths";
+import { TargetManager } from './Managers/TargetManager';
+import { MapPaths, MapName } from './Enums/MapPaths';
+
 
 export class Game {
     //###################################################
@@ -18,17 +26,19 @@ export class Game {
     public loadingBar: LoadingBar;
     public assetsPath: string;
 
-    public scene: THREE.Scene;
-    public camera: THREE.PerspectiveCamera;
-    public renderer: THREE.WebGLRenderer;
+    public sceneManager: SceneManager;
+    public cameraManager: CameraManager;
+    public lightManager: LightManager;
+    public rendererManager: RendererManager;
 
-    public player?: Player;
-    public enemies: NPC[];
+    public players: Player[];
+    public npcs: NPC[];
     public projectiles: Projectile[];
 
     public collisionManager: CollisionManager;
     public inputManager: InputManager;
-    public soundManager: SoundManager;
+    public soundManagers: Map<Player, SoundManager>;
+    public targetManager: TargetManager;
 
     public savePath: string;
     public loadPath?: string;
@@ -48,89 +58,100 @@ export class Game {
         // Set the path to your assets
         this.assetsPath = 'assets/';
 
-        // Create the scene
-        this.scene = new THREE.Scene();
-
-        // Set up the camera
-        this.camera = new THREE.PerspectiveCamera(
-            70, // Field of view
-            window.innerWidth / window.innerHeight, // Aspect ratio
-            0.1, // Near clipping plane
-            1000 // Far clipping plane
-        );
-        this.camera.position.set(0, 5, 10);
-        this.camera.lookAt(0, 0, 0);
-
-        // Set up the renderer
-        this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        this.renderer.setPixelRatio(window.devicePixelRatio);
-        this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(this.renderer.domElement);
-
-        // Handle window resize
-        window.addEventListener('resize', this.onWindowResize.bind(this), false);
-
-        // Add lights to the scene
-        this.addLights();
+        // Initialize empty arrays for entities
+        this.players = [];
+        this.npcs = [];
+        this.projectiles = [];
 
         // Initialize the InputManager
         this.inputManager = new InputManager();
-
-        // Initialize the SoundManager
-        this.soundManager = new SoundManager(this.camera, this.assetsPath);
-
-
-        // Initialize empty arrays for entities
-        this.enemies = [];
-        this.projectiles = [];
-
-        // Initialize the collision manager
-        this.collisionManager = new CollisionManager(this);
 
         // Set savePath and loadPath
         this.savePath = 'path/to/savefile.json';
         this.loadPath = loadPath;
 
+        // Initialize the SceneManager
+        this.sceneManager = new SceneManager();
+
+        // Initialize the LightManager
+        this.lightManager = new LightManager(this.sceneManager.scene);
+
         // Check if loadPath exists
         if (this.loadPath) {
             // Load game from data
-            console.log('Request loading game')
+            console.log('Request loading game');
             this.loadGame();
         } else {
             // Use the debug initializer
-            console.log('Request creating debug scene')
+            console.log('Request creating debug scene');
             this.createDebugScene();
+            console.log('Debug scene created');
         }
 
-        // Start the game loop
-        this.start();
-    }
+        // Initialize the CameraManager after players are created
+        this.cameraManager = new CameraManager(this.players);
 
-    private addLights(): void {
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-        this.scene.add(ambientLight);
+        // Initialize the SoundManagers for each player
+        this.soundManagers = new Map<Player, SoundManager>();
+        this.players.forEach((player) => {
+            const camera = this.cameraManager.cameras.get(player);
+            if (camera) {
+                const soundManager = new SoundManager(camera, this.assetsPath, player);
+                this.soundManagers.set(player, soundManager);
+            }
+        });
 
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        directionalLight.position.set(10, 10, 10);
-        this.scene.add(directionalLight);
-    }
+        this.targetManager = new TargetManager([this.players, this.npcs]);
 
-    private onWindowResize(): void {
-        this.camera.aspect = window.innerWidth / window.innerHeight;
-        this.camera.updateProjectionMatrix();
+        // Initialize the RendererManager
+        this.rendererManager = new RendererManager(this.cameraManager, this.sceneManager, this.players);
 
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.collisionManager = new CollisionManager(this);
+
+
+        this.waitForEntitiesToBeReady();
     }
 
     private createDebugScene(): void {
-        // Create a simple player at the origin
-        this.player = new Player(this, 'f22', undefined, undefined, 1);
+        // Create two players at different positions
+        console.log('Request creating player')
+        const player1 = new Player(this, 'plane', new THREE.Vector3(-10, 0, 0), undefined, undefined, undefined, 1, 0);
+        const player2 = new Player(this, 'plane', new THREE.Vector3(10, 0, 0), undefined, undefined, undefined, 1, 1);
 
-        // Optionally, add some enemies for testing
-        const enemyPosition = new THREE.Vector3(0, 0, -50);
-        const enemy = new NPC(this, 'f22', enemyPosition);
-        this.enemies.push(enemy);
+        this.players.push(player1, player2);
+
+        // Optionally, add some NPCs for testing
+        console.log('Request creating npc');
+        const npcPosition = new THREE.Vector3(0, 0, -50);
+        const npc = new NPC(this, 'plane', npcPosition);
+        this.npcs.push(npc);
+
+        this.loadSkybox('paintedsky');
+    }
+
+    private loadSkybox(mapName: MapName): void {
+        const path = `${this.assetsPath}${MapPaths[mapName]}/`;
+        const format = '.jpg'; // Adjust the format if your images are in a different format
+        const urls = [
+            path + 'px' + format, // positive x
+            path + 'nx' + format, // negative x
+            path + 'py' + format, // positive y
+            path + 'ny' + format, // negative y
+            path + 'pz' + format, // positive z
+            path + 'nz' + format  // negative z
+        ];
+
+        const loader = new THREE.CubeTextureLoader();
+        loader.load(
+            urls,
+            (texture) => {
+                this.sceneManager.scene.background = texture;
+            },
+            undefined,
+            (err) => {
+                console.error('Error loading skybox:', err);
+            }
+        );
     }
 
     public loadGame(): void {
@@ -143,23 +164,44 @@ export class Game {
         console.log(`Saving game to ${this.savePath}`);
     }
 
-    //###################################################       ###################################################
-    //###################################################       ###################################################
-    //################################################### START ###################################################
-    //###################################################       ###################################################
-    //###################################################       ###################################################
+    //###################################################
+    //################### START #########################
+    //###################################################
+
+    // In Game.ts
 
     public start(): void {
-        if (this.player){
-            this.player.addToScene()
-        }
-
-        this.enemies.forEach(enemy => {
-            enemy.addToScene()
-        });
-
+        // console.log('Start adding entities to scene');
+        // this.players.forEach((player) => {
+        //     player.addToScene(this.sceneManager.scene);
+        // });
+        //
+        // this.npcs.forEach((npc) => {
+        //     npc.addToScene(this.sceneManager.scene);
+        // });
         // Start the game loop
+        this.players.forEach(player => {
+            this.playSound(player, 'engine', true, 0)
+        })
+        console.log('Start game loop')
         this.loop();
+    }
+
+    private waitForEntitiesToBeReady(): void {
+        const checkReady = () => {
+            const allPlayersReady = this.players.every(player => player.ready);
+            const allNPCsReady = this.npcs.every(npc => npc.ready);
+
+            if (allPlayersReady && allNPCsReady) {
+                console.log('All entities are ready. Starting game.');
+                this.start();
+            } else {
+                // Continue checking
+                requestAnimationFrame(checkReady);
+            }
+        };
+
+        checkReady();
     }
 
     private loop(): void {
@@ -167,29 +209,30 @@ export class Game {
 
         const deltaTime = this.clock.getDelta();
         this.update(deltaTime);
-        this.render();
+        this.rendererManager.render(); // Call render on rendererManager
     }
 
     private update(deltaTime: number): void {
-        // Update the player
-        if (this.player){
-            if (this.player.ready) {
-                this.player.update(deltaTime);
+        // Update players
+        this.players.forEach((player) => {
+            if (player.ready) {
+                player.update(deltaTime);
             }
-        }
-        // Update enemies
-        this.enemies.forEach(enemy => {
-            if (enemy.ready) {
-                enemy.update(deltaTime);
+        });
+
+        // Update NPCs
+        this.npcs.forEach((npc) => {
+            if (npc.ready) {
+                npc.update(deltaTime);
             }
         });
 
         // Update projectiles
         this.projectiles.forEach((projectile, index) => {
             projectile.update(deltaTime);
-
             // Remove projectiles that are out of bounds or have expired
-            if (this.isProjectileOutOfBounds(projectile)) {
+            if (this.collisionManager.isProjectileOutOfBounds(projectile)) {
+                console.log('Projectile out of bounds');
                 projectile.removeFromScene();
                 this.projectiles.splice(index, 1);
             }
@@ -198,34 +241,25 @@ export class Game {
         // Check collisions
         this.collisionManager.checkCollisions();
 
-        // Update sounds based on game state if needed
-        this.updateSounds();
+        // Update sounds for each player
+        this.players.forEach((player) => {
+            const soundManager = this.soundManagers.get(player);
+            soundManager?.updateSounds();
+        });
     }
 
-    private render(): void {
-        this.renderer.render(this.scene, this.camera);
-    }
-
-    private isProjectileOutOfBounds(projectile: Projectile): boolean {
-        if (!projectile.entity) return true;
-
-        const position = projectile.entity.position;
-        const bounds = 1000; // Adjust according to your game world size
-
-        return (
-            Math.abs(position.x) > bounds ||
-            Math.abs(position.y) > bounds ||
-            Math.abs(position.z) > bounds
-        );
-    }
-
-    private updateSounds(): void {
+    private updateSounds(player: Player): void {
         // Example: Adjust engine sound volume based on player speed
-        if (this.player){
-            const speed = this.player.velocity.length();
-            const maxSpeed = 100; // Define your max speed
+        const soundManager = this.soundManagers.get(player);
+        if (soundManager) {
+            const speed = player.velocity.length();
+            const maxSpeed = 10; // Define your max speed
             const volume = THREE.MathUtils.clamp(speed / maxSpeed, 0, 1);
-            this.soundManager.setVolume('engine', volume);
+            soundManager.setVolume('engine', volume);
         }
+    }
+
+    public playSound(player: Player, name: SoundEnum, loop: boolean = false, volume: number = 1): void {
+        this.soundManagers.get(player)?.playSound(name, loop, volume)
     }
 }

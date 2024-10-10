@@ -14,16 +14,17 @@ export class Projectile extends MovableEntity {
         assetName: EntityName,
         pos?: THREE.Vector3,
         qua?: THREE.Quaternion,
+        velocity?: THREE.Vector3,
+        acceleration?: THREE.Vector3,
         iFFNumber?: number,
         target?: Entity
     ) {
-        super(game, assetName, pos, qua, iFFNumber);
+        super(game, assetName, pos, qua, velocity, acceleration, iFFNumber);
         this.target = target || null;
     }
 
     public update(deltaTime: number): void {
         if (!this.ready || !this.entity) return;
-
         // Force homing
         if (this.target && this.target.entity) {
             const targetPosition = this.target.entity.position.clone();

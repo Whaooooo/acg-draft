@@ -18,11 +18,13 @@ export class MovableEntity extends Entity {
         assetName: EntityName,
         pos?: THREE.Vector3,
         qua?: THREE.Quaternion,
+        velocity?: THREE.Vector3,
+        acceleration?: THREE.Vector3,
         iFFNumber?: number,
     ) {
         super(game, assetName, pos, qua, iFFNumber);
-        this.velocity = new THREE.Vector3();
-        this.acceleration = new THREE.Vector3();
+        this.velocity = velocity? velocity : new THREE.Vector3();
+        this.acceleration = acceleration ? acceleration : new THREE.Vector3();
         //############################################### Need to implement weapons initialization
         this.targets = []
         this.weapons = []

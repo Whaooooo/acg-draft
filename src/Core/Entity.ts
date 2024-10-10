@@ -15,11 +15,13 @@ export class Entity {
     public scene: THREE.Scene;
     public entity?: THREE.Group;
     public ready: boolean = false;
+    public removed: boolean = false;
 
     protected tmpPos: THREE.Vector3;
     protected tmpQua: THREE.Quaternion;
 
     public iFFNumber: number;
+    public targets: Entity[];
 
     constructor(game: Game, assetName: EntityName, pos?: THREE.Vector3, qua?: THREE.Quaternion, iFFNumber?: number) {
         this.assetsPath = game.assetsPath;
@@ -28,12 +30,13 @@ export class Entity {
         this.loadingBar = game.loadingBar;
 
         this.game = game;
-        this.scene = game.scene;
+        this.scene = game.sceneManager.scene;
 
         this.tmpPos = pos ? pos : new THREE.Vector3();
         this.tmpQua = qua ? qua : new THREE.Quaternion();
 
         this.iFFNumber = iFFNumber ? iFFNumber : 0;
+        this.targets = [];
 
         this.load();
     }
@@ -41,7 +44,7 @@ export class Entity {
     private load(): void {
         const pathParts = this.assetPath.split('/');
         const fileName = pathParts.pop();
-        if (fileName === undefined) {
+        if (!fileName) {
             console.error(`Undefined fileName in ${this.assetPath}`);
             return;
         }
@@ -56,11 +59,10 @@ export class Entity {
             fileName,
             // called when the resource is loaded
             gltf => {
+                this.scene.add(gltf.scene)
                 this.entity = gltf.scene;
                 this.entity.position.copy(this.tmpPos);
                 this.entity.quaternion.copy(this.tmpQua);
-
-                this.scene.add(this.entity);
 
                 this.ready = true;
             },
@@ -111,6 +113,7 @@ export class Entity {
     }
 
     public removeFromScene(scene?: THREE.Scene): void {
+        this.removed = true;
         if (this.entity && scene) {
             scene.remove(this.entity);
             return;

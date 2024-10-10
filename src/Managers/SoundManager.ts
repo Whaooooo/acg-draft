@@ -2,15 +2,18 @@
 
 import * as THREE from 'three';
 import { SoundPaths, SoundEnum } from '../Enums/SoundPaths';
+import { Player } from '../Entities/Player';
 
 export class SoundManager {
     private listener: THREE.AudioListener;
     private sounds: Map<SoundEnum, THREE.Audio>;
+    private player: Player;
 
-    constructor(camera: THREE.Camera, assetsPath: string) {
+    constructor(camera: THREE.Camera, assetsPath: string, player: Player) {
         this.listener = new THREE.AudioListener();
         camera.add(this.listener);
         this.sounds = new Map<SoundEnum, THREE.Audio>();
+        this.player = player;
 
         // Load sounds during initialization
         this.loadSounds(assetsPath);
@@ -64,6 +67,7 @@ export class SoundManager {
         const sound = this.sounds.get(name);
         if (sound) {
             sound.setVolume(volume);
+            console.log('Set volume successfully')
         }
     }
 
@@ -74,5 +78,13 @@ export class SoundManager {
             sound.disconnect();
         });
         this.sounds.clear();
+    }
+
+    public updateSounds(): void {
+        // Example: Adjust engine sound volume based on player speed
+        const speed = this.player.velocity.length();
+        const maxSpeed = 10; // Define your max speed
+        const volume = THREE.MathUtils.clamp(speed / maxSpeed, 0, 1);
+        this.setVolume('engine', volume);
     }
 }
