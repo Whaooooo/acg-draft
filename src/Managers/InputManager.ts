@@ -1,55 +1,79 @@
 // src/Managers/InputManager.ts
 
 export class InputManager {
-    private keysPressed: Set<string>;
+    private keysPressed: { [key: string]: boolean } = {};
+    private keysDown: { [key: string]: boolean } = {};
+    public mouseDeltaX: number = 0;
+    public mouseDeltaY: number = 0;
+    public pointerLocked: boolean = false;
 
     constructor() {
-        this.keysPressed = new Set<string>();
+        this.initEventListeners();
+    }
 
-        // Add event listeners
-        window.addEventListener('keydown', this.onKeyDown.bind(this), false);
-        window.addEventListener('keyup', this.onKeyUp.bind(this), false);
+    private initEventListeners(): void {
+        window.addEventListener('keydown', (event) => this.onKeyDown(event), false);
+        window.addEventListener('keyup', (event) => this.onKeyUp(event), false);
         window.addEventListener('mousedown', this.onMouseDown.bind(this), false);
-        window.addEventListener('mouseup', this.onMouseUp.bind(this), false);
-        window.addEventListener('touchstart', this.onTouchStart.bind(this), false);
-        window.addEventListener('touchend', this.onTouchEnd.bind(this), false);
+        window.addEventListener('mousemove', this.onMouseMove.bind(this), false);
+        document.addEventListener('pointerlockchange', this.onPointerLockChange.bind(this), false);
     }
 
     private onKeyDown(event: KeyboardEvent): void {
-        this.keysPressed.add(event.code);
+        const key = event.key.toLowerCase();
+        if (!this.keysPressed[key]) {
+            // Key was not pressed before, so it's a key down event
+            this.keysDown[key] = true;
+        }
+        this.keysPressed[key] = true;
     }
 
     private onKeyUp(event: KeyboardEvent): void {
-        this.keysPressed.delete(event.code);
+        const key = event.key.toLowerCase();
+        this.keysPressed[key] = false;
     }
 
     private onMouseDown(event: MouseEvent): void {
-        // Handle mouse down events if needed
+        // Request pointer lock
+        const element = document.body;
+        if (!this.pointerLocked) {
+            element.requestPointerLock();
+        }
     }
 
-    private onMouseUp(event: MouseEvent): void {
-        // Handle mouse up events if needed
+    private onPointerLockChange(): void {
+        const element = document.body;
+        if (document.pointerLockElement === element) {
+            this.pointerLocked = true;
+        } else {
+            this.pointerLocked = false;
+        }
     }
 
-    private onTouchStart(event: TouchEvent): void {
-        // Handle touch start events if needed
+    private onMouseMove(event: MouseEvent): void {
+        if (this.pointerLocked) {
+            this.mouseDeltaX += event.movementX;
+            this.mouseDeltaY += event.movementY;
+        }
     }
 
-    private onTouchEnd(event: TouchEvent): void {
-        // Handle touch end events if needed
+    public isKeyPressed(key: string): boolean {
+        return this.keysPressed[key.toLowerCase()] || false;
     }
 
-    public isKeyPressed(keyCode: string): boolean {
-        return this.keysPressed.has(keyCode);
+    public isKeyDown(key: string): boolean {
+        key = key.toLowerCase();
+        if (this.keysDown[key]) {
+            this.keysDown[key] = false; // Reset the flag after reading
+            return true;
+        }
+        return false;
     }
 
-    public dispose(): void {
-        // Remove event listeners when no longer needed
-        window.removeEventListener('keydown', this.onKeyDown);
-        window.removeEventListener('keyup', this.onKeyUp);
-        window.removeEventListener('mousedown', this.onMouseDown);
-        window.removeEventListener('mouseup', this.onMouseUp);
-        window.removeEventListener('touchstart', this.onTouchStart);
-        window.removeEventListener('touchend', this.onTouchEnd);
+    public getMouseMovement(): { deltaX: number; deltaY: number } {
+        const delta = { deltaX: this.mouseDeltaX, deltaY: this.mouseDeltaY };
+        this.mouseDeltaX = 0;
+        this.mouseDeltaY = 0;
+        return delta;
     }
 }

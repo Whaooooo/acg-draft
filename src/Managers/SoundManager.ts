@@ -67,7 +67,6 @@ export class SoundManager {
         const sound = this.sounds.get(name);
         if (sound) {
             sound.setVolume(volume);
-            console.log('Set volume successfully')
         }
     }
 

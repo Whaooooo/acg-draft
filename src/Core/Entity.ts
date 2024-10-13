@@ -13,7 +13,10 @@ export class Entity {
     public loadingBar: LoadingBar;
     public game: Game;
     public scene: THREE.Scene;
+
     public entity?: THREE.Group;
+    public animations: Map<string, THREE.AnimationClip>;
+
     public ready: boolean = false;
     public removed: boolean = false;
 
@@ -31,6 +34,8 @@ export class Entity {
 
         this.game = game;
         this.scene = game.sceneManager.scene;
+
+        this.animations = new Map<string, THREE.AnimationClip>();
 
         this.tmpPos = pos ? pos : new THREE.Vector3();
         this.tmpQua = qua ? qua : new THREE.Quaternion();
@@ -61,6 +66,16 @@ export class Entity {
             gltf => {
                 this.scene.add(gltf.scene)
                 this.entity = gltf.scene;
+
+                gltf.animations.forEach( animation => {
+                    this.animations.set(animation.name.toLowerCase(), animation);
+                });
+
+                this.animations.forEach(pair =>{
+                    console.log(pair.name.toLowerCase());
+                    }
+                )
+
                 this.entity.position.copy(this.tmpPos);
                 this.entity.quaternion.copy(this.tmpQua);
 
