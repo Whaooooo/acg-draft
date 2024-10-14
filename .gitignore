@@ -1,3 +1,6 @@
 /assets/fighter/lockheed-martin-f-22-raptor/fbx/
 /assets/fighter/lockheed-martin-f-22-raptor/glb/
 /assets/fighter/f22-raptor/
+node_modules/
+dist/
+yarn.lock

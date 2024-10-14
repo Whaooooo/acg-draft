@@ -4,7 +4,7 @@
   "description": "A 3D flying combat game built with Three.js and TypeScript.",
   "main": "src/main.ts",
   "scripts": {
-    "start": "webpack serve --open",
+    "start": "webpack && webpack serve --open",
     "build": "webpack"
   },
   "author": "Double-Z",

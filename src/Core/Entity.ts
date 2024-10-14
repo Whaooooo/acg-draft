@@ -64,17 +64,22 @@ export class Entity {
             fileName,
             // called when the resource is loaded
             gltf => {
-                this.scene.add(gltf.scene)
                 this.entity = gltf.scene;
+                this.entity.traverse(node => {
+                    if (node.isObject3D) {
+                        node.castShadow = true;
+                        node.receiveShadow = true;
+                    }
+                });
+                this.scene.add(gltf.scene);
 
-                gltf.animations.forEach( animation => {
+                gltf.animations.forEach(animation => {
                     this.animations.set(animation.name.toLowerCase(), animation);
                 });
 
-                this.animations.forEach(pair =>{
+                this.animations.forEach(pair => {
                     console.log(pair.name.toLowerCase());
-                    }
-                )
+                });
 
                 this.entity.position.copy(this.tmpPos);
                 this.entity.quaternion.copy(this.tmpQua);

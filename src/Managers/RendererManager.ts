@@ -15,6 +15,7 @@ export class RendererManager {
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         this.renderer.setPixelRatio(window.devicePixelRatio);
         this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+        this.renderer.shadowMap.enabled = true;
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(this.renderer.domElement);
 

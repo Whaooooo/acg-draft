@@ -12,7 +12,7 @@ import { CameraManager } from './Managers/CameraManager';
 import { SceneManager } from './Managers/SceneManager';
 import { LightManager } from './Managers/LightManager';
 import { RendererManager } from './Managers/RendererManager';
-import {SoundEnum} from "./Enums/SoundPaths";
+import { SoundEnum } from "./Enums/SoundPaths";
 import { TargetManager } from './Managers/TargetManager';
 import { MapPaths, MapName } from './Enums/MapPaths';
 
@@ -125,6 +125,18 @@ export class Game {
         const npcPosition = new THREE.Vector3(0, 0, -50);
         const npc = new NPC(this, 'plane', npcPosition);
         this.npcs.push(npc);
+
+        const sphereGeometry = new THREE.SphereGeometry(5, 32, 32);
+        const sphereMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+        const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+        sphere.castShadow = true; //default is false
+        sphere.receiveShadow = true; //default
+        this.sceneManager.scene.add(sphere);
+        const planeGeometry = new THREE.PlaneGeometry(20, 20, 32, 32);
+        const planeMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00 })
+        const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+        plane.receiveShadow = true;
+        this.sceneManager.scene.add(plane);
 
         this.loadSkybox('paintedsky');
     }
