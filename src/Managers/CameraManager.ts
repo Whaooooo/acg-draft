@@ -16,7 +16,7 @@ export class CameraManager {
                 50,
                 window.innerWidth / window.innerHeight,
                 0.001,
-                100
+                1000
             );
 
             // Initial position and orientation

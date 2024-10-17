@@ -9,7 +9,6 @@ import { Projectile } from './Entities/Projectile';
 import { InputManager } from './Managers/InputManager';
 import { SoundManager } from './Managers/SoundManager';
 import { CameraManager } from './Managers/CameraManager';
-import { SceneManager } from './Managers/SceneManager';
 import { LightManager } from './Managers/LightManager';
 import { RendererManager } from './Managers/RendererManager';
 import { SoundEnum } from "./Enums/SoundPaths";
@@ -26,7 +25,7 @@ export class Game {
     public loadingBar: LoadingBar;
     public assetsPath: string;
 
-    public sceneManager: SceneManager;
+    public scene: THREE.Scene;
     public cameraManager: CameraManager;
     public lightManager: LightManager;
     public rendererManager: RendererManager;
@@ -71,10 +70,10 @@ export class Game {
         this.loadPath = loadPath;
 
         // Initialize the SceneManager
-        this.sceneManager = new SceneManager();
+        this.scene = new THREE.Scene();
 
         // Initialize the LightManager
-        this.lightManager = new LightManager(this.sceneManager.scene);
+        this.lightManager = new LightManager(this.scene);
 
         // Check if loadPath exists
         if (this.loadPath) {
@@ -104,7 +103,7 @@ export class Game {
         this.targetManager = new TargetManager([this.players, this.npcs]);
 
         // Initialize the RendererManager
-        this.rendererManager = new RendererManager(this.cameraManager, this.sceneManager, this.players);
+        this.rendererManager = new RendererManager(this.cameraManager, this.scene, this.players);
 
         this.collisionManager = new CollisionManager(this);
 
@@ -131,12 +130,12 @@ export class Game {
         const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
         sphere.castShadow = true; //default is false
         sphere.receiveShadow = true; //default
-        this.sceneManager.scene.add(sphere);
+        this.scene.add(sphere);
         const planeGeometry = new THREE.PlaneGeometry(20, 20, 32, 32);
         const planeMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00 })
         const plane = new THREE.Mesh(planeGeometry, planeMaterial);
         plane.receiveShadow = true;
-        this.sceneManager.scene.add(plane);
+        this.scene.add(plane);
 
         this.loadSkybox('paintedsky');
     }
@@ -157,7 +156,7 @@ export class Game {
         loader.load(
             urls,
             (texture) => {
-                this.sceneManager.scene.background = texture;
+                this.scene.background = texture;
             },
             undefined,
             (err) => {

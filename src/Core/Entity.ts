@@ -3,13 +3,14 @@
 import * as THREE from 'three';
 import { Game } from "../Game";
 import { LoadingBar } from "../Utils/LoadingBar";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import { EntityPaths, EntityName } from '../Enums/EntityPaths';
+import { EntityConfigs, EntityName, EntityConfig } from '../Enums/EntityPaths';
+import { EntityLoaders } from '../Enums/EntityLoaders';
 
 export class Entity {
     public assetsPath: string;
     public assetName: EntityName;
     public assetPath: string;
+    public assetConfig: EntityConfig;
     public loadingBar: LoadingBar;
     public game: Game;
     public scene: THREE.Scene;
@@ -20,8 +21,8 @@ export class Entity {
     public ready: boolean = false;
     public removed: boolean = false;
 
-    protected tmpPos: THREE.Vector3;
-    protected tmpQua: THREE.Quaternion;
+    public tmpPos: THREE.Vector3;
+    public tmpQua: THREE.Quaternion;
 
     public iFFNumber: number;
     public targets: Entity[];
@@ -29,11 +30,12 @@ export class Entity {
     constructor(game: Game, assetName: EntityName, pos?: THREE.Vector3, qua?: THREE.Quaternion, iFFNumber?: number) {
         this.assetsPath = game.assetsPath;
         this.assetName = assetName;
-        this.assetPath = EntityPaths[assetName];
+        this.assetConfig = EntityConfigs[assetName];
+        this.assetPath = this.assetConfig.path;
         this.loadingBar = game.loadingBar;
 
         this.game = game;
-        this.scene = game.sceneManager.scene;
+        this.scene = game.scene;
 
         this.animations = new Map<string, THREE.AnimationClip>();
 
@@ -47,51 +49,30 @@ export class Entity {
     }
 
     private load(): void {
-        const pathParts = this.assetPath.split('/');
-        const fileName = pathParts.pop();
-        if (!fileName) {
-            console.error(`Undefined fileName in ${this.assetPath}`);
+        const loaderType = this.assetConfig.loaderType;
+        const loaderFunction = EntityLoaders[loaderType];
+
+        if (!loaderFunction) {
+            console.error(`No loader function defined for loaderType: ${loaderType}`);
             return;
         }
-        const dir = pathParts.join('/');
 
-        const loader = new GLTFLoader().setPath(`${this.assetsPath}${dir}/`);
-        this.ready = false;
-
-        // Load a glTF resource
-        loader.load(
-            // resource URL
-            fileName,
-            // called when the resource is loaded
-            gltf => {
-                this.entity = gltf.scene;
-                this.entity.traverse(node => {
-                    if (node.isObject3D) {
-                        node.castShadow = true;
-                        node.receiveShadow = true;
-                    }
-                });
-                this.scene.add(gltf.scene);
-
-                gltf.animations.forEach(animation => {
-                    this.animations.set(animation.name.toLowerCase(), animation);
-                });
-
-                this.animations.forEach(pair => {
-                    console.log(pair.name.toLowerCase());
-                });
-
-                this.entity.position.copy(this.tmpPos);
-                this.entity.quaternion.copy(this.tmpQua);
-
+        loaderFunction(
+            this,
+            () => {
+                // onLoad callback
                 this.ready = true;
             },
-            // called while loading is progressing
-            xhr => {
-                this.loadingBar.update(`${this.assetsPath}${this.assetPath}`, xhr.loaded, xhr.total);
+            (xhr) => {
+                // onProgress callback
+                this.loadingBar.update(
+                    `${this.assetsPath}${this.assetPath}`,
+                    xhr.loaded,
+                    xhr.total
+                );
             },
-            // called when loading has errors
-            err => {
+            (err) => {
+                // onError callback
                 console.error(err);
             }
         );

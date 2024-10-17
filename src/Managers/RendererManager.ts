@@ -2,25 +2,25 @@
 
 import * as THREE from 'three';
 import { CameraManager } from './CameraManager';
-import { SceneManager } from './SceneManager';
 import { Player } from '../Entities/Player';
 
 export class RendererManager {
     public renderer: THREE.WebGLRenderer;
     private cameraManager: CameraManager;
-    private sceneManager: SceneManager;
+    private scene: THREE.Scene;
     private players: Player[];
 
-    constructor(cameraManager: CameraManager, sceneManager: SceneManager, players: Player[]) {
+    constructor(cameraManager: CameraManager, scene : THREE.Scene, players: Player[]) {
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         this.renderer.setPixelRatio(window.devicePixelRatio);
         this.renderer.outputColorSpace = THREE.SRGBColorSpace;
         this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(this.renderer.domElement);
 
         this.cameraManager = cameraManager;
-        this.sceneManager = sceneManager;
+        this.scene = scene;
         this.players = players;
 
         window.addEventListener('resize', this.onWindowResize.bind(this), false);
@@ -32,7 +32,7 @@ export class RendererManager {
     }
 
     public render(): void {
-        const scene = this.sceneManager.scene;
+        const scene = this.scene;
         const numPlayers = this.players.length;
         const width = window.innerWidth;
         const height = window.innerHeight;
