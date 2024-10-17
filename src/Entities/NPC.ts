@@ -2,7 +2,7 @@
 
 import { Game } from '../Game';
 import * as THREE from 'three';
-import { EntityName } from '../Enums/EntityPaths';
+import { EntityName } from '../Configs/EntityPaths';
 import {MovableEntity} from "../Core/MovableEntity";
 
 export class NPC extends MovableEntity {

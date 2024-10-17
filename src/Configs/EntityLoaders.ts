@@ -1,4 +1,4 @@
-// src/Enums/EntityLoaders.ts
+// src/Configs/EntityLoaders.ts
 
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
@@ -22,11 +22,11 @@ export const EntityLoaders: { [key: string]: LoaderFunction } = {
         const geometry = new THREE.BoxGeometry();
         const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
         const mesh = new THREE.Mesh(geometry, material);
-        entity.entity = new THREE.Group();
-        entity.entity.add(mesh);
-        entity.entity.position.copy(entity.tmpPos);
-        entity.entity.quaternion.copy(entity.tmpQua);
-        entity.scene.add(entity.entity);
+        entity._entity = new THREE.Group();
+        entity._entity.add(mesh);
+        entity._entity.position.copy(entity.tmpPos);
+        entity._entity.quaternion.copy(entity.tmpQua);
+        entity.scene.add(entity._entity);
         onLoad();
     },
 
@@ -52,8 +52,8 @@ export const EntityLoaders: { [key: string]: LoaderFunction } = {
             fileName,
             // Called when the resource is loaded
             (gltf) => {
-                entity.entity = gltf.scene;
-                entity.entity.traverse((node) => {
+                entity._entity = gltf.scene;
+                entity._entity.traverse((node) => {
                     if ((node as THREE.Mesh).isMesh) {
                         node.castShadow = true;
                         node.receiveShadow = true;
@@ -65,8 +65,8 @@ export const EntityLoaders: { [key: string]: LoaderFunction } = {
                     entity.animations.set(animation.name.toLowerCase(), animation);
                 });
 
-                entity.entity.position.copy(entity.tmpPos);
-                entity.entity.quaternion.copy(entity.tmpQua);
+                entity._entity.position.copy(entity.tmpPos);
+                entity._entity.quaternion.copy(entity.tmpQua);
 
                 onLoad();
             },

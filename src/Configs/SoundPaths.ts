@@ -1,4 +1,4 @@
-// src/Enums/SoundPaths.ts
+// src/Configs/SoundPaths.ts
 
 export const SoundPaths = {
     engine: 'dcs/SA342/SA342Engine.ogg',

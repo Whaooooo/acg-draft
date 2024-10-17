@@ -11,9 +11,9 @@ import { SoundManager } from './Managers/SoundManager';
 import { CameraManager } from './Managers/CameraManager';
 import { LightManager } from './Managers/LightManager';
 import { RendererManager } from './Managers/RendererManager';
-import { SoundEnum } from "./Enums/SoundPaths";
+import { SoundEnum } from "./Configs/SoundPaths";
 import { TargetManager } from './Managers/TargetManager';
-import { MapPaths, MapName } from './Enums/MapPaths';
+import { MapPaths, MapName } from './Configs/MapPaths';
 
 
 export class Game {
@@ -238,38 +238,17 @@ export class Game {
             }
         });
 
-        // Update projectiles
-        this.projectiles.forEach((projectile, index) => {
-            projectile.update(deltaTime);
-            // Remove projectiles that are out of bounds or have expired
-            if (this.collisionManager.isProjectileOutOfBounds(projectile)) {
-                console.log('Projectile out of bounds');
-                projectile.removeFromScene();
-                this.projectiles.splice(index, 1);
-            }
-        });
 
         this.cameraManager.updateCameras();
 
         // Check collisions
-        this.collisionManager.checkCollisions();
+        this.collisionManager.update(deltaTime);
 
         // Update sounds for each player
         this.players.forEach((player) => {
             const soundManager = this.soundManagers.get(player);
             soundManager?.updateSounds();
         });
-    }
-
-    private updateSounds(player: Player): void {
-        // Example: Adjust engine sound volume based on player speed
-        const soundManager = this.soundManagers.get(player);
-        if (soundManager) {
-            const speed = player.velocity.length();
-            const maxSpeed = 10; // Define your max speed
-            const volume = THREE.MathUtils.clamp(speed / maxSpeed, 0, 1);
-            soundManager.setVolume('engine', volume);
-        }
     }
 
     public playSound(player: Player, name: SoundEnum, loop: boolean = false, volume: number = 1): void {

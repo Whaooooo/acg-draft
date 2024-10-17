@@ -3,8 +3,8 @@
 import * as THREE from 'three';
 import { Game } from "../Game";
 import { LoadingBar } from "../Utils/LoadingBar";
-import { EntityConfigs, EntityName, EntityConfig } from '../Enums/EntityPaths';
-import { EntityLoaders } from '../Enums/EntityLoaders';
+import { EntityConfigs, EntityName, EntityConfig } from '../Configs/EntityPaths';
+import { EntityLoaders } from '../Configs/EntityLoaders';
 
 export class Entity {
     public assetsPath: string;
@@ -15,7 +15,7 @@ export class Entity {
     public game: Game;
     public scene: THREE.Scene;
 
-    public entity?: THREE.Group;
+    public _entity?: THREE.Group;
     public animations: Map<string, THREE.AnimationClip>;
 
     public ready: boolean = false;
@@ -79,52 +79,49 @@ export class Entity {
     }
 
     public getPosition(): THREE.Vector3 {
-        if (this.entity) {
-            this.tmpPos = this.entity.position;
+        if (this._entity) {
+            this.tmpPos = this._entity.position;
         }
         return this.tmpPos;
     }
 
     public getQuaternion(): THREE.Quaternion {
-        if (this.entity) {
-            this.tmpQua = this.entity.quaternion;
+        if (this._entity) {
+            this.tmpQua = this._entity.quaternion;
         }
         return this.tmpQua;
     }
 
     public setPosition(position: THREE.Vector3): void {
-        if (this.entity) {
-            this.entity.position.copy(position);
+        if (this._entity) {
+            this._entity.position.copy(position);
         }
         this.tmpPos.copy(position);
     }
 
     public setQuaternion(quaternion: THREE.Quaternion): void {
-        if (this.entity) {
-            this.entity.quaternion.copy(quaternion);
+        if (this._entity) {
+            this._entity.quaternion.copy(quaternion);
         }
         this.tmpQua.copy(quaternion);
     }
 
     public addToScene(scene?: THREE.Scene): void {
-        if (!this.entity) return;
-        if (!scene) {
-            this.scene.add(this.entity);
-        } else scene.add(this.entity);
+        this.scene.add(this.entity);
     }
 
-    public removeFromScene(scene?: THREE.Scene): void {
+    public removeFromScene(): void {
+        if (this.removed) return;
         this.removed = true;
-        if (this.entity && scene) {
-            scene.remove(this.entity);
-            return;
-        }
-        if (this.entity && this.scene) {
-            this.scene.remove(this.entity);
-        }
+        this.scene.remove(this.entity);
     }
 
     public update(deltaTime: number): void {
         // Override in subclasses
+    }
+
+    get entity(): THREE.Group {
+        if (!this._entity) {throw Error()}
+        return this._entity;
     }
 }

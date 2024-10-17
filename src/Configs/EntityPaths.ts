@@ -1,8 +1,8 @@
-// src/Enums/EntityPaths.ts
+// src/Configs/EntityPaths.ts
 
 export interface EntityConfig {
     path: string;
-    loaderType: 'gltf' | 'minimal' | string;
+    loaderType: 'gltf' | 'minimal';
     // Add other configuration options as needed
 }
 

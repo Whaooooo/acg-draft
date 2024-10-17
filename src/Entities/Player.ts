@@ -3,7 +3,7 @@
 import { MovableEntity } from '../Core/MovableEntity';
 import { Game } from '../Game';
 import { Projectile } from './Projectile';
-import { EntityName } from '../Enums/EntityPaths';
+import { EntityName } from '../Configs/EntityPaths';
 import { ViewMode } from '../Enums/ViewMode';
 import * as THREE from 'three';
 
@@ -31,7 +31,7 @@ export class Player extends MovableEntity {
     }
 
     public update(deltaTime: number): void {
-        if (!this.ready || !this.entity) return;
+        if (!this.ready || !this._entity) return;
 
         // Handle input
         this.handleInput(deltaTime);
@@ -43,7 +43,7 @@ export class Player extends MovableEntity {
     }
 
     private handleInput(deltaTime: number): void {
-        if (!this.ready || !this.entity) return;
+        if (!this.ready || !this._entity) return;
         const inputManager = this.game.inputManager;
 
         // Movement speed
@@ -109,7 +109,7 @@ export class Player extends MovableEntity {
     }
 
     public fireWeapon(): void {
-        if (!this.ready || !this.entity) return;
+        if (!this.ready || !this._entity) return;
 
         // Play firing sound
         this.game.playSound(this, 'fox2');
@@ -126,7 +126,7 @@ export class Player extends MovableEntity {
         const projectile = new Projectile(
             this.game,
             this.name,
-            this.entity.position.clone(),
+            this._entity.position.clone(),
             new THREE.Quaternion().setFromUnitVectors(
                 new THREE.Vector3(0, 0, -1),
                 forward.clone().normalize()

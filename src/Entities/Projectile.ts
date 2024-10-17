@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { MovableEntity } from '../Core/MovableEntity';
 import { Entity } from '../Core/Entity';
 import { Game } from '../Game';
-import { EntityName } from '../Enums/EntityPaths';
+import { EntityName } from '../Configs/EntityPaths';
 
 export class Projectile extends MovableEntity {
     public target: Entity | null;
@@ -24,11 +24,11 @@ export class Projectile extends MovableEntity {
     }
 
     public update(deltaTime: number): void {
-        if (!this.ready || !this.entity) return;
+        if (!this.ready || !this._entity) return;
         // Force homing
-        if (this.target && this.target.entity) {
-            const targetPosition = this.target.entity.position.clone();
-            const currentPosition = this.entity.position.clone();
+        if (this.target && this.target._entity) {
+            const targetPosition = this.target._entity.position.clone();
+            const currentPosition = this._entity.position.clone();
             const direction = targetPosition.sub(currentPosition).normalize();
 
             const speed = this.velocity.length(); // Maintain current speed

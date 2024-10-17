@@ -1,4 +1,4 @@
-// src/Enums/MapPaths.ts
+// src/Configs/MapPaths.ts
 
 export const MapPaths = {
     paintedsky: 'plane/paintedsky', // Folder containing skybox images

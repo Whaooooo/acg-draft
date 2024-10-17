@@ -1,7 +1,7 @@
 // src/Managers/SoundManager.ts
 
 import * as THREE from 'three';
-import { SoundPaths, SoundEnum } from '../Enums/SoundPaths';
+import { SoundPaths, SoundEnum } from '../Configs/SoundPaths';
 import { Player } from '../Entities/Player';
 
 export class SoundManager {
