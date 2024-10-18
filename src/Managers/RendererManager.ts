@@ -10,12 +10,14 @@ export class RendererManager {
     private scene: THREE.Scene;
     private players: Player[];
 
-    constructor(cameraManager: CameraManager, scene : THREE.Scene, players: Player[]) {
-        this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    constructor(cameraManager: CameraManager, scene: THREE.Scene, players: Player[]) {
+        this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
         this.renderer.setPixelRatio(window.devicePixelRatio);
         this.renderer.outputColorSpace = THREE.SRGBColorSpace;
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping; // Advanced tone mapping
+        this.renderer.toneMappingExposure = 1; // Adjust exposure as needed
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(this.renderer.domElement);
 

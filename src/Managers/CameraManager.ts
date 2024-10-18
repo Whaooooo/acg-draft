@@ -13,10 +13,10 @@ export class CameraManager {
 
         players.forEach((player) => {
             const camera = new THREE.PerspectiveCamera(
-                50,
+                100,
                 window.innerWidth / window.innerHeight,
-                0.001,
-                1000
+                0.01,
+                100
             );
 
             // Initial position and orientation
@@ -67,7 +67,7 @@ export class CameraManager {
             } else {
                 // Third-person view
 
-                const radius = 5; // Distance from the player
+                const radius = 40; // Distance from the player
 
                 // Calculate camera position in spherical coordinates
                 const offsetX = radius * Math.cos(controls.pitch) * Math.sin(controls.yaw);

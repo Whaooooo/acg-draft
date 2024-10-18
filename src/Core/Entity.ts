@@ -46,6 +46,8 @@ export class Entity {
         this.targets = [];
 
         this.load();
+
+        console.log(this.animations)
     }
 
     private load(): void {

@@ -57,6 +57,9 @@ export const EntityLoaders: { [key: string]: LoaderFunction } = {
                     if ((node as THREE.Mesh).isMesh) {
                         node.castShadow = true;
                         node.receiveShadow = true;
+                        const mesh = node as THREE.Mesh;
+                        mesh.geometry.computeBoundingBox();
+                        mesh.geometry.computeBoundingSphere();
                     }
                 });
                 entity.scene.add(gltf.scene);
