@@ -2,16 +2,24 @@
 
 import { MovableEntity } from '../Core/MovableEntity';
 import { Game } from '../Game';
-import { Projectile } from './Projectile';
+import { Missile } from './Missile';
 import { EntityName } from '../Configs/EntityPaths';
 import { ViewMode } from '../Enums/ViewMode';
+import { PlaneProperty, MissileProperty, PlayerProperties } from '../Configs/EntityProperty';
 import * as THREE from 'three';
+import { Weapon } from '../Core/Weapon';
 
 export class Player extends MovableEntity {
     public playerId: number;
-    public cooldown: boolean;
     public name: EntityName;
     public viewMode: ViewMode;
+
+    public property: PlaneProperty;
+
+    // New property: List of weapons
+    public weapons: Weapon[];
+    public selectedWeaponIndex: number = 0; // Index of the currently selected weapon
+
 
     constructor(
         game: Game,
@@ -25,17 +33,45 @@ export class Player extends MovableEntity {
     ) {
         super(game, assetName, pos, qua, velocity, acceleration, iFFNumber);
         this.playerId = playerId;
-        this.cooldown = true;
         this.name = assetName;
         this.viewMode = ViewMode.ThirdPerson;
+
+        // Initialize plane properties
+        this.property = PlayerProperties[this.name] as PlaneProperty;
+
+        // Initialize weapons list
+        this.weapons = [];
+
+        // Get the plane's configuration from EntityConfigs
+        const planeConfig = this.assetConfig;
+        if (planeConfig && planeConfig.children) {
+            // For each weapon name in the children list, create a Weapon instance
+            for (const weaponName of planeConfig.children) {
+                try {
+                    const weapon = new Weapon(this.game, this, this.name, weaponName);
+                    this.weapons.push(weapon);
+                } catch (error) {
+                    console.error(error);
+                }
+            }
+        } else {
+            console.warn(`No weapons defined for plane ${this.name}`);
+        }
+        console.log(this.weapons)
     }
 
     public update(deltaTime: number): void {
-        if (!this.ready || !this._entity) return;
+        if (!this.ready || !this.entity) return;
 
         // Handle input
         this.handleInput(deltaTime);
 
+        // Update weapons
+        for (const weapon of this.weapons) {
+            weapon.update(deltaTime);
+        }
+
+        // Update targets (locked targets)
         this.targets = this.game.targetManager.getLockList(this);
 
         // Call the parent update to move the entity
@@ -43,8 +79,24 @@ export class Player extends MovableEntity {
     }
 
     private handleInput(deltaTime: number): void {
-        if (!this.ready || !this._entity) return;
+        if (!this.ready || !this.entity) return;
         const inputManager = this.game.inputManager;
+
+        // Handle weapon selection (number keys 1-9)
+        for (let i = 0; i < this.weapons.length && i < 9; i++) {
+            if (inputManager.isKeyDown((i + 1).toString())) {
+                this.selectedWeaponIndex = i;
+                break;
+            }
+        }
+
+        // Handle weapon switching with mouse wheel
+        const wheelDelta = inputManager.getWheelDelta();
+        if (wheelDelta !== 0) {
+            this.selectedWeaponIndex =
+                (this.selectedWeaponIndex + (wheelDelta > 0 ? 1 : -1) + this.weapons.length) %
+                this.weapons.length;
+        }
 
         // Movement speed
         const moveSpeed = 1.0;
@@ -78,7 +130,7 @@ export class Player extends MovableEntity {
         }
 
         // Fire weapon
-        if (inputManager.isKeyPressed('f') && this.cooldown) {
+        if (inputManager.isKeyDown('f')) {
             this.fireWeapon();
         }
 
@@ -109,34 +161,15 @@ export class Player extends MovableEntity {
     }
 
     public fireWeapon(): void {
-        if (!this.ready || !this._entity) return;
 
-        // Play firing sound
-        this.game.playSound(this, 'fox2');
-
-        let forward = new THREE.Vector3(0, 0, -1);
-
-        // Use camera's direction for firing in both views
-        const camera = this.game.cameraManager.cameras.get(this);
-        if (camera) {
-            forward.applyQuaternion(camera.quaternion);
+        // Get the selected weapon
+        const weapon = this.weapons[this.selectedWeaponIndex];
+        if (!weapon) {
+            console.warn('No weapon selected or weapon not found.');
+            return;
         }
+        weapon.fire()
 
-        // Create and add projectile to the game
-        const projectile = new Projectile(
-            this.game,
-            this.name,
-            this._entity.position.clone(),
-            new THREE.Quaternion().setFromUnitVectors(
-                new THREE.Vector3(0, 0, -1),
-                forward.clone().normalize()
-            ),
-            forward.multiplyScalar(100).clone(),
-            undefined,
-            this.iFFNumber,
-            this.targets[0] // No specific target
-        );
-
-        this.game.projectiles.push(projectile);
+        // Rest of the fireWeapon function can be implemented later
     }
 }

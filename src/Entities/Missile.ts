@@ -1,4 +1,4 @@
-// src/Entities/Projectile.ts
+// src/Entities/Missile.ts
 
 import * as THREE from 'three';
 import { MovableEntity } from '../Core/MovableEntity';
@@ -6,7 +6,7 @@ import { Entity } from '../Core/Entity';
 import { Game } from '../Game';
 import { EntityName } from '../Configs/EntityPaths';
 
-export class Projectile extends MovableEntity {
+export class Missile extends MovableEntity {
     public target: Entity | null;
 
     constructor(

@@ -48,7 +48,7 @@ Before you begin, ensure you have the following software installed:
 
 ## Building the Project
 
-To build the project, run the following command:
+To only build the project, run the following command:
 
 ```bash
 npm run build
@@ -56,29 +56,29 @@ npm run build
 
 This will compile the TypeScript code and bundle the project using Webpack. The output will be placed in the `dist` directory.
 
-## Running the Game
+## Building and Running the Game
 
-You can run the game using the development server provided by Webpack. Execute the following command:
+You can build and run the game using the development server provided by Webpack. Execute the following command:
 
 ```bash
 npm start
 ```
 
-This command starts `webpack-dev-server` and serves the game at `http://localhost:8082/`.
+This command starts `webpack-dev-server` and serves the game at `http://localhost:3000/`.
 
 ### Accessing the Game
 
 Open your web browser and navigate to:
 
 ```
-http://localhost:8082/
+http://localhost:3000/
 ```
 
 The game should now load and run in your browser.
 
 ## Changing the Port Number
 
-If port `8082` is already in use on your machine, you can change the port number by modifying the `webpack.config.js` file.
+If port `3000` is already in use on your machine, you can change the port number by modifying the `webpack.config.js` file.
 
 1. **Open `webpack.config.js`**
 
@@ -96,7 +96,7 @@ If port `8082` is already in use on your machine, you can change the port number
          directory: path.join(__dirname, 'dist'),
        },
        compress: true,
-       port: 8082, // Change this port number
+       port: 3000, // Change this port number
      },
      // ... rest of your configuration ...
    };
@@ -104,10 +104,10 @@ If port `8082` is already in use on your machine, you can change the port number
 
 3. **Change the `port` Value**
 
-   Replace `8082` with an available port number of your choice. For example, to use port `3000`:
+   Replace `3000` with an available port number of your choice. For example, to use port `8080`:
 
    ```javascript
-   port: 3000,
+   port: 8080,
    ```
 
 4. **Save the File**
@@ -135,7 +135,7 @@ If port `8082` is already in use on your machine, you can change the port number
   If you encounter an error similar to:
 
   ```
-  Refused to execute script from 'http://localhost:8082/dist/bundle.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.
+  Refused to execute script from 'http://localhost:3000/dist/bundle.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.
   ```
 
   Ensure that:

@@ -5,7 +5,7 @@ import { Player } from './Entities/Player';
 import { NPC } from './Entities/NPC';
 import { CollisionManager } from './Managers/CollisionManager';
 import { LoadingBar } from './Utils/LoadingBar';
-import { Projectile } from './Entities/Projectile';
+import { Missile } from './Entities/Missile';
 import { InputManager } from './Managers/InputManager';
 import { SoundManager } from './Managers/SoundManager';
 import { CameraManager } from './Managers/CameraManager';
@@ -32,7 +32,7 @@ export class Game {
 
     public players: Player[];
     public npcs: NPC[];
-    public projectiles: Projectile[];
+    public projectiles: Missile[];
 
     public collisionManager: CollisionManager;
     public inputManager: InputManager;
@@ -253,5 +253,11 @@ export class Game {
 
     public playSound(player: Player, name: SoundEnum, loop: boolean = false, volume: number = 1): void {
         this.soundManagers.get(player)?.playSound(name, loop, volume)
+    }
+
+    public getTime(): number {
+        // Return the current game time in seconds
+        // This could be based on a THREE.Clock instance
+        return this.clock.getElapsedTime();
     }
 }

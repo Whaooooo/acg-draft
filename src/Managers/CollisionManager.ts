@@ -3,7 +3,7 @@
 import { Game } from '../Game';
 import * as THREE from 'three';
 import { Entity } from "../Core/Entity";
-import { Projectile } from '../Entities/Projectile';
+import { Missile } from '../Entities/Missile';
 
 export class CollisionManager {
     public game: Game;
@@ -40,7 +40,7 @@ export class CollisionManager {
             this.game.npcs.forEach(npc => {
                 if (this.checkCollisionAndIFFNumber(projectile, npc)) {
                     // Handle collision (e.g., apply damage, remove projectile)
-                    console.log('Projectile hit enemy');
+                    console.log('Missile hit enemy');
                     // Remove projectile
                     const index = this.game.projectiles.indexOf(projectile);
                     if (index > -1) {
@@ -52,7 +52,7 @@ export class CollisionManager {
         });
     }
 
-    public isProjectileOutOfBounds(projectile: Projectile): boolean {
+    public isProjectileOutOfBounds(projectile: Missile): boolean {
         if (projectile.removed) return true;
         if (!projectile._entity) return false;
 
@@ -71,7 +71,7 @@ export class CollisionManager {
             projectile.update(deltaTime);
             // Remove projectiles that are out of bounds or have expired
             if (this.isProjectileOutOfBounds(projectile)) {
-                console.log('Projectile out of bounds');
+                console.log('Missile out of bounds');
                 projectile.removeFromScene();
                 this.game.projectiles.splice(index, 1);
             }

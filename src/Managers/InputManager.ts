@@ -6,6 +6,7 @@ export class InputManager {
     public mouseDeltaX: number = 0;
     public mouseDeltaY: number = 0;
     public pointerLocked: boolean = false;
+    private wheelDelta: number = 0;
 
     constructor() {
         this.initEventListeners();
@@ -16,6 +17,7 @@ export class InputManager {
         window.addEventListener('keyup', (event) => this.onKeyUp(event), false);
         window.addEventListener('mousedown', this.onMouseDown.bind(this), false);
         window.addEventListener('mousemove', this.onMouseMove.bind(this), false);
+        window.addEventListener('wheel', this.onWheel.bind(this), { passive: false });
         document.addEventListener('pointerlockchange', this.onPointerLockChange.bind(this), false);
     }
 
@@ -57,6 +59,17 @@ export class InputManager {
         }
     }
 
+    private onWheel(event: WheelEvent): void {
+        // Normalize the wheel delta to -1, 0, or 1
+        if (event.deltaY < 0) {
+            this.wheelDelta += 1; // Scrolled up
+        } else if (event.deltaY > 0) {
+            this.wheelDelta -= 1; // Scrolled down
+        }
+        // Prevent the default scrolling behavior
+        event.preventDefault();
+    }
+
     public isKeyPressed(key: string): boolean {
         return this.keysPressed[key.toLowerCase()] || false;
     }
@@ -74,6 +87,12 @@ export class InputManager {
         const delta = { deltaX: this.mouseDeltaX, deltaY: this.mouseDeltaY };
         this.mouseDeltaX = 0;
         this.mouseDeltaY = 0;
+        return delta;
+    }
+
+    public getWheelDelta(): number {
+        const delta = this.wheelDelta;
+        this.wheelDelta = 0;
         return delta;
     }
 }
