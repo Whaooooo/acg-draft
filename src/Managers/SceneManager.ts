@@ -94,14 +94,14 @@ export class SceneManager {
         plane.receiveShadow = true;
         this.scene.add(plane);
 
-        const waterGeometry = new THREE.PlaneGeometry(10000, 10000);
+        const waterGeometry = new THREE.PlaneGeometry(100000, 100000);
 
 
         const water = new Water(
             waterGeometry,
             {
-                textureWidth: 512,
-                textureHeight: 512,
+                textureWidth: 1024,
+                textureHeight: 1024,
                 waterNormals: new THREE.TextureLoader().load('assets/waternormals.jpg', function (texture) {
 
                     texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
