@@ -11,6 +11,49 @@ export type LoaderFunction = (
     onError: (error: ErrorEvent) => void
 ) => void;
 
+function applyMaterialSettings(material: THREE.Material | THREE.Material[]) {
+    if (Array.isArray(material)) {
+        material.forEach((mat) => applySettingsToMaterial(mat));
+    } else {
+        applySettingsToMaterial(material);
+    }
+}
+
+/**
+ * Applies individual settings to a THREE.Material.
+ * @param mat - A single THREE.Material.
+ */
+function applySettingsToMaterial(mat: THREE.Material) {
+    // Ensure the material supports these properties
+    // Most standard materials like MeshStandardMaterial, MeshBasicMaterial, etc., support these properties
+    // If you're using custom materials, ensure they have these properties or handle accordingly
+
+    // Type assertion to extend THREE.Material with possible properties
+    const materialWithDepth = mat as THREE.Material & {
+        depthTest?: boolean;
+        depthWrite?: boolean;
+        polygonOffset?: boolean;
+        polygonOffsetFactor?: number;
+        polygonOffsetUnits?: number;
+    };
+
+    if (materialWithDepth.depthTest !== undefined) {
+        materialWithDepth.depthTest = true;
+    }
+
+    if (materialWithDepth.depthWrite !== undefined) {
+        materialWithDepth.depthWrite = true;
+    }
+
+    if (materialWithDepth.polygonOffset !== undefined) {
+        materialWithDepth.polygonOffset = true;
+        materialWithDepth.polygonOffsetFactor = 1; // Adjust as needed
+        materialWithDepth.polygonOffsetUnits = 1;  // Adjust as needed
+    }
+
+    // If you need to handle other properties, add them here similarly
+}
+
 export const EntityLoaders: { [key: string]: LoaderFunction } = {
     minimal: (
         entity: Entity,
@@ -52,24 +95,34 @@ export const EntityLoaders: { [key: string]: LoaderFunction } = {
             fileName,
             // Called when the resource is loaded
             (gltf) => {
-                entity._entity = gltf.scene;
-                entity._entity.traverse((node) => {
+                const model = gltf.scene;
+
+                model.traverse((node) => {
                     if ((node as THREE.Mesh).isMesh) {
-                        node.castShadow = true;
-                        node.receiveShadow = true;
                         const mesh = node as THREE.Mesh;
+                        mesh.castShadow = true;
+                        mesh.receiveShadow = true;
+
+                        // Compute bounding volumes
                         mesh.geometry.computeBoundingBox();
                         mesh.geometry.computeBoundingSphere();
+
+                        // Apply material settings using the helper function
+                        applyMaterialSettings(mesh.material);
                     }
                 });
-                entity.scene.add(gltf.scene);
 
+                entity._entity = model;
+                entity.scene.add(model);
+
+                // Store animations
                 gltf.animations.forEach((animation) => {
                     entity.animations.set(animation.name.toLowerCase(), animation);
                 });
 
-                entity._entity.position.copy(entity.tmpPos);
-                entity._entity.quaternion.copy(entity.tmpQua);
+                // Set position and orientation
+                model.position.copy(entity.tmpPos);
+                model.quaternion.copy(entity.tmpQua);
 
                 onLoad();
             },
