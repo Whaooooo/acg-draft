@@ -15,11 +15,10 @@ export class Missile extends MovableEntity {
         pos?: THREE.Vector3,
         qua?: THREE.Quaternion,
         velocity?: THREE.Vector3,
-        acceleration?: THREE.Vector3,
         iFFNumber?: number,
         target?: Entity
     ) {
-        super(game, assetName, pos, qua, velocity, acceleration, iFFNumber);
+        super(game, assetName, pos, qua, velocity, iFFNumber);
         this.target = target || null;
     }
 

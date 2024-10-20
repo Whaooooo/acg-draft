@@ -11,10 +11,9 @@ export class NPC extends MovableEntity {
                 pos?: THREE.Vector3,
                 qua?: THREE.Quaternion,
                 velocity?: THREE.Vector3,
-                acceleration?: THREE.Vector3,
                 iFFNumber?: number,
                 playerId: number = 0) {
-        super(game, assetName, pos, qua, velocity, acceleration, iFFNumber);
+        super(game, assetName, pos, qua, velocity, iFFNumber);
     }
 
     public update(deltaTime: number): void {

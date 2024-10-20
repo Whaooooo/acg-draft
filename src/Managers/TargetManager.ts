@@ -34,6 +34,10 @@ export class TargetManager {
         return lockList;
     }
 
+    public reTarget(entity: Entity): Entity[] {
+        return []
+    }
+
     public getAllEntities(): Entity[] {
         return Array.from(this.entities);
     }

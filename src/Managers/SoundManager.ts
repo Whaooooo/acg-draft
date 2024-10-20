@@ -82,8 +82,9 @@ export class SoundManager {
     public updateSounds(): void {
         // Example: Adjust engine sound volume based on player speed
         const speed = this.player.velocity.length();
-        const maxSpeed = 10; // Define your max speed
-        const volume = THREE.MathUtils.clamp(speed / maxSpeed, 0, 1);
+        const pulsion = this.player.pulsion;
+        const maxpulsion = this.player.property.maxPulsion;
+        const volume = THREE.MathUtils.clamp(pulsion / maxpulsion, 0, 1);
         this.setVolume('engine', volume);
     }
 }

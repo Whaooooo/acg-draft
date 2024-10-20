@@ -8,7 +8,6 @@ import { Weapon } from "./Weapon";
 
 export class MovableEntity extends Entity {
     public velocity: THREE.Vector3;
-    public acceleration: THREE.Vector3;
 
     public targets: Entity[];
     public weapons: Weapon[];
@@ -19,12 +18,10 @@ export class MovableEntity extends Entity {
         pos?: THREE.Vector3,
         qua?: THREE.Quaternion,
         velocity?: THREE.Vector3,
-        acceleration?: THREE.Vector3,
         iFFNumber?: number,
     ) {
         super(game, assetName, pos, qua, iFFNumber);
         this.velocity = velocity ? velocity : new THREE.Vector3();
-        this.acceleration = acceleration ? acceleration : new THREE.Vector3();
         //############################################### Need to implement weapons initialization
         this.targets = []
         this.weapons = []
@@ -32,14 +29,6 @@ export class MovableEntity extends Entity {
 
     public update(deltaTime: number): void {
         if (!this.ready || !this._entity) return;
-
-        // Update velocity based on acceleration
-        this.velocity.add(this.acceleration.clone().multiplyScalar(deltaTime));
-        // add resistance
-        if (this.velocity.length() < 0.001) {
-            this.velocity.set(0, 0, 0);
-        }
-        this.velocity.multiplyScalar(0.995);
 
         // Update position based on velocity
         this._entity.position.add(this.velocity.clone().multiplyScalar(deltaTime));

@@ -17,11 +17,15 @@ export interface PlaneProperty {
     minPulsion: number;
     defaultPulsion: number;
     maxPulsion: number;
+    pulsionSensitivity: number;
     xSpeedDecrease: number; // Speed along this direction will decrease to SpeedDecrease * CurrentSpeed after 1s.
     ySpeedDecrease: number;
     zSpeedDecrease: number;
+    yawMinSpeed: number;
     yawMaxSpeed: number;
+    rollMinSpeed: number;
     rollMaxSpeed: number;
+    pitchMinSpeed: number;
     pitchMaxSpeed: number;
     yawSensitivity: number;
     rollSensitivity: number;
@@ -51,14 +55,18 @@ export const PlayerProperties: {
 } = {
     f22: {
         hP: 1000,
-        minPulsion: 50,
-        defaultPulsion: 100,
-        maxPulsion: 250,
+        minPulsion: 5,
+        defaultPulsion: 10,
+        maxPulsion: 25,
+        pulsionSensitivity: 15,
         xSpeedDecrease: 0.4,
         ySpeedDecrease: 0.3,
         zSpeedDecrease: 0.5,
+        yawMinSpeed: -20,
         yawMaxSpeed: 20,
+        rollMinSpeed: -120,
         rollMaxSpeed: 120,
+        pitchMinSpeed: -30,
         pitchMaxSpeed: 60,
         yawSensitivity: 40,
         rollSensitivity: 180,
@@ -118,12 +126,16 @@ export const NPCProperties: {
         minPulsion: 50,
         defaultPulsion: 70,
         maxPulsion: 150,
+        pulsionSensitivity: 150,
         xSpeedDecrease: 0.4,
         ySpeedDecrease: 0.3,
         zSpeedDecrease: 0.5,
-        yawMaxSpeed: 20,
-        rollMaxSpeed: 90,
-        pitchMaxSpeed: 40,
+        yawMinSpeed: -10,
+        yawMaxSpeed: 10,
+        rollMinSpeed: -80,
+        rollMaxSpeed: 80,
+        pitchMinSpeed: -15,
+        pitchMaxSpeed: 30,
         yawSensitivity: 40,
         rollSensitivity: 180,
         pitchSensitivity: 120,
@@ -170,11 +182,15 @@ export const NPCProperties: {
         minPulsion: 50,
         defaultPulsion: 50,
         maxPulsion: 50,
+        pulsionSensitivity: 150,
         xSpeedDecrease: 0.3,
         ySpeedDecrease: 0.2,
         zSpeedDecrease: 0.4,
+        yawMinSpeed: 0,
         yawMaxSpeed: 0,
+        rollMinSpeed: 0,
         rollMaxSpeed: 0,
+        pitchMinSpeed: 0,
         pitchMaxSpeed: 0,
         yawSensitivity: 0,
         rollSensitivity: 0,

@@ -2,21 +2,21 @@
 
 import * as THREE from 'three';
 import { Player } from '../Entities/Player';
-import { ViewMode } from "../Enums/ViewMode";
+import { ViewMode } from '../Enums/ViewMode';
 
 export class CameraManager {
     public cameras: Map<Player, THREE.PerspectiveCamera>;
-    public cameraControls: Map<Player, { yaw: number; pitch: number }> = new Map();
+    public cameraControls: Map<Player, { rotation: THREE.Quaternion }> = new Map();
 
     constructor(players: Player[]) {
         this.cameras = new Map<Player, THREE.PerspectiveCamera>();
 
         players.forEach((player) => {
             const camera = new THREE.PerspectiveCamera(
-                100,
+                75,
                 window.innerWidth / window.innerHeight,
-                0.01,
-                100
+                0.1,
+                1000
             );
 
             // Initial position and orientation
@@ -26,8 +26,8 @@ export class CameraManager {
             // Store the camera associated with the player
             this.cameras.set(player, camera);
 
-            // Initialize camera controls
-            this.cameraControls.set(player, { yaw: 0, pitch: 0 });
+            // Initialize camera controls with identity quaternion
+            this.cameraControls.set(player, { rotation: new THREE.Quaternion() });
         });
     }
 
@@ -47,40 +47,53 @@ export class CameraManager {
             const controls = this.cameraControls.get(player);
             if (!controls) return;
 
-            // Update yaw and pitch based on mouse movement
-            controls.yaw -= deltaX * sensitivity;
-            controls.pitch -= deltaY * sensitivity;
+            // Calculate rotation deltas based on mouse movement
+            const deltaYaw = -deltaX * sensitivity;
+            const deltaPitch = -deltaY * sensitivity;
 
-            // Clamp pitch to prevent flipping over
-            const pitchLimit = Math.PI / 2 - 0.1;
-            controls.pitch = Math.max(-pitchLimit, Math.min(pitchLimit, controls.pitch));
+            // Create quaternions for the incremental rotations
+            const quatYaw = new THREE.Quaternion();
+            const quatPitch = new THREE.Quaternion();
+
+            // Yaw rotation around the world's up axis (Y-axis)
+            quatYaw.setFromAxisAngle(new THREE.Vector3(0, 1, 0), deltaYaw);
+
+            // Pitch rotation around the camera's right axis (local X-axis)
+            const cameraRight = new THREE.Vector3(1, 0, 0).applyQuaternion(controls.rotation);
+            quatPitch.setFromAxisAngle(cameraRight, deltaPitch);
+
+            // Update the camera's rotation quaternion
+            controls.rotation.premultiply(quatYaw).premultiply(quatPitch).normalize();
+
+            const playerPosition = player.getPosition();
+            const playerQuaternion = player.getQuaternion();
 
             if (player.viewMode === ViewMode.FirstPerson) {
                 // First-person view
 
-                // Update camera orientation
-                const euler = new THREE.Euler(controls.pitch, controls.yaw, 0, 'YXZ');
-                camera.quaternion.setFromEuler(euler);
-
                 // Camera follows player's position
-                camera.position.copy(player.getPosition());
+                camera.position.copy(playerPosition);
+
+                // Combine player's rotation with camera's relative rotation
+                camera.quaternion.copy(playerQuaternion).multiply(controls.rotation);
+
             } else {
                 // Third-person view
 
-                const radius = 40; // Distance from the player
+                const offsetDistance = 40; // Distance from the player
+                const offsetVector = new THREE.Vector3(0, 0, offsetDistance);
 
-                // Calculate camera position in spherical coordinates
-                const offsetX = radius * Math.cos(controls.pitch) * Math.sin(controls.yaw);
-                const offsetY = radius * Math.sin(controls.pitch);
-                const offsetZ = radius * Math.cos(controls.pitch) * Math.cos(controls.yaw);
+                // Apply the camera's rotation to the offset vector
+                offsetVector.applyQuaternion(controls.rotation);
 
-                const offset = new THREE.Vector3(offsetX, offsetY, offsetZ);
+                // Rotate the offset vector by the player's orientation
+                offsetVector.applyQuaternion(playerQuaternion);
 
-                // Camera position is player position plus offset
-                camera.position.copy(player.getPosition()).add(offset);
+                // Set the camera position
+                camera.position.copy(playerPosition).add(offsetVector);
 
                 // Camera looks at the player
-                camera.lookAt(player.getPosition());
+                camera.lookAt(playerPosition);
             }
         });
     }

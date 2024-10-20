@@ -5,9 +5,12 @@ import { Game } from '../Game';
 import { Missile } from './Missile';
 import { EntityName } from '../Configs/EntityPaths';
 import { ViewMode } from '../Enums/ViewMode';
-import { PlaneProperty, MissileProperty, PlayerProperties } from '../Configs/EntityProperty';
+import { PlaneProperty, PlayerProperties } from '../Configs/EntityProperty';
 import * as THREE from 'three';
 import { Weapon } from '../Core/Weapon';
+import { KeyBoundConfig, KeyBoundConfigs } from '../Configs/KeyBound';
+import { updateControlVariable } from '../Utils/MoveUtils'; // Import the function
+import { PlaneState, updatePlaneState} from "../Utils/MoveUtils";
 
 export class Player extends MovableEntity {
     public playerId: number;
@@ -16,10 +19,17 @@ export class Player extends MovableEntity {
 
     public property: PlaneProperty;
 
-    // New property: List of weapons
     public weapons: Weapon[];
     public selectedWeaponIndex: number = 0; // Index of the currently selected weapon
 
+    // Key mapping configuration
+    private keyConfig: KeyBoundConfig;
+
+    // Real-time control variables
+    public pulsion: number;
+    public yawSpeed: number = 0;
+    public pitchSpeed: number = 0;
+    public rollSpeed: number = 0;
 
     constructor(
         game: Game,
@@ -27,11 +37,11 @@ export class Player extends MovableEntity {
         pos?: THREE.Vector3,
         qua?: THREE.Quaternion,
         velocity?: THREE.Vector3,
-        acceleration?: THREE.Vector3,
         iFFNumber?: number,
-        playerId: number = 0
+        playerId: number = 0,
+        keyConfigIndex: number = 0 // Index of the key mapping configuration
     ) {
-        super(game, assetName, pos, qua, velocity, acceleration, iFFNumber);
+        super(game, assetName, pos, qua, velocity, iFFNumber);
         this.playerId = playerId;
         this.name = assetName;
         this.viewMode = ViewMode.ThirdPerson;
@@ -57,7 +67,12 @@ export class Player extends MovableEntity {
         } else {
             console.warn(`No weapons defined for plane ${this.name}`);
         }
-        console.log(this.weapons)
+
+        // Initialize key mapping configuration
+        this.keyConfig = KeyBoundConfigs[keyConfigIndex] || KeyBoundConfigs[0];
+
+        // Initialize pulsion to defaultPulsion
+        this.pulsion = this.property.defaultPulsion;
     }
 
     public update(deltaTime: number): void {
@@ -74,6 +89,26 @@ export class Player extends MovableEntity {
         // Update targets (locked targets)
         this.targets = this.game.targetManager.getLockList(this);
 
+        // Prepare plane state for update
+        const planeState: PlaneState = {
+            quaternion: this.entity.quaternion,
+            velocity: this.velocity,
+            yawSpeed: this.yawSpeed,
+            pitchSpeed: this.pitchSpeed,
+            rollSpeed: this.rollSpeed,
+            pulsion: this.pulsion,
+            xSpeedDecrease: this.property.xSpeedDecrease,
+            ySpeedDecrease: this.property.ySpeedDecrease,
+            zSpeedDecrease: this.property.zSpeedDecrease,
+        };
+
+        // Update plane state
+        const updatedState = updatePlaneState(planeState, deltaTime);
+
+        // Apply the updated quaternion and velocity
+        this.entity.quaternion.copy(updatedState.quaternion);
+        this.velocity.copy(updatedState.velocity);
+
         // Call the parent update to move the entity
         super.update(deltaTime);
     }
@@ -82,61 +117,63 @@ export class Player extends MovableEntity {
         if (!this.ready || !this.entity) return;
         const inputManager = this.game.inputManager;
 
-        // Handle weapon selection (number keys 1-9)
-        for (let i = 0; i < this.weapons.length && i < 9; i++) {
-            if (inputManager.isKeyDown((i + 1).toString())) {
-                this.selectedWeaponIndex = i;
-                break;
-            }
-        }
+        // ... (other code remains the same)
 
-        // Handle weapon switching with mouse wheel
-        const wheelDelta = inputManager.getWheelDelta();
-        if (wheelDelta !== 0) {
-            this.selectedWeaponIndex =
-                (this.selectedWeaponIndex + (wheelDelta > 0 ? 1 : -1) + this.weapons.length) %
-                this.weapons.length;
-        }
+        // Update control variables using the helper function
+        this.pulsion = updateControlVariable(
+            this.pulsion,
+            this.property.defaultPulsion,
+            this.property.minPulsion,
+            this.property.maxPulsion,
+            this.property.pulsionSensitivity,
+            inputManager.isKeyPressed(this.keyConfig.increaseThrust),
+            inputManager.isKeyPressed(this.keyConfig.decreaseThrust),
+            deltaTime
+        );
 
-        // Movement speed
-        const moveSpeed = 1.0;
+        this.yawSpeed = updateControlVariable(
+            this.yawSpeed,
+            0,
+            this.property.yawMinSpeed,   // Use the new minSpeed property
+            this.property.yawMaxSpeed,
+            this.property.yawSensitivity,
+            inputManager.isKeyPressed(this.keyConfig.yawLeft),
+            inputManager.isKeyPressed(this.keyConfig.yawRight),
+            deltaTime
+        );
 
-        // Reset acceleration
-        this.acceleration.set(0, 0, 0);
+        this.pitchSpeed = updateControlVariable(
+            this.pitchSpeed,
+            0,
+            this.property.pitchMinSpeed, // Use the new minSpeed property
+            this.property.pitchMaxSpeed,
+            this.property.pitchSensitivity,
+            inputManager.isKeyPressed(this.keyConfig.pitchUp),
+            inputManager.isKeyPressed(this.keyConfig.pitchDown),
+            deltaTime
+        );
 
-        const direction = new THREE.Vector3();
+        this.rollSpeed = updateControlVariable(
+            this.rollSpeed,
+            0,
+            this.property.rollMinSpeed,  // Use the new minSpeed property
+            this.property.rollMaxSpeed,
+            this.property.rollSensitivity,
+            inputManager.isKeyPressed(this.keyConfig.rollLeft),
+            inputManager.isKeyPressed(this.keyConfig.rollRight),
+            deltaTime
+        );
 
-        // Forward and backward
-        if (inputManager.isKeyPressed('w') || inputManager.isKeyPressed('arrowup')) {
-            direction.z = -1;
-        } else if (inputManager.isKeyPressed('s') || inputManager.isKeyPressed('arrowdown')) {
-            direction.z = 1;
-        }
-
-        // Left and right
-        if (inputManager.isKeyPressed('a') || inputManager.isKeyPressed('arrowleft')) {
-            direction.x = -1;
-        } else if (inputManager.isKeyPressed('d') || inputManager.isKeyPressed('arrowright')) {
-            direction.x = 1;
-        }
-
-        // Normalize direction vector
-        if (direction.length() > 0) {
-            direction.normalize();
-
-            // Movement in world coordinates (no rotation applied)
-            // Set acceleration
-            this.acceleration.copy(direction.multiplyScalar(moveSpeed));
-        }
-
-        // Fire weapon
-        if (inputManager.isKeyDown('f')) {
+        if (inputManager.isKeyDown(this.keyConfig.fireWeapon)) {
             this.fireWeapon();
         }
 
-        // Toggle view mode
-        if (inputManager.isKeyDown('v')) {
+        if (inputManager.isKeyDown(this.keyConfig.toggleViewMode)) {
             this.toggleViewMode();
+        }
+
+        if (inputManager.isKeyDown(this.keyConfig.reTarget)) {
+            this.targets = this.game.targetManager.reTarget(this);
         }
     }
 
@@ -146,30 +183,41 @@ export class Player extends MovableEntity {
                 ? ViewMode.ThirdPerson
                 : ViewMode.FirstPerson;
 
-        // Reset camera controls when view mode changes
         const cameraManager = this.game.cameraManager;
         const controls = cameraManager.cameraControls.get(this);
-        if (controls) {
+        const camera = cameraManager.cameras.get(this);
+
+        if (controls && camera) {
             if (this.viewMode === ViewMode.FirstPerson) {
-                controls.yaw = 0;
-                controls.pitch = 0;
+                // 第一人称视角
+                controls.rotation.identity();
+                camera.position.copy(this.getPosition());
+
+                camera.quaternion.copy(this.getQuaternion()).multiply(controls.rotation);
             } else {
-                controls.yaw = 0;
-                controls.pitch = Math.PI / 6; // Default angle for third-person
+                // 第三人称视角
+                const defaultPitch = THREE.MathUtils.degToRad(-30);
+                const euler = new THREE.Euler(defaultPitch, 0, 0, 'YXZ');
+                controls.rotation.setFromEuler(euler);
+
+                camera.quaternion.copy(this.getQuaternion()).multiply(controls.rotation);
+
+                const offset = new THREE.Vector3(0, 5, 40);
+                offset.applyQuaternion(camera.quaternion);
+                camera.position.copy(this.getPosition()).add(offset);
+
+                camera.lookAt(this.getPosition());
             }
         }
     }
 
     public fireWeapon(): void {
-
         // Get the selected weapon
         const weapon = this.weapons[this.selectedWeaponIndex];
         if (!weapon) {
             console.warn('No weapon selected or weapon not found.');
             return;
         }
-        weapon.fire()
-
-        // Rest of the fireWeapon function can be implemented later
+        weapon.fire();
     }
 }

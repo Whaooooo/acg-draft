@@ -131,7 +131,6 @@ export class Weapon {
                     firePosition,
                     this.owner.entity.quaternion.clone(),
                     forward.clone().multiplyScalar(this.property.pulsion),
-                    undefined,
                     this.owner.iFFNumber,
                     target
                 );
