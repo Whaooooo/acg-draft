@@ -9,12 +9,11 @@ import { Missile } from './Entities/Missile';
 import { InputManager } from './Managers/InputManager';
 import { SoundManager } from './Managers/SoundManager';
 import { CameraManager } from './Managers/CameraManager';
-import { LightManager } from './Managers/LightManager';
+import { SceneManager } from './Managers/SceneManager';
 import { RendererManager } from './Managers/RendererManager';
 import { SoundEnum } from "./Configs/SoundPaths";
 import { TargetManager } from './Managers/TargetManager';
-import { MapPaths, MapName } from './Configs/MapPaths';
-
+import { Config } from './Configs/Config';
 
 export class Game {
     //###################################################
@@ -23,12 +22,11 @@ export class Game {
 
     public clock: THREE.Clock;
     public loadingBar: LoadingBar;
-    public assetsPath: string;
 
     public scene: THREE.Scene;
     public cameraManager: CameraManager;
-    public lightManager: LightManager;
     public rendererManager: RendererManager;
+    public sceneManager: SceneManager;
 
     public players: Player[];
     public npcs: NPC[];
@@ -54,9 +52,6 @@ export class Game {
         // Initialize the loading bar
         this.loadingBar = new LoadingBar();
 
-        // Set the path to your assets
-        this.assetsPath = 'assets/';
-
         // Initialize empty arrays for entities
         this.players = [];
         this.npcs = [];
@@ -73,7 +68,7 @@ export class Game {
         this.scene = new THREE.Scene();
 
         // Initialize the LightManager
-        this.lightManager = new LightManager(this.scene);
+        this.sceneManager = new SceneManager(this.scene);
 
         // Check if loadPath exists
         if (this.loadPath) {
@@ -95,7 +90,7 @@ export class Game {
         this.players.forEach((player) => {
             const camera = this.cameraManager.cameras.get(player);
             if (camera) {
-                const soundManager = new SoundManager(camera, this.assetsPath, player);
+                const soundManager = new SoundManager(camera, player);
                 this.soundManagers.set(player, soundManager);
             }
         });
@@ -124,45 +119,6 @@ export class Game {
         const npcPosition = new THREE.Vector3(0, 0, -50);
         const npc = new NPC(this, 'plane', npcPosition);
         this.npcs.push(npc);
-
-        const sphereGeometry = new THREE.SphereGeometry(5, 32, 32);
-        const sphereMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
-        const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-        sphere.castShadow = true; //default is false
-        sphere.receiveShadow = true; //default
-        this.scene.add(sphere);
-        const planeGeometry = new THREE.PlaneGeometry(20, 20, 32, 32);
-        const planeMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00 })
-        const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-        plane.receiveShadow = true;
-        this.scene.add(plane);
-
-        this.loadSkybox('paintedsky');
-    }
-
-    private loadSkybox(mapName: MapName): void {
-        const path = `${this.assetsPath}${MapPaths[mapName]}/`;
-        const format = '.jpg'; // Adjust the format if your images are in a different format
-        const urls = [
-            path + 'px' + format, // positive x
-            path + 'nx' + format, // negative x
-            path + 'py' + format, // positive y
-            path + 'ny' + format, // negative y
-            path + 'pz' + format, // positive z
-            path + 'nz' + format  // negative z
-        ];
-
-        const loader = new THREE.CubeTextureLoader();
-        loader.load(
-            urls,
-            (texture) => {
-                this.scene.background = texture;
-            },
-            undefined,
-            (err) => {
-                console.error('Error loading skybox:', err);
-            }
-        );
     }
 
     public loadGame(): void {
@@ -249,6 +205,8 @@ export class Game {
             const soundManager = this.soundManagers.get(player);
             soundManager?.updateSounds();
         });
+
+        this.sceneManager.update(deltaTime);
     }
 
     public playSound(player: Player, name: SoundEnum, loop: boolean = false, volume: number = 1): void {

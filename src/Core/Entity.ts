@@ -5,6 +5,7 @@ import { Game } from "../Game";
 import { LoadingBar } from "../Utils/LoadingBar";
 import { EntityConfigs, EntityName, EntityConfig } from '../Configs/EntityPaths';
 import { EntityLoaders } from '../Configs/EntityLoaders';
+import { Config } from '../Configs/Config';
 
 export class Entity {
     public assetsPath: string;
@@ -28,7 +29,7 @@ export class Entity {
     public targets: Entity[];
 
     constructor(game: Game, assetName: EntityName, pos?: THREE.Vector3, qua?: THREE.Quaternion, iFFNumber?: number) {
-        this.assetsPath = game.assetsPath;
+        this.assetsPath = Config.assetsPath;
         this.assetName = assetName;
         this.assetConfig = EntityConfigs[assetName];
         this.assetPath = this.assetConfig.path;
@@ -123,7 +124,7 @@ export class Entity {
     }
 
     get entity(): THREE.Group {
-        if (!this._entity) {throw Error()}
+        if (!this._entity) { throw Error() }
         return this._entity;
     }
 }
