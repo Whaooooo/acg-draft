@@ -3,20 +3,21 @@
 import * as THREE from 'three';
 import { SoundPaths, SoundEnum } from '../Configs/SoundPaths';
 import { Player } from '../Entities/Player';
+import { Config } from '../Configs/Config';
 
 export class SoundManager {
     private listener: THREE.AudioListener;
     private sounds: Map<SoundEnum, THREE.Audio>;
     private player: Player;
 
-    constructor(camera: THREE.Camera, assetsPath: string, player: Player) {
+    constructor(camera: THREE.Camera, player: Player) {
         this.listener = new THREE.AudioListener();
         camera.add(this.listener);
         this.sounds = new Map<SoundEnum, THREE.Audio>();
         this.player = player;
 
         // Load sounds during initialization
-        this.loadSounds(assetsPath);
+        this.loadSounds(Config.assetsPath);
     }
 
     private loadSounds(assetsPath: string): void {
