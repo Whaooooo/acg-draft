@@ -2,7 +2,7 @@
 
 export const SoundPaths = {
     engine: 'dcs/SA342/SA342Engine.ogg',
-    propeller: 'assets/plane/engine.mp3',
+    propeller: 'plane/engine.mp3',
     explosion: 'plane/explosion.mp3',
     fox2: 'dcs/British-WWII-radio/Sounds/Speech/Sound/ENG/Common/Wingman/2/Messages/FOX 2.wav',
     // Add other sounds and their paths
