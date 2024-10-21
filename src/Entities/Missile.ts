@@ -107,13 +107,18 @@ export class Missile extends MovableEntity {
     }
 
     private applyVelocityDecay(deltaTime: number): void {
+
+        const inverseQuaternion = this.entity.quaternion.clone().invert();
+        const localVelocity = this.velocity.clone().applyQuaternion(inverseQuaternion);
         // Apply velocity decay in the x, y, and z axes
         const xDecayFactor = Math.pow(this.property.xSpeedDecrease, deltaTime);
         const yDecayFactor = Math.pow(this.property.ySpeedDecrease, deltaTime);
         const zDecayFactor = Math.pow(this.property.zSpeedDecrease, deltaTime);
 
-        this.velocity.x *= xDecayFactor;
-        this.velocity.y *= yDecayFactor;
-        this.velocity.z *= zDecayFactor;
+        localVelocity.x *= xDecayFactor;
+        localVelocity.y *= yDecayFactor;
+        localVelocity.z *= zDecayFactor;
+
+        this.velocity = localVelocity.clone().applyQuaternion(this.entity.quaternion);
     }
 }
