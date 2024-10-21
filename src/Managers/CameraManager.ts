@@ -15,8 +15,8 @@ export class CameraManager {
             const camera = new THREE.PerspectiveCamera(
                 75,
                 window.innerWidth / window.innerHeight,
-                0.01,
-                1000
+                0.1,
+                100000
             );
 
             // Initial position and orientation
@@ -29,6 +29,8 @@ export class CameraManager {
             // Initialize camera controls with identity quaternion
             this.cameraControls.set(player, { rotation: new THREE.Quaternion() });
         });
+
+        window.addEventListener('resize', this.updateCameraAspectRatios.bind(this), false);
     }
 
     public toggleViewMode(player: Player): void {

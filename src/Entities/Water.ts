@@ -153,11 +153,13 @@ class Water extends Mesh {
 					vec2 uv0 = ( uv / 103.0 ) + vec2(time / 17.0, time / 29.0);
 					vec2 uv1 = uv / 107.0-vec2( time / -19.0, time / 31.0 );
 					vec2 uv2 = uv / vec2( 897.0, 983.0 ) + vec2( time / 101.0, time / 97.0 );
-					vec2 uv3 = uv / vec2( 991.0, 877.0 ) - vec2( time / 109.0, time / -113.0 );
+					vec2 uv3 = uv / vec2( 991.0, 877.0 ) - vec2( time / 109.0, time / -127.0 );
+					vec2 uv4 = uv / vec2( 9707.0, 10083.0 ) - vec2( (time - sin(time)) / 331.0, (time + cos(time)) / 997.0 );
 					vec4 noise = texture2D( normalSampler, uv0 ) +
 						texture2D( normalSampler, uv1 ) +
 						texture2D( normalSampler, uv2 ) +
-						texture2D( normalSampler, uv3 );
+						texture2D( normalSampler, uv3 ) +
+						texture2D( normalSampler, uv4 ) * 0.2;
 					return noise * 0.5 - 1.0;
 				}
 
@@ -246,7 +248,7 @@ class Water extends Mesh {
 
 					#include <logdepthbuf_fragment>
 					vec4 noise = getNoise( worldPosition.xz * size );
-					vec3 surfaceNormal = normalize( noise.xzy * vec3( 1.5, 1.0, 1.5 ) );
+					vec3 surfaceNormal = normalize( noise.xzy * vec3( 7.5, 1.0, 7.5 ) );
 
 					vec3 diffuseLight = vec3(0.0);
 					vec3 specularLight = vec3(0.0);
@@ -334,7 +336,7 @@ class Water extends Mesh {
 			mirrorCamera.up.reflect(normal);
 			mirrorCamera.lookAt(target);
 
-			mirrorCamera.far = (camera as any).far; // Used in WebGLBackground
+			mirrorCamera.far = (camera as any).far * 1.1; // Used in WebGLBackground
 
 			mirrorCamera.updateMatrixWorld();
 			mirrorCamera.projectionMatrix.copy(camera.projectionMatrix);
