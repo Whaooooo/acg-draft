@@ -10,6 +10,7 @@ export class SceneManager {
     public renderer!: THREE.WebGLRenderer;
 
     public water?: Water;
+    public directionalLight?: THREE.DirectionalLight;
 
     constructor(scene: THREE.Scene) {
         this.scene = scene;
@@ -38,6 +39,16 @@ export class SceneManager {
     }
 
     public renderCamera(camera: THREE.Camera, left: number, bottom: number, viewportWidth: number, viewportHeight: number): void {
+        const position = camera.position.clone();
+        if (this.directionalLight) {
+            this.directionalLight.position.copy(position);
+            this.directionalLight.target.position.copy(position.clone().sub(new THREE.Vector3(10, 10, 10)));
+        }
+        if (this.water) {
+            var water_position = position.clone();
+            water_position.y = 0;
+        }
+
         this.renderer.setViewport(left, bottom, viewportWidth, viewportHeight);
         this.renderer.setScissor(left, bottom, viewportWidth, viewportHeight);
         this.renderer.setScissorTest(true);
@@ -81,6 +92,7 @@ export class SceneManager {
         directionalLight.shadow.bias = -0.0005;  // Typically a small negative value
 
         this.scene.add(directionalLight);
+        this.directionalLight = directionalLight;
     }
 
     private loadSkybox(mapName: MapName): void {
@@ -112,6 +124,7 @@ export class SceneManager {
         const sphereGeometry = new THREE.SphereGeometry(5, 32, 32);
         const sphereMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
         const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+        sphere.position.add(new THREE.Vector3(0, 15, 0));
         sphere.castShadow = true; //default is false
         sphere.receiveShadow = true; //default
         this.scene.add(sphere);
@@ -119,6 +132,7 @@ export class SceneManager {
         const planeMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00 })
         const plane = new THREE.Mesh(planeGeometry, planeMaterial);
         plane.receiveShadow = true;
+        plane.position.add(new THREE.Vector3(0, 15, 0));
         this.scene.add(plane);
 
         const waterGeometry = new THREE.PlaneGeometry(100000, 100000);
@@ -143,7 +157,7 @@ export class SceneManager {
         );
         water.receiveShadow = true;
         water.rotation.x = - Math.PI / 2;
-        water.position.set(0, -15, 0);
+        water.position.set(0, 0, 0);
         this.scene.add(water);
         this.water = water;
     }
