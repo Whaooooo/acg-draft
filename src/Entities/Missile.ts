@@ -4,30 +4,39 @@ import { Entity } from '../Core/Entity';
 import { Game } from '../Game';
 import { EntityName } from '../Configs/EntityPaths';
 import { MissileProperty, PlayerProperties } from '../Configs/EntityProperty';
+import {SoundEnum} from "../Configs/SoundPaths";
+import {Player} from "./Player";
+import {soundPropertyToOption} from "../Configs/SoundProperty";
 
 export class Missile extends MovableEntity {
     public target: Entity | null;
     public property: MissileProperty;
+    private owner: Entity;
 
     constructor(
         game: Game,
+        owner: Entity,
+        property: MissileProperty,
         entityId: number,
         assetName: EntityName,
         pos?: THREE.Vector3,
         qua?: THREE.Quaternion,
         velocity?: THREE.Vector3,
         iFFNumber?: number,
-        target?: Entity
+        target?: Entity,
     ) {
         super(game, entityId, assetName, pos, qua, velocity, iFFNumber);
+        this.owner = owner;
         this.target = target || null;
 
         // Retrieve the missile properties
-        this.property = PlayerProperties[assetName] as MissileProperty;
+        this.property = property;
 
         if (!this.property) {
             console.error(`Missile properties not found for ${assetName}`);
         }
+
+        this.initializeSound()
     }
 
     public update(deltaTime: number): void {
@@ -120,5 +129,21 @@ export class Missile extends MovableEntity {
         localVelocity.z *= zDecayFactor;
 
         this.velocity = localVelocity.clone().applyQuaternion(this.entity.quaternion);
+    }
+
+    public initializeSound(): void {
+        const soundManager = this.game.soundManager;
+        if (soundManager && this.property.sound && this.property.sound.fire) {
+            const fireSound = this.property.sound.fire;
+            soundManager.playSound(
+                this, // The player who owns the weapon
+                fireSound.name as SoundEnum,
+                soundPropertyToOption(fireSound, this),
+            );
+        }
+    }
+
+    public getOwnerPlayer(): Player[] {
+        return this.owner.getOwnerPlayer();
     }
 }

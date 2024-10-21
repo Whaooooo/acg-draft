@@ -12,7 +12,7 @@ import * as THREE from 'three';
  * @param increase - Whether the increase key is pressed.
  * @param decrease - Whether the decrease key is pressed.
  * @param deltaTime - The time elapsed since the last update.
- * @returns The updated control variable value.
+ * @returns The updated control variable value and whether it was increased or decreased.
  */
 export function updateControlVariable(
     currentValue: number,
@@ -23,26 +23,33 @@ export function updateControlVariable(
     increase: boolean,
     decrease: boolean,
     deltaTime: number
-): number {
+): { value: number; increased: boolean; decreased: boolean } {
+    let increased = false;
+    let decreased = false;
+
     if (increase) {
         // Increase the value
         currentValue += sensitivity * deltaTime;
         if (currentValue > maxValue) currentValue = maxValue;
+        increased = true;
     } else if (decrease) {
         // Decrease the value
         currentValue -= sensitivity * deltaTime;
         if (currentValue < minValue) currentValue = minValue;
+        decreased = true;
     } else {
         // Gradually return to default value
         if (currentValue > defaultValue) {
             currentValue -= sensitivity * deltaTime;
             if (currentValue < defaultValue) currentValue = defaultValue;
+            decreased = true;
         } else if (currentValue < defaultValue) {
             currentValue += sensitivity * deltaTime;
             if (currentValue > defaultValue) currentValue = defaultValue;
+            increased = true;
         }
     }
-    return currentValue;
+    return { value: currentValue, increased, decreased };
 }
 
 export interface PlaneState {
@@ -61,12 +68,12 @@ export interface PlaneState {
  * Updates the plane's quaternion and velocity based on the provided state and deltaTime.
  * @param state - The current state of the plane.
  * @param deltaTime - The time elapsed since the last update.
- * @returns The updated quaternion and velocity.
+ * @returns The updated quaternion, velocity, and lost speed due to speed decreases.
  */
 export function updatePlaneState(
     state: PlaneState,
     deltaTime: number
-): { quaternion: THREE.Quaternion; velocity: THREE.Vector3 } {
+): { quaternion: THREE.Quaternion; velocity: THREE.Vector3; lostSpeed: THREE.Vector3 } {
     // Convert rotational speeds from degrees per second to radians per second
     const rollRate = THREE.MathUtils.degToRad(state.rollSpeed);   // Roll around local Z-axis
     const pitchRate = THREE.MathUtils.degToRad(state.pitchSpeed); // Pitch around local X-axis
@@ -97,10 +104,16 @@ export function updatePlaneState(
     const yDecreaseFactor = Math.pow(state.ySpeedDecrease, deltaTime);
     const zDecreaseFactor = Math.pow(state.zSpeedDecrease, deltaTime);
 
+    // Store local velocity before speed decrease
+    const localVelocityBefore = localVelocity.clone();
+
     // Apply speed decrease
     localVelocity.x *= xDecreaseFactor;
     localVelocity.y *= yDecreaseFactor;
     localVelocity.z *= zDecreaseFactor;
+
+    // Compute lost speed in local coordinates
+    const lostLocalSpeed = localVelocityBefore.clone().sub(localVelocity);
 
     // Apply acceleration due to pulsion along the forward axis (-Z)
     // Assuming pulsion is acceleration in m/s²
@@ -110,9 +123,13 @@ export function updatePlaneState(
     // Convert local velocity back to world coordinates using the new quaternion
     const newVelocity = localVelocity.applyQuaternion(newQuaternion);
 
-    // Return the updated quaternion and velocity
+    // Convert lostLocalSpeed to world coordinates
+    const lostSpeed = lostLocalSpeed.applyQuaternion(newQuaternion);
+
+    // Return the updated quaternion, velocity, and lost speed
     return {
         quaternion: newQuaternion,
         velocity: newVelocity,
+        lostSpeed: lostSpeed,
     };
 }

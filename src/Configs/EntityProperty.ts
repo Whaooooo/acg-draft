@@ -1,14 +1,17 @@
 // src/Configs/EntityProperty.ts
 
-import {EntityConfigs, EntityName} from './EntityPaths';
-import { SoundEnum } from "./SoundPaths";
+import {EntityName} from './EntityPaths';
+import { SoundType } from "../Enums/SoundType";
 
-export interface SoundProperty {
-    name: SoundEnum;
-    cooldown: number;
-    volume: number;
-    loop: boolean;
-}
+import {
+    ExplosionSound, Exs2EngineSound,
+    F14AfterburnerSound,
+    F14EngineSound,
+    Fox2Sound, MissileShotSound, PropellerSound,
+    SoundProperty,
+    WindSound
+} from './SoundProperty';
+
 
 export type SoundPropertyName = keyof SoundProperty;
 
@@ -30,7 +33,7 @@ export interface PlaneProperty {
     yawSensitivity: number;
     rollSensitivity: number;
     pitchSensitivity: number;
-    sound: { [key in string]? : SoundProperty};
+    sound: { [key in SoundType]? : SoundProperty};
 }
 
 export interface MissileProperty {
@@ -47,7 +50,7 @@ export interface MissileProperty {
     loadNumber: number;
     totalNumber: number;
     firePosition: [number, number, number][];
-    sound: { [key in string]? : SoundProperty};
+    sound: { [key in SoundType]? : SoundProperty};
 }
 
 export const PlayerProperties: {
@@ -72,18 +75,10 @@ export const PlayerProperties: {
         rollSensitivity: 180,
         pitchSensitivity: 120,
         sound: {
-            'engine' : {
-                name: 'engine',
-                cooldown: 0,
-                volume: 1,
-                loop: true,
-            },
-            'explode' : {
-                name: 'explosion',
-                cooldown: 0,
-                volume: 1,
-                loop: false,
-            }
+            'engine' : F14EngineSound,
+            'afterburner': F14AfterburnerSound,
+            'wind': WindSound,
+            'explosion' : ExplosionSound,
         },
     },
     f22_stdm: {
@@ -101,18 +96,9 @@ export const PlayerProperties: {
         totalNumber: 180,
         firePosition: [[2.5, -2.5, 7], [-2.5, -2.5, 7]],
         sound: {
-            'fire' : {
-                name: 'fox2',
-                cooldown: 30,
-                volume: 1,
-                loop: false,
-            },
-            'explode' : {
-                name: 'explosion',
-                cooldown: 0,
-                volume: 1,
-                loop: false,
-            }
+            'speech' : Fox2Sound,
+            'explosion' : ExplosionSound,
+            'fire' : MissileShotSound
         },
     },
     // Add other entities as needed
@@ -140,18 +126,10 @@ export const NPCProperties: {
         rollSensitivity: 180,
         pitchSensitivity: 120,
         sound: {
-            'engine' : {
-                name: 'engine',
-                cooldown: 0,
-                volume: 1,
-                loop: true,
-            },
-            'explode' : {
-                name: 'explosion',
-                cooldown: 0,
-                volume: 1,
-                loop: false,
-            }
+            'engine' : F14EngineSound,
+            'afterburner': F14AfterburnerSound,
+            'wind': WindSound,
+            'explosion' : ExplosionSound,
         },
     },
     f22_stdm: {
@@ -169,12 +147,9 @@ export const NPCProperties: {
         totalNumber: 180,
         firePosition: [[2.5, -2.5, 7], [-2.5, -2.5, 7]],
         sound: {
-            'fire' : {
-                name: 'fox2',
-                cooldown: 30,
-                volume: 1,
-                loop: false,
-            },
+            'speech' : Fox2Sound,
+            'explosion' : ExplosionSound,
+            'fire' : MissileShotSound
         },
     },
     plane: {
@@ -196,18 +171,10 @@ export const NPCProperties: {
         rollSensitivity: 0,
         pitchSensitivity: 0,
         sound: {
-            'engine' : {
-                name: 'propeller',
-                cooldown: 0,
-                volume: 1,
-                loop: true,
-            },
-            'explode' : {
-                name: 'explosion',
-                cooldown: 0,
-                volume: 1,
-                loop: false,
-            }
+            'engine' : PropellerSound,
+            'afterburner': Exs2EngineSound,
+            'wind': WindSound,
+            'explosion' : ExplosionSound
         },
     },
     plane_stdm: {
@@ -225,12 +192,9 @@ export const NPCProperties: {
         totalNumber: 180,
         firePosition: [[2.5, -2.5, 7], [-2.5, -2.5, 7]],
         sound: {
-            'fire' : {
-                name: 'fox2',
-                cooldown: 30,
-                volume: 1,
-                loop: false,
-            },
+            'speech' : Fox2Sound,
+            'explosion' : ExplosionSound,
+            'fire' : MissileShotSound
         },
     },
     // Add other entities as needed
