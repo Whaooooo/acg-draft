@@ -162,6 +162,8 @@ class Cloud extends Mesh {
         #include <shadowmask_pars_fragment>
 
         void main() {
+
+            #include <logdepthbuf_fragment>
             vec3 rayDir = normalize( vDirection );
             vec2 bounds = hitBox( vOrigin, rayDir );
 
