@@ -6,6 +6,7 @@ import { LoadingBar } from "../Utils/LoadingBar";
 import { EntityConfigs, EntityName, EntityConfig } from '../Configs/EntityPaths';
 import { EntityLoaders } from '../Configs/EntityLoaders';
 import { Config } from '../Configs/Config';
+import {Player} from "../Entities/Player";
 
 export class Entity {
     public entityId: number;
@@ -128,6 +129,11 @@ export class Entity {
 
     public initializeSound(): void {
         //Placeholder
+    }
+
+    public getOwnerPlayer(): Player[] {
+        // Override in subclasses if needed
+        return [];
     }
 
     get entity(): THREE.Group {

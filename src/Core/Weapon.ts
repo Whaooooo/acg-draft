@@ -1,12 +1,13 @@
 // src/Core/Weapon.ts
 
 import { EntityName, getEntityName } from '../Configs/EntityPaths';
-import { MissileProperty, PlayerProperties } from '../Configs/EntityProperty';
+import {MissileProperty, NPCProperties, PlayerProperties} from '../Configs/EntityProperty';
 import { Player } from '../Entities/Player';
 import { Game } from '../Game';
 import { Missile } from '../Entities/Missile';
 import { SoundEnum } from "../Configs/SoundPaths";
 import { Entity } from "./Entity";
+import { soundPropertyToOption } from "../Configs/SoundProperty";
 import * as THREE from 'three';
 
 export class Weapon {
@@ -34,7 +35,7 @@ export class Weapon {
         const weaponEntityName = `${parentPlaneName}_${weaponName}` as EntityName;
 
         // Retrieve the weapon properties from PlayerProperties
-        const weaponProperty = PlayerProperties[weaponEntityName] as MissileProperty;
+        const weaponProperty = (this.owner instanceof Player ? PlayerProperties[weaponEntityName] : NPCProperties[weaponEntityName]) as MissileProperty;
 
         if (!weaponProperty) {
             console.error(`Weapon properties not found for ${weaponEntityName}`);
@@ -68,6 +69,8 @@ export class Weapon {
             this.property.loadNumber,
             this.property.totalNumber - this.totalMissilesFired
         );
+
+        this.lastSoundPlayTime -= deltaTime;
     }
 
     public fire(): void {
@@ -110,6 +113,8 @@ export class Weapon {
                 // Create missile
                 const missile = new Missile(
                     this.game,
+                    this.owner,
+                    this.property,
                     this.game.requestNewEntityId(),
                     `${this.parentPlaneName}_${this.name}` as EntityName,
                     firePositionWorld.clone(),
@@ -130,21 +135,19 @@ export class Weapon {
                 // Start load timer for this firing slot
                 this.loadTimers[slotIndex] = this.property.loadTime;
 
-                // Play weapon fire sound with positional audio
-                const soundManager = this.game.soundManager;
-                if (soundManager && this.property.sound && this.property.sound.fire) {
-                    soundManager.playSound(
-                        this.owner, // The player who owns the weapon
-                        this.property.sound.fire.name as SoundEnum,
-                        {
-                            loop: this.property.sound.fire.loop,
-                            volume: this.property.sound.fire.volume,
-                            position: firePositionWorld,
-                            refDistance: 20, // Adjust as needed
-                            maxDistance: 1000, // Adjust as needed
-                            rolloffFactor: 1, // Adjust as needed
-                        }
-                    );
+                if (this.lastSoundPlayTime <= 0) {
+                    // Play weapon fire sound with positional audio
+                    const soundManager = this.game.soundManager;
+                    if (soundManager && this.property.sound && this.property.sound.speech && this.owner instanceof Player) {
+                        console.log('Play speech sound')
+                        soundManager.playSound(
+                            this.owner, // The player who owns the weapon
+                            this.property.sound.speech.name as SoundEnum,
+                            soundPropertyToOption(this.property.sound.speech, missile, {position: this.owner.getPosition()}),
+                            [this.owner]
+                        );
+                        this.lastSoundPlayTime = this.property.sound.speech.cooldown
+                    }
                 }
 
                 // Check if all missiles are fired

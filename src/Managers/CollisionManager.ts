@@ -7,7 +7,7 @@ import { Missile } from '../Entities/Missile';
 
 export class CollisionManager {
     public game: Game;
-    public bounds: number = 1000;
+    public bounds: number = 10000;
 
     constructor(game: Game) {
         this.game = game;

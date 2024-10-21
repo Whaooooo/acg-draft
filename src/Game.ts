@@ -2,7 +2,7 @@
 
 import * as THREE from 'three';
 import { Player } from './Entities/Player';
-import { NPC } from './Entities/NPC';
+import { NPCPlane } from './Entities/NPCPlane';
 import { CollisionManager } from './Managers/CollisionManager';
 import { LoadingBar } from './Utils/LoadingBar';
 import { Missile } from './Entities/Missile';
@@ -28,7 +28,7 @@ export class Game {
 
     public entityIdSet: Set<number>;
     public players: Player[];
-    public npcs: NPC[];
+    public npcs: NPCPlane[];
     public projectiles: Missile[];
 
     public collisionManager: CollisionManager;
@@ -109,7 +109,7 @@ export class Game {
         // Optionally, add some NPCs for testing
         console.log('Request creating npc');
         const npcPosition = new THREE.Vector3(0, 20, -50);
-        const npc = new NPC(this, this.requestNewEntityId(), 'plane', npcPosition);
+        const npc = new NPCPlane(this, this.requestNewEntityId(), 'plane', npcPosition);
         this.npcs.push(npc);
     }
 
