@@ -7,14 +7,41 @@ import { Config } from '../Configs/Config';
 
 export class SceneManager {
     public scene: THREE.Scene;
+    public renderer!: THREE.WebGLRenderer;
 
     public water?: Water;
 
     constructor(scene: THREE.Scene) {
         this.scene = scene;
+        this.SetupRenderer();
         this.addLights();
         this.CreateBasicScene();
         this.loadSkybox('paintedsky');
+    }
+
+    private SetupRenderer(): void {
+        this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance", logarithmicDepthBuffer: true, precision: "highp" });
+        this.renderer.setPixelRatio(window.devicePixelRatio);
+        this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping; // Advanced tone mapping
+        this.renderer.toneMappingExposure = 1; // Adjust exposure as needed
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(this.renderer.domElement);
+
+        window.addEventListener('resize', this.onWindowResize.bind(this), false);
+    }
+
+    private onWindowResize(): void {
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    public renderCamera(camera: THREE.Camera, left: number, bottom: number, viewportWidth: number, viewportHeight: number): void {
+        this.renderer.setViewport(left, bottom, viewportWidth, viewportHeight);
+        this.renderer.setScissor(left, bottom, viewportWidth, viewportHeight);
+        this.renderer.setScissorTest(true);
+        this.renderer.render(this.scene, camera);
     }
 
     private addLights(): void {
@@ -102,7 +129,7 @@ export class SceneManager {
             {
                 textureWidth: 1024,
                 textureHeight: 1024,
-                waterNormals: new THREE.TextureLoader().load('assets/waternormals.jpg', function (texture) {
+                waterNormals: new THREE.TextureLoader().load(`${Config.assetsPath}waternormals.jpg`, function (texture) {
 
                     texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
 

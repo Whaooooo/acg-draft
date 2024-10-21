@@ -10,7 +10,6 @@ import { InputManager } from './Managers/InputManager';
 import { SoundManager } from './Managers/SoundManager';
 import { CameraManager } from './Managers/CameraManager';
 import { SceneManager } from './Managers/SceneManager';
-import { RendererManager } from './Managers/RendererManager';
 import { SoundEnum } from "./Configs/SoundPaths";
 import { TargetManager } from './Managers/TargetManager';
 import { Config } from './Configs/Config';
@@ -25,7 +24,6 @@ export class Game {
 
     public scene: THREE.Scene;
     public cameraManager: CameraManager;
-    public rendererManager: RendererManager;
     public sceneManager: SceneManager;
 
     public players: Player[];
@@ -96,9 +94,6 @@ export class Game {
         });
 
         this.targetManager = new TargetManager([this.players, this.npcs]);
-
-        // Initialize the RendererManager
-        this.rendererManager = new RendererManager(this.cameraManager, this.scene, this.players);
 
         this.collisionManager = new CollisionManager(this);
 
@@ -176,7 +171,25 @@ export class Game {
 
         const deltaTime = this.clock.getDelta();
         this.update(deltaTime);
-        this.rendererManager.render(); // Call render on rendererManager
+
+        const numPlayers = this.players.length;
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        const playerCameras = this.cameraManager.cameras;
+
+        let index = 0;
+        this.players.forEach((player) => {
+            const camera = playerCameras.get(player);
+            if (camera) {
+                const left = Math.floor((index / numPlayers) * width);
+                const bottom = 0;
+                const viewportWidth = Math.floor(width / numPlayers);
+                const viewportHeight = height;
+
+                this.sceneManager.renderCamera(camera, left, bottom, viewportWidth, viewportHeight);
+            }
+            index++;
+        });
     }
 
     private update(deltaTime: number): void {

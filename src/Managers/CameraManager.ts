@@ -29,6 +29,8 @@ export class CameraManager {
             // Initialize camera controls with identity quaternion
             this.cameraControls.set(player, { rotation: new THREE.Quaternion() });
         });
+
+        window.addEventListener('resize', this.updateCameraAspectRatios.bind(this), false);
     }
 
     public updateCameraAspectRatios(): void {
