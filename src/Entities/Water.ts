@@ -99,7 +99,8 @@ class Water extends Mesh {
 					'alpha': { value: 1.0 },
 					'time': { value: 0.0 },
 					'size': { value: 1.0 },
-					'distortionScale': { value: 20.0 },
+					'distortionScale': { value: 2.0 },
+					'shadowDistortionScale': { value: 0.2 },
 					'textureMatrix': { value: new Matrix4() },
 					'sunColor': { value: new Color(0x7F7F7F) },
 					'sunDirection': { value: new Vector3(0.70707, 0.70707, 0) },
@@ -140,6 +141,7 @@ class Water extends Mesh {
 				uniform float time;
 				uniform float size;
 				uniform float distortionScale;
+				uniform float shadowDistortionScale;
 				uniform sampler2D normalSampler;
 				uniform vec3 sunColor;
 				uniform vec3 sunDirection;
@@ -179,7 +181,7 @@ class Water extends Mesh {
 				#include <shadowmap_pars_fragment>
 				#include <shadowmask_pars_fragment>
 
-				float getDistortedShadowMask(vec3 distortion) {
+				float getDistortedShadowMask(vec2 distortion) {
 
 				float shadow = 1.0;
 
@@ -193,7 +195,7 @@ class Water extends Mesh {
 				for ( int i = 0; i < NUM_DIR_LIGHT_SHADOWS; i ++ ) {
 
 					directionalLight = directionalLightShadows[ i ];
-					shadow *= receiveShadow ? getShadow( directionalShadowMap[ i ], directionalLight.shadowMapSize, directionalLight.shadowIntensity, directionalLight.shadowBias, directionalLight.shadowRadius, vec4(vDirectionalShadowCoord[ i ].xyz + distortion, vDirectionalShadowCoord[ i ].w) ) : 1.0;
+					shadow *= receiveShadow ? getShadow( directionalShadowMap[ i ], directionalLight.shadowMapSize, directionalLight.shadowIntensity, directionalLight.shadowBias, directionalLight.shadowRadius, vec4(vDirectionalShadowCoord[ i ].xy + distortion * vDirectionalShadowCoord[ i ].w, vDirectionalShadowCoord[ i ].zw) ) : 1.0;
 
 				}
 				#pragma unroll_loop_end
@@ -208,7 +210,7 @@ class Water extends Mesh {
 				for ( int i = 0; i < NUM_SPOT_LIGHT_SHADOWS; i ++ ) {
 
 					spotLight = spotLightShadows[ i ];
-					shadow *= receiveShadow ? getShadow( spotShadowMap[ i ], spotLight.shadowMapSize, spotLight.shadowIntensity, spotLight.shadowBias, spotLight.shadowRadius, vec4(vSpotLightCoord[ i ].xyz + distortion, vSpotLightCoord[ i ].w) : 1.0;
+					shadow *= receiveShadow ? getShadow( spotShadowMap[ i ], spotLight.shadowMapSize, spotLight.shadowIntensity, spotLight.shadowBias, spotLight.shadowRadius, vec4(vSpotLightCoord[ i ].xy + distortion * vDirectionalShadowCoord[ i ].w, vSpotLightCoord[ i ].zw) : 1.0;
 
 				}
 				#pragma unroll_loop_end
@@ -223,7 +225,7 @@ class Water extends Mesh {
 				for ( int i = 0; i < NUM_POINT_LIGHT_SHADOWS; i ++ ) {
 
 					pointLight = pointLightShadows[ i ];
-					shadow *= receiveShadow ? getPointShadow( pointShadowMap[ i ], pointLight.shadowMapSize, pointLight.shadowIntensity, pointLight.shadowBias, pointLight.shadowRadius, vec4(vPointShadowCoord[ i ].xyz + distortion, vPointShadowCoord[ i ].w), pointLight.shadowCameraNear, pointLight.shadowCameraFar ) : 1.0;
+					shadow *= receiveShadow ? getPointShadow( pointShadowMap[ i ], pointLight.shadowMapSize, pointLight.shadowIntensity, pointLight.shadowBias, pointLight.shadowRadius, vec4(vPointShadowCoord[ i ].xy + distortion * vDirectionalShadowCoord[ i ].w, vPointShadowCoord[ i ].zw), pointLight.shadowCameraNear, pointLight.shadowCameraFar ) : 1.0;
 
 				}
 				#pragma unroll_loop_end
@@ -260,13 +262,14 @@ class Water extends Mesh {
 					float distance = length(worldToEye);
 
 					vec2 distortion = surfaceNormal.xz * ( 0.001 + 1.0 / distance ) * distortionScale;
+					vec2 shadowDistortion = surfaceNormal.xz * ( 0.01 + 1.0 / distance ) * shadowDistortionScale;
 					vec3 reflectionSample = vec3( texture2D( mirrorSampler, mirrorCoord.xy / mirrorCoord.w + distortion ) );
 
 					float theta = max( dot( eyeDirection, surfaceNormal ), 0.0 );
 					float rf0 = 0.1;
 					float reflectance = rf0 + ( 1.0 - rf0 ) * pow( ( 1.0 - theta ), 5.0 );
 					vec3 scatter = max( 0.0, dot( surfaceNormal, eyeDirection ) ) * waterColor;
-					vec3 albedo = mix( ( sunColor * diffuseLight * 0.3 + scatter ) * getDistortedShadowMask(vec3(distortion, 0.0)), ( vec3( 0.1 ) + reflectionSample * 0.9 + reflectionSample * specularLight ), reflectance);
+					vec3 albedo = mix( ( sunColor * diffuseLight * 0.3 + scatter ) * getDistortedShadowMask(shadowDistortion), ( vec3( 0.1 ) + reflectionSample * 0.9 + reflectionSample * specularLight ), reflectance);
 					vec3 outgoingLight = albedo;
 					gl_FragColor = vec4( outgoingLight, alpha );
 

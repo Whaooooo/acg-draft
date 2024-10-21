@@ -74,22 +74,22 @@ export class SceneManager {
         directionalLight.castShadow = true;
 
         // Configure shadow properties for better quality
-        directionalLight.shadow.mapSize.width = 2048;  // Higher value means better shadow quality
-        directionalLight.shadow.mapSize.height = 2048;
+        directionalLight.shadow.mapSize.width = 16384;  // Higher value means better shadow quality
+        directionalLight.shadow.mapSize.height = 16384;
 
         directionalLight.shadow.camera.near = 0.01;
-        directionalLight.shadow.camera.far = 500;
-        directionalLight.shadow.camera.left = -50;
-        directionalLight.shadow.camera.right = 50;
-        directionalLight.shadow.camera.top = 50;
-        directionalLight.shadow.camera.bottom = -50;
+        directionalLight.shadow.camera.far = 10000;
+        directionalLight.shadow.camera.left = -1000;
+        directionalLight.shadow.camera.right = 1000;
+        directionalLight.shadow.camera.top = 500;
+        directionalLight.shadow.camera.bottom = -500;
 
         // Optional: Visualize the shadow camera frustum (useful for debugging)
         // const helper = new THREE.CameraHelper(directionalLight.shadow.camera);
         // this.scene.add(helper);
 
         // Adjust shadow bias to prevent shadow artifacts
-        directionalLight.shadow.bias = -0.0005;  // Typically a small negative value
+        directionalLight.shadow.bias = -0.00005;  // Typically a small negative value
 
         this.scene.add(directionalLight);
         this.directionalLight = directionalLight;
