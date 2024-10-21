@@ -2,6 +2,7 @@
 
 import * as THREE from 'three';
 import { Water } from '../Entities/Water';
+import { Cloud } from '../Entities/Cloud';
 import { MapPaths, MapName } from '../Configs/MapPaths';
 import { Config } from '../Configs/Config';
 
@@ -128,16 +129,11 @@ export class SceneManager {
         sphere.castShadow = true; //default is false
         sphere.receiveShadow = true; //default
         this.scene.add(sphere);
-        const planeGeometry = new THREE.PlaneGeometry(20, 20, 32, 32);
-        const planeMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00 })
-        const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-        plane.receiveShadow = true;
-        plane.position.add(new THREE.Vector3(0, 15, 0));
-        this.scene.add(plane);
+
+
+
 
         const waterGeometry = new THREE.PlaneGeometry(100000, 100000);
-
-
         const water = new Water(
             waterGeometry,
             {
@@ -160,6 +156,13 @@ export class SceneManager {
         water.position.set(0, 0, 0);
         this.scene.add(water);
         this.water = water;
+
+        const geometry = new THREE.BoxGeometry(20, 20, 20);
+        const cloud = new Cloud(geometry, { size: 128, opacity: 1.0, threshold: 0.01 });
+        cloud.position.set(50, 80, 80);
+        cloud.castShadow = true;
+        cloud.receiveShadow = true;
+        this.scene.add(cloud);
     }
 
     public addtoScene(object: THREE.Object3D): void {
