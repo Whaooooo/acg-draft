@@ -45,7 +45,7 @@ export class CollisionManager {
                     const index = this.game.projectiles.indexOf(projectile);
                     if (index > -1) {
                         this.game.projectiles.splice(index, 1);
-                        projectile.removeFromScene();
+                        projectile.dispose();
                     }
                 }
             });
@@ -72,7 +72,7 @@ export class CollisionManager {
             // Remove projectiles that are out of bounds or have expired
             if (this.isProjectileOutOfBounds(projectile)) {
                 console.log('Missile out of bounds');
-                projectile.removeFromScene();
+                projectile.dispose();
                 this.game.projectiles.splice(index, 1);
             }
         });

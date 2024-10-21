@@ -1,47 +1,73 @@
 // src/Configs/KeyBound.ts
+// src/Configs/KeyBound.ts
+
+export interface InputAction {
+    keyType: 'keyboard' | 'mouse' | 'wheel' | 'gamepad';
+    keyName: string;
+    triggerType: 'pressed' | 'down' | 'up' | 'scrolled';
+}
+
+// src/Configs/KeyBound.ts
 
 export interface KeyBoundConfig {
-    increaseThrust: string;
-    decreaseThrust: string;
-    yawLeft: string;
-    yawRight: string;
-    pitchUp: string;
-    pitchDown: string;
-    rollLeft: string;
-    rollRight: string;
-    fireWeapon: string;
-    toggleViewMode: string;
-    reTarget: string;
-    useNumpadForWeaponSelection: boolean;
+    increaseThrust: InputAction;
+    decreaseThrust: InputAction;
+    yawLeft: InputAction;
+    yawRight: InputAction;
+    pitchUp: InputAction;
+    pitchDown: InputAction;
+    rollLeft: InputAction;
+    rollRight: InputAction;
+    fireWeapon: InputAction;
+    toggleViewMode: InputAction;
+    reTarget: InputAction;
+    // Removed useNumpadForWeaponSelection
+    // Added new keys for weapon selection
+    selectWeapon1: InputAction;
+    selectWeapon2: InputAction;
+    selectWeapon3: InputAction;
+    selectWeapon4: InputAction;
 }
+
+
 
 export const KeyBoundConfigs: KeyBoundConfig[] = [
     {
-        increaseThrust: 'capslock',
-        decreaseThrust: 'shiftleft',
-        yawLeft: 'keyq',
-        yawRight: 'keye',
-        pitchUp: 'keys',
-        pitchDown: 'keyw',
-        rollLeft: 'keya',
-        rollRight: 'keyd',
-        fireWeapon: 'space',
-        toggleViewMode: 'keyv',
-        reTarget: 'tab',
-        useNumpadForWeaponSelection: false,
+        increaseThrust: { keyType: 'keyboard', keyName: 'capslock', triggerType: 'pressed' },
+        decreaseThrust: { keyType: 'keyboard', keyName: 'shiftleft', triggerType: 'pressed' },
+        yawLeft: { keyType: 'keyboard', keyName: 'keyq', triggerType: 'pressed' },
+        yawRight: { keyType: 'keyboard', keyName: 'keye', triggerType: 'pressed' },
+        pitchUp: { keyType: 'keyboard', keyName: 'keys', triggerType: 'pressed' },
+        pitchDown: { keyType: 'keyboard', keyName: 'keyw', triggerType: 'pressed' },
+        rollLeft: { keyType: 'keyboard', keyName: 'keya', triggerType: 'pressed' },
+        rollRight: { keyType: 'keyboard', keyName: 'keyd', triggerType: 'pressed' },
+        fireWeapon: { keyType: 'keyboard', keyName: 'space', triggerType: 'down' },
+        toggleViewMode: { keyType: 'keyboard', keyName: 'keyv', triggerType: 'down' },
+        reTarget: { keyType: 'keyboard', keyName: 'tab', triggerType: 'down' },
+        // New weapon selection keys
+        selectWeapon1: { keyType: 'keyboard', keyName: 'digit1', triggerType: 'down' },
+        selectWeapon2: { keyType: 'keyboard', keyName: 'digit2', triggerType: 'down' },
+        selectWeapon3: { keyType: 'keyboard', keyName: 'digit3', triggerType: 'down' },
+        selectWeapon4: { keyType: 'keyboard', keyName: 'digit4', triggerType: 'down' },
     },
     {
-        increaseThrust: 'backslash',                 // 加速键为 Enter
-        decreaseThrust: 'enter',             // 减速键为 '\'
-        yawLeft: 'insert',                       // 偏航左：Insert 键
-        yawRight: 'pageup',                      // 偏航右：Delete 键
-        pitchUp: 'end',                         // 俯仰上：Home 键
-        pitchDown: 'home',                        // 俯仰下：End 键
-        rollLeft: 'delete',                      // 滚转左：Page Up 键
-        rollRight: 'pagedown',                   // 滚转右：Page Down 键
-        fireWeapon: 'numpad0',                   // 开火：小键盘 0
-        toggleViewMode: 'numpaddecimal',         // 视角切换：小键盘 .
-        reTarget: 'tab',                         // 重选目标键为 Tab
-        useNumpadForWeaponSelection: true,       // 使用小键盘切换武器
+        increaseThrust: { keyType: 'keyboard', keyName: 'backslash', triggerType: 'pressed' },
+        decreaseThrust: { keyType: 'keyboard', keyName: 'enter', triggerType: 'pressed' },
+        yawLeft: { keyType: 'keyboard', keyName: 'insert', triggerType: 'pressed' },
+        yawRight: { keyType: 'keyboard', keyName: 'pageup', triggerType: 'pressed' },
+        pitchUp: { keyType: 'keyboard', keyName: 'end', triggerType: 'pressed' },
+        pitchDown: { keyType: 'keyboard', keyName: 'home', triggerType: 'pressed' },
+        rollLeft: { keyType: 'keyboard', keyName: 'delete', triggerType: 'pressed' },
+        rollRight: { keyType: 'keyboard', keyName: 'pagedown', triggerType: 'pressed' },
+        fireWeapon: { keyType: 'keyboard', keyName: 'numpad0', triggerType: 'down' },
+        toggleViewMode: { keyType: 'keyboard', keyName: 'numpaddecimal', triggerType: 'down' },
+        reTarget: { keyType: 'keyboard', keyName: 'tab', triggerType: 'down' },
+        // New weapon selection keys
+        selectWeapon1: { keyType: 'keyboard', keyName: 'numpad1', triggerType: 'down' },
+        selectWeapon2: { keyType: 'keyboard', keyName: 'numpad2', triggerType: 'down' },
+        selectWeapon3: { keyType: 'keyboard', keyName: 'numpad3', triggerType: 'down' },
+        selectWeapon4: { keyType: 'keyboard', keyName: 'numpad4', triggerType: 'down' },
     },
 ];
+
+

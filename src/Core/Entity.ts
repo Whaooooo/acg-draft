@@ -8,6 +8,7 @@ import { EntityLoaders } from '../Configs/EntityLoaders';
 import { Config } from '../Configs/Config';
 
 export class Entity {
+    public entityId: number;
     public assetsPath: string;
     public assetName: EntityName;
     public assetPath: string;
@@ -28,7 +29,8 @@ export class Entity {
     public iFFNumber: number;
     public targets: Entity[];
 
-    constructor(game: Game, assetName: EntityName, pos?: THREE.Vector3, qua?: THREE.Quaternion, iFFNumber?: number) {
+    constructor(game: Game, entityId: number, assetName: EntityName, pos?: THREE.Vector3, qua?: THREE.Quaternion, iFFNumber?: number) {
+        this.entityId = entityId;
         this.assetsPath = Config.assetsPath;
         this.assetName = assetName;
         this.assetConfig = EntityConfigs[assetName];
@@ -113,14 +115,19 @@ export class Entity {
         this.scene.add(this.entity);
     }
 
-    public removeFromScene(): void {
+    public dispose(): void {
         if (this.removed) return;
-        this.removed = true;
+        this.game.entityIdSet.delete(this.entityId)
         this.scene.remove(this.entity);
+        this.removed = true;
     }
 
     public update(deltaTime: number): void {
         // Override in subclasses
+    }
+
+    public initializeSound(): void {
+        //Placeholder
     }
 
     get entity(): THREE.Group {

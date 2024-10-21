@@ -74,9 +74,9 @@ export const PlayerProperties: {
         sound: {
             'engine' : {
                 name: 'engine',
-                cooldown: 30,
+                cooldown: 0,
                 volume: 1,
-                loop: false,
+                loop: true,
             },
             'explode' : {
                 name: 'explosion',
@@ -89,8 +89,8 @@ export const PlayerProperties: {
     f22_stdm: {
         damage: 300,
         pulsion: 200,
-        xSpeedDecrease: 0.3,
-        ySpeedDecrease: 0.3,
+        xSpeedDecrease: 0.1,
+        ySpeedDecrease: 0.1,
         zSpeedDecrease: 0.5,
         rotationSpeed: 90,
         lockRange: 2000,
@@ -142,9 +142,9 @@ export const NPCProperties: {
         sound: {
             'engine' : {
                 name: 'engine',
-                cooldown: 30,
+                cooldown: 0,
                 volume: 1,
-                loop: false,
+                loop: true,
             },
             'explode' : {
                 name: 'explosion',
@@ -179,9 +179,9 @@ export const NPCProperties: {
     },
     plane: {
         hP: 300,
-        minPulsion: 50,
-        defaultPulsion: 50,
-        maxPulsion: 50,
+        minPulsion: 1,
+        defaultPulsion: 1,
+        maxPulsion: 1,
         pulsionSensitivity: 150,
         xSpeedDecrease: 0.3,
         ySpeedDecrease: 0.2,
@@ -198,9 +198,9 @@ export const NPCProperties: {
         sound: {
             'engine' : {
                 name: 'propeller',
-                cooldown: 30,
+                cooldown: 0,
                 volume: 1,
-                loop: false,
+                loop: true,
             },
             'explode' : {
                 name: 'explosion',

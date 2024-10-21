@@ -2,10 +2,9 @@
 
 import { MovableEntity } from '../Core/MovableEntity';
 import { Game } from '../Game';
-import { Missile } from './Missile';
 import { EntityName } from '../Configs/EntityPaths';
 import { ViewMode } from '../Enums/ViewMode';
-import { PlaneProperty, PlayerProperties } from '../Configs/EntityProperty';
+import { PlaneProperty, PlayerProperties, SoundProperty } from '../Configs/EntityProperty';
 import * as THREE from 'three';
 import { Weapon } from '../Core/Weapon';
 import { KeyBoundConfig, KeyBoundConfigs } from '../Configs/KeyBound';
@@ -13,7 +12,6 @@ import { updateControlVariable } from '../Utils/MoveUtils'; // Import the functi
 import { PlaneState, updatePlaneState} from "../Utils/MoveUtils";
 
 export class Player extends MovableEntity {
-    public playerId: number;
     public name: EntityName;
     public viewMode: ViewMode;
 
@@ -31,18 +29,19 @@ export class Player extends MovableEntity {
     public pitchSpeed: number = 0;
     public rollSpeed: number = 0;
 
+    public engineSoundId?: string;
+
     constructor(
         game: Game,
+        entityId: number,
         assetName: EntityName,
         pos?: THREE.Vector3,
         qua?: THREE.Quaternion,
         velocity?: THREE.Vector3,
         iFFNumber?: number,
-        playerId: number = 0,
         keyConfigIndex: number = 0 // Index of the key mapping configuration
     ) {
-        super(game, assetName, pos, qua, velocity, iFFNumber);
-        this.playerId = playerId;
+        super(game, entityId, assetName, pos, qua, velocity, iFFNumber);
         this.name = assetName;
         this.viewMode = ViewMode.ThirdPerson;
 
@@ -73,6 +72,32 @@ export class Player extends MovableEntity {
 
         // Initialize pulsion to defaultPulsion
         this.pulsion = this.property.defaultPulsion;
+    }
+
+    public initializeSound(): void {
+        const soundConfig = this.property.sound
+        const engineSoundProperty = soundConfig['engine']
+        if (!engineSoundProperty) {
+            return
+        }
+
+        this.engineSoundId = `engine_player_${this.entityId}`;
+
+        // Play the engine sound
+        this.game.soundManager.playSound(
+            this,
+            engineSoundProperty.name, // Use the correct SoundEnum value for 'engine'
+            {
+                loop: engineSoundProperty.loop,
+                volume: engineSoundProperty.volume, // Initial volume
+                position: this.getPosition(), // If the sound is positional
+                refDistance: 20,
+                maxDistance: 1000,
+                rolloffFactor: 1,
+                autoplay: true,
+                soundId: this.engineSoundId,
+            }
+        );
     }
 
     public update(deltaTime: number): void {
@@ -109,6 +134,8 @@ export class Player extends MovableEntity {
         this.entity.quaternion.copy(updatedState.quaternion);
         this.velocity.copy(updatedState.velocity);
 
+        this.updateSound()
+
         // Call the parent update to move the entity
         super.update(deltaTime);
     }
@@ -116,8 +143,24 @@ export class Player extends MovableEntity {
     private handleInput(deltaTime: number): void {
         if (!this.ready || !this.entity) return;
         const inputManager = this.game.inputManager;
+        const keyConfig = this.keyConfig;
 
-        // ... (other code remains the same)
+        // Handle weapon selection using new keys
+        if (inputManager.checkInput(keyConfig.selectWeapon1)) {
+            this.selectWeapon(0);
+        }
+
+        if (inputManager.checkInput(keyConfig.selectWeapon2)) {
+            this.selectWeapon(1);
+        }
+
+        if (inputManager.checkInput(keyConfig.selectWeapon3)) {
+            this.selectWeapon(2);
+        }
+
+        if (inputManager.checkInput(keyConfig.selectWeapon4)) {
+            this.selectWeapon(3);
+        }
 
         // Update control variables using the helper function
         this.pulsion = updateControlVariable(
@@ -126,90 +169,82 @@ export class Player extends MovableEntity {
             this.property.minPulsion,
             this.property.maxPulsion,
             this.property.pulsionSensitivity,
-            inputManager.isKeyPressed(this.keyConfig.increaseThrust),
-            inputManager.isKeyPressed(this.keyConfig.decreaseThrust),
+            inputManager.checkInput(keyConfig.increaseThrust),
+            inputManager.checkInput(keyConfig.decreaseThrust),
             deltaTime
         );
 
         this.yawSpeed = updateControlVariable(
             this.yawSpeed,
             0,
-            this.property.yawMinSpeed,   // Use the new minSpeed property
+            this.property.yawMinSpeed,
             this.property.yawMaxSpeed,
             this.property.yawSensitivity,
-            inputManager.isKeyPressed(this.keyConfig.yawLeft),
-            inputManager.isKeyPressed(this.keyConfig.yawRight),
+            inputManager.checkInput(keyConfig.yawLeft),
+            inputManager.checkInput(keyConfig.yawRight),
             deltaTime
         );
 
         this.pitchSpeed = updateControlVariable(
             this.pitchSpeed,
             0,
-            this.property.pitchMinSpeed, // Use the new minSpeed property
+            this.property.pitchMinSpeed,
             this.property.pitchMaxSpeed,
             this.property.pitchSensitivity,
-            inputManager.isKeyPressed(this.keyConfig.pitchUp),
-            inputManager.isKeyPressed(this.keyConfig.pitchDown),
+            inputManager.checkInput(keyConfig.pitchUp),
+            inputManager.checkInput(keyConfig.pitchDown),
             deltaTime
         );
 
         this.rollSpeed = updateControlVariable(
             this.rollSpeed,
             0,
-            this.property.rollMinSpeed,  // Use the new minSpeed property
+            this.property.rollMinSpeed,
             this.property.rollMaxSpeed,
             this.property.rollSensitivity,
-            inputManager.isKeyPressed(this.keyConfig.rollLeft),
-            inputManager.isKeyPressed(this.keyConfig.rollRight),
+            inputManager.checkInput(keyConfig.rollLeft),
+            inputManager.checkInput(keyConfig.rollRight),
             deltaTime
         );
 
-        if (inputManager.isKeyDown(this.keyConfig.fireWeapon)) {
+        // Fire weapon
+        if (inputManager.checkInput(keyConfig.fireWeapon)) {
             this.fireWeapon();
         }
 
-        if (inputManager.isKeyDown(this.keyConfig.toggleViewMode)) {
-            this.toggleViewMode();
+        // Toggle view mode
+        if (inputManager.checkInput(keyConfig.toggleViewMode)) {
+            this.game.cameraManager.toggleViewMode(this);
         }
 
-        if (inputManager.isKeyDown(this.keyConfig.reTarget)) {
-            this.targets = this.game.targetManager.reTarget(this);
+        // Re-target
+        if (inputManager.checkInput(keyConfig.reTarget)) {
+            this.reTarget();
         }
     }
 
-    public toggleViewMode(): void {
-        this.viewMode =
-            this.viewMode === ViewMode.FirstPerson
-                ? ViewMode.ThirdPerson
-                : ViewMode.FirstPerson;
+    private updateSound(): void {
+        if (this.engineSoundId){
+            const pulsion = this.pulsion;
+            const maxPulsion = this.property.maxPulsion;
+            const volume = THREE.MathUtils.clamp(pulsion / maxPulsion, 0, 1);
 
-        const cameraManager = this.game.cameraManager;
-        const controls = cameraManager.cameraControls.get(this);
-        const camera = cameraManager.cameras.get(this);
+            this.game.soundManager.setVolumeById(this.engineSoundId, volume);
 
-        if (controls && camera) {
-            if (this.viewMode === ViewMode.FirstPerson) {
-                // 第一人称视角
-                controls.rotation.identity();
-                camera.position.copy(this.getPosition());
-
-                camera.quaternion.copy(this.getQuaternion()).multiply(controls.rotation);
-            } else {
-                // 第三人称视角
-                const defaultPitch = THREE.MathUtils.degToRad(-30);
-                const euler = new THREE.Euler(defaultPitch, 0, 0, 'YXZ');
-                controls.rotation.setFromEuler(euler);
-
-                camera.quaternion.copy(this.getQuaternion()).multiply(controls.rotation);
-
-                const offset = new THREE.Vector3(0, 5, 40);
-                offset.applyQuaternion(camera.quaternion);
-                camera.position.copy(this.getPosition()).add(offset);
-
-                camera.lookAt(this.getPosition());
+            // Update position if the sound is positional
+            const engineSound = this.game.soundManager.getSoundById(this.engineSoundId);
+            if (engineSound && engineSound instanceof THREE.PositionalAudio) {
+                engineSound.position.copy(this.getPosition());
             }
         }
     }
+
+    public selectWeapon(id: number): void {
+        if (id <= this.weapons.length - 1){
+            this.selectedWeaponIndex = id
+        }
+    }
+
 
     public fireWeapon(): void {
         // Get the selected weapon
@@ -220,4 +255,18 @@ export class Player extends MovableEntity {
         }
         weapon.fire();
     }
+
+    public reTarget(): void {
+
+    }
+
+    public dispose(): void {
+        // ... existing disposal logic ...
+
+        // Stop and remove the engine sound
+        if (this.engineSoundId){
+            this.game.soundManager.stopSoundById(this.engineSoundId);
+        }
+    }
+
 }

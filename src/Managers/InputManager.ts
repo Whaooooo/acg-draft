@@ -1,8 +1,11 @@
 // src/Managers/InputManager.ts
+import { InputAction } from "../Configs/KeyBound";
 
 export class InputManager {
     private keysPressed: { [key: string]: boolean } = {};
     private keysDown: { [key: string]: boolean } = {};
+    private mouseButtonsPressed: { [button: string]: boolean } = {};
+    private mouseButtonsDown: { [button: string]: boolean } = {};
     public mouseDeltaX: number = 0;
     public mouseDeltaY: number = 0;
     public pointerLocked: boolean = false;
@@ -13,16 +16,17 @@ export class InputManager {
     }
 
     private initEventListeners(): void {
-        // 使用捕获阶段确保我们的处理器优先执行
+        // Use capture phase to prevent default browser shortcuts
         window.addEventListener('keydown', (event) => this.preventBrowserShortcuts(event), true);
         window.addEventListener('keydown', (event) => this.onKeyDown(event), false);
         window.addEventListener('keyup', (event) => this.onKeyUp(event), false);
         window.addEventListener('mousedown', this.onMouseDown.bind(this), false);
+        window.addEventListener('mouseup', this.onMouseUp.bind(this), false);
         window.addEventListener('mousemove', this.onMouseMove.bind(this), false);
         window.addEventListener('wheel', this.onWheel.bind(this), { passive: false });
         document.addEventListener('pointerlockchange', this.onPointerLockChange.bind(this), false);
 
-        // 阻止右键菜单
+        // Prevent right-click context menu
         window.addEventListener('contextmenu', (event) => {
             if (this.pointerLocked) {
                 event.preventDefault();
@@ -31,15 +35,13 @@ export class InputManager {
     }
 
     private onKeyDown(event: KeyboardEvent): void {
-        const key = event.code.toLowerCase(); // 使用 event.code
+        const key = event.code.toLowerCase();
 
         if (this.pointerLocked) {
-            // 在指针锁定时，阻止大多数默认行为
             event.preventDefault();
         }
 
         if (!this.keysPressed[key]) {
-            // Key was not pressed before, so it's a key down event
             this.keysDown[key] = true;
         }
         this.keysPressed[key] = true;
@@ -51,6 +53,12 @@ export class InputManager {
     }
 
     private onMouseDown(event: MouseEvent): void {
+        const button = `mousebutton${event.button}`;
+        if (!this.mouseButtonsPressed[button]) {
+            this.mouseButtonsDown[button] = true;
+        }
+        this.mouseButtonsPressed[button] = true;
+
         // Request pointer lock
         const element = document.body;
         if (!this.pointerLocked) {
@@ -58,13 +66,14 @@ export class InputManager {
         }
     }
 
+    private onMouseUp(event: MouseEvent): void {
+        const button = `mousebutton${event.button}`;
+        this.mouseButtonsPressed[button] = false;
+    }
+
     private onPointerLockChange(): void {
         const element = document.body;
-        if (document.pointerLockElement === element) {
-            this.pointerLocked = true;
-        } else {
-            this.pointerLocked = false;
-        }
+        this.pointerLocked = document.pointerLockElement === element;
     }
 
     private onMouseMove(event: MouseEvent): void {
@@ -75,53 +84,67 @@ export class InputManager {
     }
 
     private onWheel(event: WheelEvent): void {
-        // Normalize the wheel delta to -1, 0, or 1
         if (event.deltaY < 0) {
             this.wheelDelta += 1; // Scrolled up
         } else if (event.deltaY > 0) {
             this.wheelDelta -= 1; // Scrolled down
         }
-        // Prevent the default scrolling behavior if pointer is locked
         if (this.pointerLocked) {
             event.preventDefault();
         }
     }
 
-    /**
-     * 阻止除 Esc 之外的所有快捷键
-     */
     private preventBrowserShortcuts(event: KeyboardEvent): void {
         if (this.pointerLocked) {
-            // 允许 Esc 键用于退出指针锁定
             if (event.key === 'Escape') {
                 return;
             }
 
-            // 阻止所有带有修饰键的快捷键
             if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) {
                 event.preventDefault();
                 return;
             }
+        }
+    }
 
-            // 阻止特定功能键
-            const blockedKeys = ['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10', 'f11', 'f12'];
-            if (blockedKeys.includes(event.code.toLowerCase())) {
-                event.preventDefault();
-                return;
+    public checkInput(action: InputAction): boolean {
+        const keyType = action.keyType.toLowerCase();
+        const keyName = action.keyName.toLowerCase();
+        const triggerType = action.triggerType.toLowerCase();
+
+        if (keyType === 'keyboard') {
+            if (triggerType === 'pressed') {
+                return this.keysPressed[keyName] || false;
+            } else if (triggerType === 'down') {
+                if (this.keysDown[keyName]) {
+                    this.keysDown[keyName] = false;
+                    return true;
+                }
+                return false;
+            }
+        } else if (keyType === 'mouse') {
+            const button = `mousebutton${keyName}`;
+            if (triggerType === 'pressed') {
+                return this.mouseButtonsPressed[button] || false;
+            } else if (triggerType === 'down') {
+                if (this.mouseButtonsDown[button]) {
+                    this.mouseButtonsDown[button] = false;
+                    return true;
+                }
+                return false;
+            }
+        } else if (keyType === 'wheel') {
+            if (triggerType === 'scrolled') {
+                if (keyName === 'up' && this.wheelDelta > 0) {
+                    this.wheelDelta = 0;
+                    return true;
+                } else if (keyName === 'down' && this.wheelDelta < 0) {
+                    this.wheelDelta = 0;
+                    return true;
+                }
             }
         }
-    }
 
-    public isKeyPressed(key: string): boolean {
-        return this.keysPressed[key.toLowerCase()] || false;
-    }
-
-    public isKeyDown(key: string): boolean {
-        key = key.toLowerCase();
-        if (this.keysDown[key]) {
-            this.keysDown[key] = false; // Reset the flag after reading
-            return true;
-        }
         return false;
     }
 
@@ -138,3 +161,5 @@ export class InputManager {
         return delta;
     }
 }
+
+

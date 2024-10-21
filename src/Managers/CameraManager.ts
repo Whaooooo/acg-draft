@@ -31,6 +31,39 @@ export class CameraManager {
         });
     }
 
+    public toggleViewMode(player: Player): void {
+        player.viewMode =
+            player.viewMode === ViewMode.FirstPerson
+                ? ViewMode.ThirdPerson
+                : ViewMode.FirstPerson;
+
+        const controls = this.cameraControls.get(player);
+        const camera = this.cameras.get(player);
+
+        if (controls && camera) {
+            if (player.viewMode === ViewMode.FirstPerson) {
+                // First-person view
+                controls.rotation.identity();
+                camera.position.copy(player.getPosition());
+
+                camera.quaternion.copy(player.getQuaternion()).multiply(controls.rotation);
+            } else {
+                // Third-person view
+                const defaultPitch = THREE.MathUtils.degToRad(-30);
+                const euler = new THREE.Euler(defaultPitch, 0, 0, 'YXZ');
+                controls.rotation.setFromEuler(euler);
+
+                camera.quaternion.copy(player.getQuaternion()).multiply(controls.rotation);
+
+                const offset = new THREE.Vector3(0, 5, 40);
+                offset.applyQuaternion(camera.quaternion);
+                camera.position.copy(player.getPosition()).add(offset);
+
+                camera.lookAt(player.getPosition());
+            }
+        }
+    }
+
     public updateCameraAspectRatios(): void {
         this.cameras.forEach((camera) => {
             camera.aspect = window.innerWidth / window.innerHeight;

@@ -5,6 +5,8 @@ import { MissileProperty, PlayerProperties } from '../Configs/EntityProperty';
 import { Player } from '../Entities/Player';
 import { Game } from '../Game';
 import { Missile } from '../Entities/Missile';
+import { SoundEnum } from "../Configs/SoundPaths";
+import { Entity } from "./Entity";
 import * as THREE from 'three';
 
 export class Weapon {
@@ -12,7 +14,7 @@ export class Weapon {
     public parentPlaneName: EntityName;
     public property: MissileProperty;
     private game: Game;
-    private owner: Player;
+    private owner: Entity;
 
     // Weapon state
     private cooldownTimer: number = 0;
@@ -21,7 +23,8 @@ export class Weapon {
     private totalMissilesFired: number = 0;
     public lastSoundPlayTime: number = 0;
 
-    constructor(game: Game, owner: Player, parentPlaneName: EntityName, weaponName: string) {
+
+    constructor(game: Game, owner: Entity, parentPlaneName: EntityName, weaponName: string) {
         this.game = game;
         this.owner = owner;
         this.name = weaponName;
@@ -85,41 +88,21 @@ export class Weapon {
             return;
         }
 
-        // Play weapon fire sound if applicable
-        const soundProperty = this.property.sound['fire'];
-        if (soundProperty) {
-            const currentTime = this.game.getTime();
-            if (
-                !this.lastSoundPlayTime ||
-                currentTime - this.lastSoundPlayTime >= soundProperty.cooldown
-            ) {
-                this.game.playSound(
-                    this.owner,
-                    soundProperty.name,
-                    soundProperty.loop,
-                    soundProperty.volume
-                );
-                this.lastSoundPlayTime = currentTime;
-            }
-        }
-
         // Fire missiles
         let missilesFired = 0;
 
-        // Iterate over firing slots
         for (let slotIndex = 0; slotIndex < this.loadTimers.length; slotIndex++) {
             if (missilesFired >= missilesToFire) {
                 break;
             }
 
-            // Check if the firing slot is available (load timer is zero)
             if (this.loadTimers[slotIndex] <= 0) {
                 const target = this.owner.targets[missilesFired];
 
-                // Get fire position for this slot
+                // Calculate firing position in world coordinates
                 const firePosArray = this.property.firePosition[slotIndex];
-                const firePosition = new THREE.Vector3(...firePosArray);
-                firePosition.applyMatrix4(this.owner.entity.matrixWorld);
+                const firePositionLocal = new THREE.Vector3(...firePosArray);
+                const firePositionWorld = firePositionLocal.clone().applyMatrix4(this.owner.entity.matrixWorld);
 
                 // Calculate initial direction
                 const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.owner.entity.quaternion);
@@ -127,8 +110,9 @@ export class Weapon {
                 // Create missile
                 const missile = new Missile(
                     this.game,
+                    this.game.requestNewEntityId(),
                     `${this.parentPlaneName}_${this.name}` as EntityName,
-                    firePosition,
+                    firePositionWorld.clone(),
                     this.owner.entity.quaternion.clone(),
                     forward.clone().multiplyScalar(this.property.pulsion),
                     this.owner.iFFNumber,
@@ -146,7 +130,24 @@ export class Weapon {
                 // Start load timer for this firing slot
                 this.loadTimers[slotIndex] = this.property.loadTime;
 
-                // Check if we have fired all available missiles
+                // Play weapon fire sound with positional audio
+                const soundManager = this.game.soundManager;
+                if (soundManager && this.property.sound && this.property.sound.fire) {
+                    soundManager.playSound(
+                        this.owner, // The player who owns the weapon
+                        this.property.sound.fire.name as SoundEnum,
+                        {
+                            loop: this.property.sound.fire.loop,
+                            volume: this.property.sound.fire.volume,
+                            position: firePositionWorld,
+                            refDistance: 20, // Adjust as needed
+                            maxDistance: 1000, // Adjust as needed
+                            rolloffFactor: 1, // Adjust as needed
+                        }
+                    );
+                }
+
+                // Check if all missiles are fired
                 if (this.totalMissilesFired >= this.property.totalNumber) {
                     console.warn('All missiles have been fired.');
                     break;
@@ -158,6 +159,4 @@ export class Weapon {
             console.warn('Not enough available firing slots to fire all missiles.');
         }
     }
-
-
 }

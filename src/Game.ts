@@ -28,17 +28,19 @@ export class Game {
     public rendererManager: RendererManager;
     public sceneManager: SceneManager;
 
+    public entityIdSet: Set<number>;
     public players: Player[];
     public npcs: NPC[];
     public projectiles: Missile[];
 
     public collisionManager: CollisionManager;
     public inputManager: InputManager;
-    public soundManagers: Map<Player, SoundManager>;
+    public soundManager: SoundManager;
     public targetManager: TargetManager;
 
     public savePath: string;
     public loadPath?: string;
+
 
     //###################################################
     //################### INIT ##########################
@@ -53,6 +55,7 @@ export class Game {
         this.loadingBar = new LoadingBar();
 
         // Initialize empty arrays for entities
+        this.entityIdSet = new Set<number>
         this.players = [];
         this.npcs = [];
         this.projectiles = [];
@@ -86,14 +89,7 @@ export class Game {
         this.cameraManager = new CameraManager(this.players);
 
         // Initialize the SoundManagers for each player
-        this.soundManagers = new Map<Player, SoundManager>();
-        this.players.forEach((player) => {
-            const camera = this.cameraManager.cameras.get(player);
-            if (camera) {
-                const soundManager = new SoundManager(camera, player);
-                this.soundManagers.set(player, soundManager);
-            }
-        });
+        this.soundManager = new SoundManager(this.players, this.cameraManager.cameras, this.scene);
 
         this.targetManager = new TargetManager([this.players, this.npcs]);
 
@@ -107,9 +103,10 @@ export class Game {
     }
 
     private createDebugScene(): void {
+
         // Create two players at different positions
         console.log('Request creating player')
-        const player1 = new Player(this, 'f22', new THREE.Vector3(-10, 0, 0), undefined, undefined, 1, 0, 0);
+        const player1 = new Player(this, this.requestNewEntityId(), 'f22', new THREE.Vector3(-10, 0, 0), undefined, undefined, 1, 0);
         // const player2 = new Player(this, 'f22', new THREE.Vector3(10, 0, 0), undefined, undefined, undefined, 1, 1);
 
         this.players.push(player1);
@@ -117,7 +114,7 @@ export class Game {
         // Optionally, add some NPCs for testing
         console.log('Request creating npc');
         const npcPosition = new THREE.Vector3(0, 0, -50);
-        const npc = new NPC(this, 'plane', npcPosition);
+        const npc = new NPC(this, this.requestNewEntityId(), 'plane', npcPosition);
         this.npcs.push(npc);
     }
 
@@ -147,9 +144,9 @@ export class Game {
         //     npc.addToScene(this.sceneManager.scene);
         // });
         // Start the game loop
-        this.players.forEach(player => {
-            this.playSound(player, 'engine', true, 0)
-        })
+        this.players.forEach(player => player.initializeSound())
+        this.npcs.forEach(npc => npc.initializeSound())
+
         console.log('Start game loop')
         this.loop();
     }
@@ -200,17 +197,7 @@ export class Game {
         // Check collisions
         this.collisionManager.update(deltaTime);
 
-        // Update sounds for each player
-        this.players.forEach((player) => {
-            const soundManager = this.soundManagers.get(player);
-            soundManager?.updateSounds();
-        });
-
         this.sceneManager.update(deltaTime);
-    }
-
-    public playSound(player: Player, name: SoundEnum, loop: boolean = false, volume: number = 1): void {
-        this.soundManagers.get(player)?.playSound(name, loop, volume)
     }
 
     public getTime(): number {
@@ -218,4 +205,15 @@ export class Game {
         // This could be based on a THREE.Clock instance
         return this.clock.getElapsedTime();
     }
+
+    public requestNewEntityId(): number {
+        for (let i = 0; i < 10000; i++) {
+            if (!this.entityIdSet.has(i)) {
+                this.entityIdSet.add(i); // Add the new ID to the set
+                return i;             // Return the ID
+            }
+        }
+        throw new Error('No available entity IDs');
+    }
+
 }
