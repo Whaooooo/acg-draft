@@ -207,9 +207,7 @@ class Cloud extends Mesh {
 
             gl_FragColor = linearToSRGB( ac );
 
-            // if ( gl_FragColor.a == 0.0 ) discard;
-
-            gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+            if ( gl_FragColor.a == 0.0 ) discard;
 
             #include <tonemapping_fragment>
             #include <colorspace_fragment>
@@ -237,7 +235,7 @@ class Cloud extends Mesh {
             side: THREE.BackSide,
             transparent: true,
             depthTest: true,
-            depthWrite: true,
+            depthWrite: false,
         });
 
         scope.material = material;
