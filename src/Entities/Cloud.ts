@@ -10,6 +10,7 @@ interface CloudOptions {
     range?: number;
     steps?: number;
     frame?: number;
+    boxBound?: THREE.Vector3;
 }
 
 class Cloud extends Mesh {
@@ -29,6 +30,7 @@ class Cloud extends Mesh {
         const steps = options.steps !== undefined ? options.steps : 100;
         const frame = options.frame !== undefined ? options.frame : 0;
         const eye = new THREE.Vector3(0, 0, 0);
+        const boxBound = options.boxBound !== undefined ? options.boxBound : new THREE.Vector3(1.0, 1.0, 1.0);
 
 
         const data = new Uint8Array(size * size * size);
@@ -104,6 +106,7 @@ class Cloud extends Mesh {
 
         uniform vec3 base;
         uniform sampler3D map;
+        uniform vec3 boxBound;
 
         uniform float threshold;
         uniform float range;
@@ -127,8 +130,8 @@ class Cloud extends Mesh {
         }
 
         vec2 hitBox( vec3 orig, vec3 dir ) {
-            const vec3 box_min = vec3( - 10.0 );
-            const vec3 box_max = vec3( 10.0 );
+            const vec3 box_min = vec3(-0.5);
+            const vec3 box_max = vec3(0.5);
             vec3 inv_dir = 1.0 / dir;
             vec3 tmin_tmp = ( box_min - orig ) * inv_dir;
             vec3 tmax_tmp = ( box_max - orig ) * inv_dir;
@@ -164,14 +167,15 @@ class Cloud extends Mesh {
         void main() {
 
             #include <logdepthbuf_fragment>
-            vec3 rayDir = normalize( vDirection );
-            vec2 bounds = hitBox( vOrigin, rayDir );
+            vec3 rayDir = normalize( vDirection / boxBound );
+            vec3 origProj = vOrigin / boxBound;
+            vec2 bounds = hitBox( origProj, rayDir );
 
             if ( bounds.x > bounds.y ) discard;
 
             bounds.x = max( bounds.x, 0.0 );
 
-            vec3 p = vOrigin + bounds.x * rayDir;
+            vec3 p = origProj + bounds.x * rayDir;
             vec3 inc = 1.0 / abs( rayDir );
             float delta = min( inc.x, min( inc.y, inc.z ) );
             delta /= steps;
@@ -228,7 +232,8 @@ class Cloud extends Mesh {
                     opacity: { value: opacity },
                     range: { value: range },
                     steps: { value: steps },
-                    frame: { value: frame }
+                    frame: { value: frame },
+                    boxBound: { value: boxBound },
                 }
             ]),
             vertexShader,
@@ -238,6 +243,7 @@ class Cloud extends Mesh {
             transparent: true,
             depthTest: true,
             depthWrite: false,
+            alphaTest: 0.5,
         });
 
         scope.material = material;

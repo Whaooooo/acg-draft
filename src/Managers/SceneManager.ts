@@ -42,8 +42,8 @@ export class SceneManager {
     public renderCamera(camera: THREE.Camera, left: number, bottom: number, viewportWidth: number, viewportHeight: number): void {
         const position = camera.position.clone();
         if (this.directionalLight) {
-            this.directionalLight.position.copy(position);
-            this.directionalLight.target.position.copy(position.clone().sub(new THREE.Vector3(10, 10, 10)));
+            this.directionalLight.position.copy(position.clone().add(new THREE.Vector3(1000, 1000, 1000)));
+            this.directionalLight.target.position.copy(position.clone().sub(new THREE.Vector3(100, 100, 100)));
         }
         if (this.water) {
             var water_position = position.clone();
@@ -79,15 +79,16 @@ export class SceneManager {
         directionalLight.shadow.mapSize.height = 16384;
 
         directionalLight.shadow.camera.near = 0.01;
-        directionalLight.shadow.camera.far = 10000;
+        directionalLight.shadow.camera.far = 5000;
         directionalLight.shadow.camera.left = -1000;
         directionalLight.shadow.camera.right = 1000;
-        directionalLight.shadow.camera.top = 500;
-        directionalLight.shadow.camera.bottom = -500;
+        directionalLight.shadow.camera.top = 1000;
+        directionalLight.shadow.camera.bottom = -1000;
+        directionalLight.shadow.camera.updateProjectionMatrix();
 
         // Optional: Visualize the shadow camera frustum (useful for debugging)
-        // const helper = new THREE.CameraHelper(directionalLight.shadow.camera);
-        // this.scene.add(helper);
+        const helper = new THREE.CameraHelper(directionalLight.shadow.camera);
+        this.scene.add(helper);
 
         // Adjust shadow bias to prevent shadow artifacts
         directionalLight.shadow.bias = -0.00005;  // Typically a small negative value
@@ -134,31 +135,33 @@ export class SceneManager {
 
 
         const waterGeometry = new THREE.PlaneGeometry(100000, 100000);
-        const water = new Water(
-            waterGeometry,
-            {
-                textureWidth: 1024,
-                textureHeight: 1024,
-                waterNormals: new THREE.TextureLoader().load(`${Config.assetsPath}waternormals.jpg`, function (texture) {
+        // const water = new Water(
+        //     waterGeometry,
+        //     {
+        //         textureWidth: 1024,
+        //         textureHeight: 1024,
+        //         waterNormals: new THREE.TextureLoader().load(`${Config.assetsPath}waternormals.jpg`, function (texture) {
 
-                    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+        //             texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
 
-                }),
-                sunDirection: new THREE.Vector3(0.577, 0.577, 0.577),
-                sunColor: 0xffffff,
-                waterColor: 0x001e0f,
-                distortionScale: 2.5,
-                fog: this.scene.fog !== undefined
-            }
-        );
+        //         }),
+        //         sunDirection: new THREE.Vector3(0.577, 0.577, 0.577),
+        //         sunColor: 0xffffff,
+        //         waterColor: 0x001e0f,
+        //         distortionScale: 2.5,
+        //         fog: this.scene.fog !== undefined
+        //     }
+        // );
+        const water = new THREE.Mesh(waterGeometry, new THREE.MeshStandardMaterial({ color: 0xffffff }));
         water.receiveShadow = true;
         water.rotation.x = - Math.PI / 2;
         water.position.set(0, 0, 0);
         this.scene.add(water);
-        this.water = water;
+        // this.water = water;
 
-        const geometry = new THREE.BoxGeometry(20, 20, 20);
-        const cloud = new Cloud(geometry, { size: 128, opacity: 1.0, threshold: 0.01 });
+        const s = 50.0;
+        const geometry = new THREE.BoxGeometry(s, s, s);
+        const cloud = new Cloud(geometry, { size: 128, opacity: 0.75, threshold: 0.25, boxBound: new THREE.Vector3(s, s, s) });
         cloud.position.set(50, 80, 80);
         cloud.castShadow = true;
         cloud.receiveShadow = true;
