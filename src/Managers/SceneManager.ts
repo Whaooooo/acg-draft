@@ -11,6 +11,7 @@ export class SceneManager {
     public renderer!: THREE.WebGLRenderer;
 
     public water?: Water;
+    public clouds: Cloud[] = [];
     public directionalLight?: THREE.DirectionalLight;
 
     constructor(scene: THREE.Scene) {
@@ -48,6 +49,7 @@ export class SceneManager {
         if (this.water) {
             var water_position = position.clone();
             water_position.y = 0;
+            this.water.position.copy(water_position);
         }
 
         this.renderer.setViewport(left, bottom, viewportWidth, viewportHeight);
@@ -75,8 +77,8 @@ export class SceneManager {
         directionalLight.castShadow = true;
 
         // Configure shadow properties for better quality
-        directionalLight.shadow.mapSize.width = 16384;  // Higher value means better shadow quality
-        directionalLight.shadow.mapSize.height = 16384;
+        directionalLight.shadow.mapSize.width = 4096;  // Higher value means better shadow quality
+        directionalLight.shadow.mapSize.height = 4096;
 
         directionalLight.shadow.camera.near = 0.01;
         directionalLight.shadow.camera.far = 5000;
@@ -135,36 +137,32 @@ export class SceneManager {
 
 
         const waterGeometry = new THREE.PlaneGeometry(100000, 100000);
-        // const water = new Water(
-        //     waterGeometry,
-        //     {
-        //         textureWidth: 1024,
-        //         textureHeight: 1024,
-        //         waterNormals: new THREE.TextureLoader().load(`${Config.assetsPath}waternormals.jpg`, function (texture) {
+        const water = new Water(
+            waterGeometry,
+            {
+                textureWidth: 1024,
+                textureHeight: 1024,
+                waterNormals: new THREE.TextureLoader().load(`${Config.assetsPath}waternormals.jpg`, function (texture) {
 
-        //             texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+                    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
 
-        //         }),
-        //         sunDirection: new THREE.Vector3(0.577, 0.577, 0.577),
-        //         sunColor: 0xffffff,
-        //         waterColor: 0x001e0f,
-        //         distortionScale: 2.5,
-        //         fog: this.scene.fog !== undefined
-        //     }
-        // );
-        const water = new THREE.Mesh(waterGeometry, new THREE.MeshStandardMaterial({ color: 0xffffff }));
+                }),
+                sunDirection: new THREE.Vector3(0.577, 0.577, 0.577),
+                sunColor: 0xffffff,
+                waterColor: 0x001e0f,
+                distortionScale: 2.5,
+                fog: this.scene.fog !== undefined
+            }
+        );
+        // const water = new THREE.Mesh(waterGeometry, new THREE.MeshStandardMaterial({ color: 0xffffff }));
         water.receiveShadow = true;
         water.rotation.x = - Math.PI / 2;
         water.position.set(0, 0, 0);
         this.scene.add(water);
-        // this.water = water;
+        this.water = water;
 
-        const s = 50.0;
-        const geometry = new THREE.BoxGeometry(s, s, s);
-        const cloud = new Cloud(geometry, { size: 128, opacity: 0.75, threshold: 0.25, boxBound: new THREE.Vector3(s, s, s) });
-        cloud.position.set(50, 80, 80);
-        cloud.castShadow = true;
-        cloud.receiveShadow = true;
+        const cloud = new Cloud({ size: [512, 128, 512], opacity: 0.2, threshold: 0.25, boxBound: new THREE.Vector3(2000.0, 320.0, 2000.0) });
+        cloud.position.set(50, 600, 80);
         this.scene.add(cloud);
     }
 

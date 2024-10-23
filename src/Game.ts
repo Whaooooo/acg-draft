@@ -39,6 +39,9 @@ export class Game {
     public savePath: string;
     public loadPath?: string;
 
+    private lastFrameTime: number = 0;
+    private frameCount: number = 0;
+
 
     //###################################################
     //################### INIT ##########################
@@ -168,6 +171,16 @@ export class Game {
 
         const deltaTime = this.clock.getDelta();
         this.update(deltaTime);
+
+        if (this.lastFrameTime === 0)
+            this.lastFrameTime = performance.now();
+        this.frameCount++;
+        if (this.frameCount >= 30 || (this.frameCount >= 4 && performance.now() - this.lastFrameTime >= 2000)) {
+            var fps = this.frameCount / ((performance.now() - this.lastFrameTime) / 1000);
+            this.frameCount = 0;
+            this.lastFrameTime = performance.now();
+            document.getElementById('fps-display')!.innerText = `FPS: ${Math.round(fps)}`;
+        }
 
         const numPlayers = this.players.length;
         const width = window.innerWidth;

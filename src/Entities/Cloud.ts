@@ -3,7 +3,7 @@ import { BufferGeometry, Mesh, NormalBufferAttributes, UniformsUtils } from "thr
 import { ImprovedNoise } from "../Utils/ImprovedNoise";
 
 interface CloudOptions {
-    size?: number;
+    size?: [number, number, number];
     base?: THREE.Color;
     threshold?: number;
     opacity?: number;
@@ -16,13 +16,16 @@ interface CloudOptions {
 class Cloud extends Mesh {
     isCloud: boolean;
 
-    constructor(geometry: BufferGeometry<NormalBufferAttributes> | undefined, options: CloudOptions) {
+    constructor(options: CloudOptions) {
+        const boxBound = options.boxBound !== undefined ? options.boxBound : new THREE.Vector3(1.0, 1.0, 1.0);
+        const geometry = new THREE.BoxGeometry(boxBound.x, boxBound.y, boxBound.z);
+
         super(geometry);
 
         const scope = this;
         this.isCloud = true;
 
-        const size = options.size !== undefined ? options.size : 128;
+        const size = options.size !== undefined ? options.size : [128, 128, 128];
         const base = options.base !== undefined ? options.base : new THREE.Color(0x798aa0);
         const threshold = options.threshold !== undefined ? options.threshold : 0.25;
         const opacity = options.opacity !== undefined ? options.opacity : 0.25;
@@ -30,23 +33,24 @@ class Cloud extends Mesh {
         const steps = options.steps !== undefined ? options.steps : 100;
         const frame = options.frame !== undefined ? options.frame : 0;
         const eye = new THREE.Vector3(0, 0, 0);
-        const boxBound = options.boxBound !== undefined ? options.boxBound : new THREE.Vector3(1.0, 1.0, 1.0);
 
 
-        const data = new Uint8Array(size * size * size);
+
+        const data = new Uint8Array(size[0] * size[1] * size[2]);
 
         let i = 0;
         const scale = 0.05;
         const perlin = new ImprovedNoise();
         const vector = new THREE.Vector3();
+        const sizeVec = new THREE.Vector3(size[0], size[1], size[2]);
 
-        for (let z = 0; z < size; z++) {
+        for (let z = 0; z < size[0]; z++) {
 
-            for (let y = 0; y < size; y++) {
+            for (let y = 0; y < size[1]; y++) {
 
-                for (let x = 0; x < size; x++) {
+                for (let x = 0; x < size[2]; x++) {
 
-                    const d = 1.0 - vector.set(x, y, z).subScalar(size / 2).divideScalar(size).length();
+                    const d = 1.0 - vector.set(x, y, z).sub(sizeVec.clone().multiplyScalar(0.5)).divide(sizeVec).length();
                     data[i] = (128 + 128 * perlin.noise(x * scale / 1.5, y * scale, z * scale / 1.5)) * d * d;
                     i++;
 
@@ -56,7 +60,8 @@ class Cloud extends Mesh {
 
         }
 
-        const texture = new THREE.Data3DTexture(data, size, size, size);
+        const texture = new THREE.Data3DTexture(data, size[0], size[1], size[2]);
+        texture.wrapS = texture.wrapT = texture.wrapR = THREE.RepeatWrapping;
         texture.format = THREE.RedFormat;
         texture.minFilter = THREE.LinearFilter;
         texture.magFilter = THREE.LinearFilter;
@@ -200,6 +205,8 @@ class Cloud extends Mesh {
                 d = smoothstep( threshold - range, threshold + range, d ) * opacity;
 
                 float col = shading( p + 0.5 ) * 3.0 + ( ( p.x + p.y ) * 0.25 ) + 0.2;
+
+                col = clamp( col, -0.1, 2.0 ); // avoid black hole
 
                 ac.rgb += ( 1.0 - ac.a ) * d * col;
 
