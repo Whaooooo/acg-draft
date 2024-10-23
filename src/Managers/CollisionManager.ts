@@ -14,19 +14,19 @@ export class CollisionManager {
     }
 
     private checkCollision(entity1: Entity, entity2: Entity): boolean {
-        if (!entity1._entity || !entity2._entity) return false;
+        if (!entity1._model || !entity2._model) return false;
 
-        const box1 = new THREE.Box3().setFromObject(entity1._entity);
-        const box2 = new THREE.Box3().setFromObject(entity2._entity);
+        const box1 = new THREE.Box3().setFromObject(entity1._model);
+        const box2 = new THREE.Box3().setFromObject(entity2._model);
 
         return box1.intersectsBox(box2);
     }
 
     private checkCollisionAndIFFNumber(entity1: Entity, entity2: Entity): boolean {
-        if (!entity1._entity || !entity2._entity) return false;
+        if (!entity1._model || !entity2._model) return false;
 
-        const box1 = new THREE.Box3().setFromObject(entity1._entity);
-        const box2 = new THREE.Box3().setFromObject(entity2._entity);
+        const box1 = new THREE.Box3().setFromObject(entity1._model);
+        const box2 = new THREE.Box3().setFromObject(entity2._model);
 
         return box1.intersectsBox(box2) && entity1.iFFNumber !== entity2.iFFNumber;
     }
@@ -35,7 +35,7 @@ export class CollisionManager {
     // In CollisionManager.ts
     public checkProjectileCollisions(): void {
         this.game.projectiles.forEach(projectile => {
-            if (!projectile._entity) return;
+            if (!projectile._model) return;
 
             this.game.npcs.forEach(npc => {
                 if (this.checkCollisionAndIFFNumber(projectile, npc)) {
@@ -54,9 +54,9 @@ export class CollisionManager {
 
     public isProjectileOutOfBounds(projectile: Missile): boolean {
         if (projectile.removed) return true;
-        if (!projectile._entity) return false;
+        if (!projectile._model) return false;
 
-        const position = projectile._entity.position;
+        const position = projectile._model.position;
 
         return (
             Math.abs(position.x) > this.bounds ||

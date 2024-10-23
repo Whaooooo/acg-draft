@@ -19,16 +19,7 @@ function applyMaterialSettings(material: THREE.Material | THREE.Material[]) {
     }
 }
 
-/**
- * Applies individual settings to a THREE.Material.
- * @param mat - A single THREE.Material.
- */
 function applySettingsToMaterial(mat: THREE.Material) {
-    // Ensure the material supports these properties
-    // Most standard materials like MeshStandardMaterial, MeshBasicMaterial, etc., support these properties
-    // If you're using custom materials, ensure they have these properties or handle accordingly
-
-    // Type assertion to extend THREE.Material with possible properties
     const materialWithDepth = mat as THREE.Material & {
         depthTest?: boolean;
         depthWrite?: boolean;
@@ -47,11 +38,9 @@ function applySettingsToMaterial(mat: THREE.Material) {
 
     if (materialWithDepth.polygonOffset !== undefined) {
         materialWithDepth.polygonOffset = true;
-        materialWithDepth.polygonOffsetFactor = 1; // Adjust as needed
-        materialWithDepth.polygonOffsetUnits = 1;  // Adjust as needed
+        materialWithDepth.polygonOffsetFactor = 1;
+        materialWithDepth.polygonOffsetUnits = 1;
     }
-
-    // If you need to handle other properties, add them here similarly
 }
 
 export const EntityLoaders: { [key: string]: LoaderFunction } = {
@@ -61,15 +50,18 @@ export const EntityLoaders: { [key: string]: LoaderFunction } = {
         onProgress: (xhr: ProgressEvent<EventTarget>) => void,
         onError: (error: ErrorEvent) => void
     ): void => {
-        // Minimal load function: create a simple box geometry
         const geometry = new THREE.BoxGeometry();
         const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
         const mesh = new THREE.Mesh(geometry, material);
-        entity._entity = new THREE.Group();
-        entity._entity.add(mesh);
-        entity._entity.position.copy(entity.tmpPos);
-        entity._entity.quaternion.copy(entity.tmpQua);
-        entity.scene.add(entity._entity);
+        entity._model = new THREE.Group();
+        entity._model.add(mesh);
+        entity._model.position.copy(entity.tmpPos);
+        entity._model.quaternion.copy(entity.tmpQua);
+        entity.scene.add(entity._model);
+
+        // Initialize the mixer even if there are no animations
+        entity.mixer = new THREE.AnimationMixer(entity._model);
+
         onLoad();
     },
 
@@ -89,13 +81,11 @@ export const EntityLoaders: { [key: string]: LoaderFunction } = {
 
         const loader = new GLTFLoader().setPath(`${entity.assetsPath}${dir}/`);
 
-        // Load a glTF resource
         loader.load(
-            // Resource URL
             fileName,
-            // Called when the resource is loaded
             (gltf) => {
                 const model = gltf.scene;
+                console.log('Model structure:', model);
 
                 model.traverse((node) => {
                     if ((node as THREE.Mesh).isMesh) {
@@ -103,22 +93,33 @@ export const EntityLoaders: { [key: string]: LoaderFunction } = {
                         mesh.castShadow = true;
                         mesh.receiveShadow = true;
 
-                        // Compute bounding volumes
                         mesh.geometry.computeBoundingBox();
                         mesh.geometry.computeBoundingSphere();
 
-                        // Apply material settings using the helper function
                         applyMaterialSettings(mesh.material);
+                    }
+                    if ((node as THREE.SkinnedMesh).isSkinnedMesh) {
+                        const skinnedMesh = node as THREE.SkinnedMesh;
+                        console.log('Found SkinnedMesh:', skinnedMesh.name);
+                        console.log('Bones:', skinnedMesh.skeleton.bones);
                     }
                 });
 
-                entity._entity = model;
+                entity._model = model;
                 entity.scene.add(model);
 
                 // Store animations
                 gltf.animations.forEach((animation) => {
+                    console.log(animation)
                     entity.animations.set(animation.name.toLowerCase(), animation);
                 });
+
+                const armature = model.getObjectByName('Armature');
+                if (armature) {
+                    entity.mixer = new THREE.AnimationMixer(armature);
+                } else {
+                    entity.mixer = new THREE.AnimationMixer(model);
+                }
 
                 // Set position and orientation
                 model.position.copy(entity.tmpPos);
@@ -126,13 +127,10 @@ export const EntityLoaders: { [key: string]: LoaderFunction } = {
 
                 onLoad();
             },
-            // Called while loading is progressing
             (xhr) => {
                 onProgress(xhr);
             },
-            // Called when loading has errors
             (err) => {
-                // Handle different error types
                 if (err instanceof ErrorEvent) {
                     onError(err);
                 } else if (typeof err === 'string') {

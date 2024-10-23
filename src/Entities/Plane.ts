@@ -6,11 +6,16 @@ import { EntityName } from '../Configs/EntityPaths';
 import { PlaneProperty } from '../Configs/EntityProperty';
 import * as THREE from 'three';
 import { Weapon } from '../Core/Weapon';
-import { PlaneState, updatePlaneState, updateControlVariable } from '../Utils/MoveUtils';
-import { SoundProperty, soundPropertyToOption } from '../Configs/SoundProperty';
-import { SoundEnum } from '../Configs/SoundPaths';
-import { SoundType } from '../Enums/SoundType'; // Import the new SoundType enum
-import { Player } from './Player'; // Import for type checking in sound
+import { PlaneState, updatePlaneState } from '../Utils/MoveUtils';
+import { SoundType } from '../Enums/SoundType';
+import { soundPropertyToOption } from "../Configs/SoundProperty";
+import { Player } from './Player';
+import {
+    PlaneAnimationBoundConfigs,
+    PlaneAnimationBoundConfig,
+    initializeEmptyPlaneAnimationBoundConfig
+} from '../Configs/AnimationBound';
+import { updatePlaneAnimations } from '../Utils/AnimationUtils';
 
 export class Plane extends MovableEntity {
     public name: EntityName;
@@ -31,6 +36,11 @@ export class Plane extends MovableEntity {
 
     // Enhanced engineSounds with soundType
     public engineSounds: { soundId: string; soundType: SoundType }[] = [];
+
+    // Animation properties
+    public activeAnimations: Map<string, THREE.AnimationAction> = new Map();
+    public animationStates: Map<string, boolean> = new Map();
+    public animationConfig: PlaneAnimationBoundConfig;
 
     constructor(
         game: Game,
@@ -67,6 +77,9 @@ export class Plane extends MovableEntity {
 
         // Initialize pulsion to defaultPulsion
         this.pulsion = this.property.defaultPulsion;
+
+        // Load animation config
+        this.animationConfig = PlaneAnimationBoundConfigs[this.name] || initializeEmptyPlaneAnimationBoundConfig();
     }
 
     /**
@@ -121,7 +134,7 @@ export class Plane extends MovableEntity {
     }
 
     public update(deltaTime: number): void {
-        if (!this.ready || !this.entity) return;
+        if (!this.ready || !this.model) return;
 
         // Update weapons
         for (const weapon of this.weapons) {
@@ -133,7 +146,7 @@ export class Plane extends MovableEntity {
 
         // Prepare plane state for update
         const planeState: PlaneState = {
-            quaternion: this.entity.quaternion,
+            quaternion: this.model.quaternion,
             velocity: this.velocity,
             yawSpeed: this.yawSpeed,
             pitchSpeed: this.pitchSpeed,
@@ -148,16 +161,27 @@ export class Plane extends MovableEntity {
         const updatedState = updatePlaneState(planeState, deltaTime);
 
         // Apply the updated quaternion and velocity
-        this.entity.quaternion.copy(updatedState.quaternion);
+        this.model.quaternion.copy(updatedState.quaternion);
         this.velocity.copy(updatedState.velocity);
 
         // Store the lost speed norm for wind sound volume calculation
         this.lostSpeedNorm = updatedState.lostSpeed.length();
 
+        // Update sound volumes based on the new state
         this.updateSound();
 
-        // Call the parent update to move the entity
+        // Update animations
+        this.updateAnimation(deltaTime);
+
+        // Call the parent update to move the entity and update animations
         super.update(deltaTime);
+    }
+
+    public updateAnimation(deltaTime: number): void {
+        // Update plane-specific animations
+        if (this.mixer && this.animations.size > 0) {
+            updatePlaneAnimations(this, deltaTime);
+        }
     }
 
     protected updateSound(): void {
@@ -169,16 +193,15 @@ export class Plane extends MovableEntity {
 
             switch (soundType) {
                 case SoundType.Engine:
-                    // Volume based on pulsion: 0 pulsion => volume 0, maxPulsion => volume 1
                     volume = THREE.MathUtils.clamp(this.pulsion / this.property.maxPulsion, 0, 1);
                     break;
                 case SoundType.Afterburner:
-                    // Volume is 1 if pulsion is increased or reaches maxPulsion, else 0
-                    volume = (!this.pulsionDecreased && this.pulsion > this.property.defaultPulsion) ? 1 : 0;
+                    if (!this.pulsionDecreased) {
+                        volume = (this.pulsion - this.property.defaultPulsion) / (this.property.maxPulsion - this.property.defaultPulsion);
+                    }
                     break;
                 case SoundType.Wind:
-                    // Volume based on lost speed: min(1, lostSpeedNorm / maxPulsionSpeed)
-                    const maxPulsionSpeed = this.property.maxPulsion; // Adjust if different
+                    const maxPulsionSpeed = this.property.maxPulsion;
                     volume = Math.min(1, this.lostSpeedNorm / maxPulsionSpeed);
                     break;
                 default:
@@ -186,10 +209,8 @@ export class Plane extends MovableEntity {
                     break;
             }
 
-            // Set the calculated volume
             this.game.soundManager.setVolumeById(soundId, volume);
 
-            // Update position if the sound is positional
             if (sound instanceof THREE.PositionalAudio) {
                 sound.position.copy(this.getPosition());
             }
@@ -205,7 +226,6 @@ export class Plane extends MovableEntity {
     }
 
     public fireWeapon(): void {
-        // Get the selected weapon
         const weapon = this.weapons[this.selectedWeaponIndex];
         if (!weapon) {
             console.warn(`No weapon selected or weapon not found for entity ${this.entityId}.`);
@@ -222,5 +242,15 @@ export class Plane extends MovableEntity {
             this.game.soundManager.stopSoundById(soundId);
         });
         this.engineSounds = [];
+
+        // Dispose of animations
+        if (this.mixer) {
+            this.activeAnimations.forEach((action) => {
+                action.stop();
+            });
+            this.activeAnimations.clear();
+        }
+
+        super.dispose();
     }
 }

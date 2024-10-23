@@ -29,10 +29,13 @@ export class MovableEntity extends Entity {
     }
 
     public update(deltaTime: number): void {
-        if (!this.ready || !this._entity) return;
+        if (!this.ready || !this._model) return;
 
         // Update position based on velocity
-        this._entity.position.add(this.velocity.clone().multiplyScalar(deltaTime));
+        this._model.position.add(this.velocity.clone().multiplyScalar(deltaTime));
+
+
+        super.update(deltaTime)
     }
 }
 

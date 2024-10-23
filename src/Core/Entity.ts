@@ -6,7 +6,7 @@ import { LoadingBar } from "../Utils/LoadingBar";
 import { EntityConfigs, EntityName, EntityConfig } from '../Configs/EntityPaths';
 import { EntityLoaders } from '../Configs/EntityLoaders';
 import { Config } from '../Configs/Config';
-import {Player} from "../Entities/Player";
+import { Player } from "../Entities/Player";
 
 export class Entity {
     public entityId: number;
@@ -18,8 +18,9 @@ export class Entity {
     public game: Game;
     public scene: THREE.Scene;
 
-    public _entity?: THREE.Group;
-    public animations: Map<string, THREE.AnimationClip>;
+    public _model?: THREE.Group;
+    public animations: Map<string, THREE.AnimationClip> = new Map();
+    public mixer?: THREE.AnimationMixer;
 
     public ready: boolean = false;
     public removed: boolean = false;
@@ -41,8 +42,6 @@ export class Entity {
         this.game = game;
         this.scene = game.scene;
 
-        this.animations = new Map<string, THREE.AnimationClip>();
-
         this.tmpPos = pos ? pos : new THREE.Vector3();
         this.tmpQua = qua ? qua : new THREE.Quaternion();
 
@@ -50,8 +49,6 @@ export class Entity {
         this.targets = [];
 
         this.load();
-
-        console.log(this.animations)
     }
 
     private load(): void {
@@ -68,6 +65,7 @@ export class Entity {
             () => {
                 // onLoad callback
                 this.ready = true;
+                this.onLoad();
             },
             (xhr) => {
                 // onProgress callback
@@ -84,51 +82,66 @@ export class Entity {
         );
     }
 
+    protected onLoad(): void {
+        // Can be overridden in subclasses for additional initialization
+    }
+
     public getPosition(): THREE.Vector3 {
-        if (this._entity) {
-            this.tmpPos = this._entity.position;
+        if (this._model) {
+            this.tmpPos = this._model.position;
         }
         return this.tmpPos;
     }
 
     public getQuaternion(): THREE.Quaternion {
-        if (this._entity) {
-            this.tmpQua = this._entity.quaternion;
+        if (this._model) {
+            this.tmpQua = this._model.quaternion;
         }
         return this.tmpQua;
     }
 
     public setPosition(position: THREE.Vector3): void {
-        if (this._entity) {
-            this._entity.position.copy(position);
+        if (this._model) {
+            this._model.position.copy(position);
         }
         this.tmpPos.copy(position);
     }
 
     public setQuaternion(quaternion: THREE.Quaternion): void {
-        if (this._entity) {
-            this._entity.quaternion.copy(quaternion);
+        if (this._model) {
+            this._model.quaternion.copy(quaternion);
         }
         this.tmpQua.copy(quaternion);
     }
 
     public addToScene(scene?: THREE.Scene): void {
-        this.scene.add(this.entity);
+        this.scene.add(this.model);
     }
 
     public dispose(): void {
         if (this.removed) return;
-        this.game.entityIdSet.delete(this.entityId)
-        this.scene.remove(this.entity);
+        this.game.entityIdSet.delete(this.entityId);
+        this.scene.remove(this.model);
         this.removed = true;
+
+        // Dispose of the mixer
+        if (this.mixer) {
+            this.mixer.stopAllAction();
+            this.mixer.uncacheRoot(this.model);
+            this.mixer = undefined;
+        }
     }
 
     public update(deltaTime: number): void {
-        // Override in subclasses
+        // Update animations if mixer exists
+        if (this.mixer) {
+            this.mixer.update(deltaTime);
+        }
+        // Override in subclasses for additional updates
     }
 
     public initializeSound(): void {
-        //Placeholder
+        // Placeholder
     }
 
     public getOwnerPlayer(): Player[] {
@@ -136,8 +149,8 @@ export class Entity {
         return [];
     }
 
-    get entity(): THREE.Group {
-        if (!this._entity) { throw Error() }
-        return this._entity;
+    get model(): THREE.Group {
+        if (!this._model) { throw Error('Entity not loaded'); }
+        return this._model;
     }
 }

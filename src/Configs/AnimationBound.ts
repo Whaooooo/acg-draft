@@ -1,13 +1,31 @@
 // src/Configs/AnimationBound.ts
 import { EntityName } from "./EntityPaths";
+import * as THREE from "three";
 
 export interface Animation {
     name: string;
     loop: boolean;
-    recover: boolean;
+    recoverAfterAnimationEnd: boolean;
+    recoverAfterActiveEnd: boolean;
 }
 
-export interface PlaneAnimation {
+export interface _Animation {
+    name: string;
+    loop?: boolean;
+    recoverAfterAnimationEnd?: boolean;
+    recoverAfterActiveEnd?: boolean;
+}
+
+export function createAnimation(props: _Animation): Animation {
+    return {
+        loop: false,
+        recoverAfterAnimationEnd: false,
+        recoverAfterActiveEnd: true,
+        ...props, // Overwrite defaults with provided values
+    };
+}
+
+export interface PlaneAnimationBoundConfig {
     increaseThrust: Animation[];
     decreaseThrust: Animation[];
     yawLeft: Animation[];
@@ -20,48 +38,59 @@ export interface PlaneAnimation {
     openMagazine: Animation[];
 }
 
-export const AnimationBoundConfigs: {
-    [key in EntityName]?: PlaneAnimation;
+export function initializeEmptyPlaneAnimationBoundConfig(): PlaneAnimationBoundConfig {
+    return {
+        increaseThrust: [],
+        decreaseThrust: [],
+        yawLeft: [],
+        yawRight: [],
+        pitchUp: [],
+        pitchDown: [],
+        rollLeft: [],
+        rollRight: [],
+        fireWeapon: [],
+        openMagazine: [],
+    };
+}
+
+export const PlaneAnimationBoundConfigs: {
+    [key in EntityName]?: PlaneAnimationBoundConfig;
 } = {
     f22: {
         increaseThrust: [],
         decreaseThrust: [],
-        yawLeft: [
-            { name: "RightVtcStabilizerRight", loop: false, recover: false },
-            { name: "LeftVtcStabilizerRight", loop: false, recover: false }
+        yawLeft: [ // Left equivalent to yawSpeed is positive
+            createAnimation({ name: "RightVtcStabilizerRight"}),
+            createAnimation({ name: "LeftVtcStabilizerRight"})
         ],
-        yawRight: [
-            { name: "RightVtcStabilizerLeft", loop: false, recover: false },
-            { name: "LeftVtcStabilizerLeft", loop: false, recover: false }
+        yawRight: [ // Right equivalent to yawSpeed is negative
+            createAnimation({ name: "RightVtcStabilizerLeft"}),
+            createAnimation({ name: "LeftVtcStabilizerLeft"})
         ],
-        pitchUp: [
-            { name: "RightHrztStabilizerDown", loop: false, recover: false },
-            { name: "LeftHrztStabilizerDown", loop: false, recover: false },
-            { name: "RightThrustPaddleDown", loop: false, recover: false },
-            { name: "LeftThrustPaddleDown", loop: false, recover: false }
+        pitchUp: [ // Up equivalent to pitchSpeed is positive
+            createAnimation({ name: "RightHrztStabilizerDown"}),
+            createAnimation({ name: "LeftHrztStabilizerDown"}),
+            createAnimation({ name: "RightThrustPaddleDown"}),
+            createAnimation({ name: "LeftThrustPaddleDown"})
         ],
-        pitchDown: [
-            { name: "RightHrztStabilizerUp", loop: false, recover: false },
-            { name: "LeftHrztStabilizerUp", loop: false, recover: false },
-            { name: "RightThrustPaddleUp", loop: false, recover: false },
-            { name: "LeftThrustPaddleUp", loop: false, recover: false }
+        pitchDown: [ // Down equivalent to pitchSpeed is negative
+            createAnimation({  name: "RightHrztStabilizerUp"}),
+            createAnimation({ name: "LeftHrztStabilizerUp"}),
+            createAnimation({ name: "RightThrustPaddleUp"}),
+            createAnimation({ name: "LeftThrustPaddleUp"})
         ],
-        rollLeft: [
-            { name: "RightOutElevonUp", loop: false, recover: false },
-            { name: "RightInElevonUp", loop: false, recover: false },
-            { name: "LeftOutElevonDown", loop: false, recover: false },
-            { name: "LeftInElevonDown", loop: false, recover: false }
+        rollLeft: [ // Left equivalent to rollSpeed is positive
+            createAnimation({ name: "RightOutElevonUp"}),
+            createAnimation({ name: "LeftOutElevonDown"}),
         ],
-        rollRight: [
-            { name: "LeftOutElevonUp", loop: false, recover: false },
-            { name: "LeftInElevonUp", loop: false, recover: false },
-            { name: "RightOutElevonDown", loop: false, recover: false },
-            { name: "RightInElevonDown", loop: false, recover: false }
+        rollRight: [ // Right equivalent to rollSpeed is negative
+            createAnimation({ name: "LeftOutElevonUp"}),
+            createAnimation({ name: "RightOutElevonDown"}),
         ],
         fireWeapon: [],
         openMagazine: [
-            { name: "RightMagazineOpen", loop: false, recover: false },
-            { name: "LeftMagazineOpen", loop: false, recover: false }
+            createAnimation({ name: "RightMagazineOpen"}),
+            createAnimation({ name: "LeftMagazineOpen"})
         ]
     }
 };

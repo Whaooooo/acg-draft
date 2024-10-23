@@ -156,7 +156,7 @@ export const NPCProperties: {
         hP: 300,
         minPulsion: 1,
         defaultPulsion: 1,
-        maxPulsion: 1,
+        maxPulsion: 2,
         pulsionSensitivity: 150,
         xSpeedDecrease: 0.3,
         ySpeedDecrease: 0.2,
