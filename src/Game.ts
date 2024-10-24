@@ -11,10 +11,8 @@ import { InputManager } from './Managers/InputManager';
 import { SoundManager } from './Managers/SoundManager';
 import { CameraManager } from './Managers/CameraManager';
 import { SceneManager } from './Managers/SceneManager';
-import { SoundEnum } from "./Configs/SoundPaths";
 import { TargetManager } from './Managers/TargetManager';
-import { Config } from './Configs/Config';
-import * as events from "node:events";
+import { HUDManager } from "./Managers/HUDManager";
 
 
 export class Game {
@@ -38,6 +36,7 @@ export class Game {
     public inputManager: InputManager;
     public soundManager: SoundManager;
     public targetManager: TargetManager;
+    public hudManager: HUDManager;
 
     public savePath: string;
     public loadPath?: string;
@@ -101,6 +100,8 @@ export class Game {
 
         // Initialize CollisionManager
         this.collisionManager = new CollisionManager(this);
+
+        this.hudManager = new HUDManager(Array.from(this.playerMap.values()), this.cameraManager, this.sceneManager.renderer)
 
         // Wait for sound to be ready before starting the game
         this.waitForSoundToBeReady();
@@ -242,6 +243,10 @@ export class Game {
         if (this.playerMap.size === 0) {
             this.end();
         }
+
+        // After rendering all cameras, update and render HUD
+        this.hudManager.update(deltaTime);
+        this.hudManager.render();
     }
 
     public getTime(): number {

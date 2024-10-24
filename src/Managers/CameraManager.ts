@@ -228,4 +228,19 @@ export class CameraManager {
             }
         }
     }
+
+    public getViewportForPlayer(player: Player): { left: number; top: number; width: number; height: number } {
+        const numPlayers = this.cameras.size;
+        const index = Array.from(this.cameras.keys()).indexOf(player);
+
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+
+        const viewportWidth = Math.floor(width / numPlayers);
+        const viewportHeight = height;
+        const left = Math.floor((index / numPlayers) * width);
+        const top = 0; // Assuming the viewport starts at the top of the window
+
+        return { left, top, width: viewportWidth, height: viewportHeight };
+    }
 }

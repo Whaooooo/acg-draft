@@ -1,0 +1,85 @@
+/* webpage/styles.css */
+
+/* Global Styles */
+body, html {
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* Prevent scrolling */
+    font-family: Arial, sans-serif;
+}
+
+/* Main Menu Styles */
+#main-menu {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: url('../assets/webpage/base-menu-window.png') no-repeat center center fixed;
+    background-size: cover;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
+#main-menu h1 {
+    color: #fff;
+    font-size: 48px;
+    margin-bottom: 50px;
+    text-shadow: 2px 2px 5px black;
+}
+
+#main-menu button {
+    padding: 15px 30px;
+    font-size: 24px;
+    margin: 10px;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    background-color: #007BFF;
+    color: white;
+}
+
+#main-menu button:hover {
+    background-color: #0056b3;
+}
+
+/* Game Container Styles */
+#game-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+}
+
+/* HUD Styles */
+.hud-container {
+    position: absolute;
+    pointer-events: none; /* So HUD doesn't block mouse events */
+    color: white;
+    font-size: 16px;
+    text-shadow: 1px 1px 2px black;
+}
+
+.hud-container .hp-display,
+.hud-container .missile-display {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+}
+
+.hud-container .missile-display {
+    top: 30px; /* Position below HP display */
+}
+
+/* Enemy Marker Styles */
+.enemy-marker {
+    width: 10px;
+    height: 10px;
+    background-color: red;
+    border: 2px solid white;
+    border-radius: 50%;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+}

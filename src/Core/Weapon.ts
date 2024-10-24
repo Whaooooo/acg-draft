@@ -14,14 +14,14 @@ export class Weapon {
     public name: string;
     public parentPlaneName: EntityName;
     public property: MissileProperty;
-    private game: Game;
-    private owner: Entity;
+    public game: Game;
+    public owner: Entity;
 
     // Weapon state
-    private cooldownTimer: number = 0;
-    private loadTimers: number[] = [];
-    private missilesLoaded: number = 0;
-    private totalMissilesFired: number = 0;
+    public cooldownTimer: number = 0;
+    public loadTimers: number[] = [];
+    public missilesLoaded: number = 0;
+    public totalMissilesFired: number = 0;
     public lastSoundPlayTime: number = 0;
 
 

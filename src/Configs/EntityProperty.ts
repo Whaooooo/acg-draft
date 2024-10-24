@@ -57,7 +57,7 @@ export const PlayerProperties: {
     [key in EntityName]?: PlaneProperty | MissileProperty;
 } = {
     f22: {
-        hp: 1000,
+        hp: 10000,
         minPulsion: 5,
         defaultPulsion: 10,
         maxPulsion: 25,
