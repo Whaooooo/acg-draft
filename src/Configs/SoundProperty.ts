@@ -124,8 +124,9 @@ export const Fox2Sound: SoundProperty = createSoundProperty({
 
 export const MissileShotSound: SoundProperty = createSoundProperty({
     name: 'missileshot',
-    loop: false,
-    refDistance: 10,
+    loop: true,
+    refDistance: 3,
+    maxDistance: 30,
     targetAll: true,
 });
 

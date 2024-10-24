@@ -1,3 +1,5 @@
+// src/Entities/Missile.ts
+
 import * as THREE from 'three';
 import { MovableEntity } from '../Core/MovableEntity';
 import { Entity } from '../Core/Entity';
@@ -6,12 +8,14 @@ import { EntityName } from '../Configs/EntityPaths';
 import { MissileProperty, PlayerProperties } from '../Configs/EntityProperty';
 import {SoundEnum} from "../Configs/SoundPaths";
 import {Player} from "./Player";
+import { applyVelocityDecay, applyThrust } from "../Utils/MoveUtils";
 import {soundPropertyToOption} from "../Configs/SoundProperty";
 
 export class Missile extends MovableEntity {
     public target: Entity | null;
     public property: MissileProperty;
     private owner: Entity;
+    private missileSoundId: string | null = null; // Store the sound ID
 
     constructor(
         game: Game,
@@ -37,7 +41,7 @@ export class Missile extends MovableEntity {
 
         this.collisionDamage = this.property.damage;
 
-        this.initializeSound()
+        this.initializeSound();
 
         // Add missile to the game
         this.game.projectileMap.set(this.entityId, this);
@@ -45,6 +49,9 @@ export class Missile extends MovableEntity {
 
     public update(deltaTime: number): void {
         if (!this.ready || !this.model) return;
+
+        // Update the sound's position
+        this.updateSound();
 
         // Check if the missile should continue homing
         if (this.shouldContinueHoming()) {
@@ -54,11 +61,9 @@ export class Missile extends MovableEntity {
             this.target = null;
         }
 
-        // Apply velocity decay based on x, y, z speed decreases
-        this.applyVelocityDecay(deltaTime);
-
-        // Apply thrust to the missile to maintain or increase velocity
-        this.applyThrust(deltaTime);
+        // Apply velocity decay and thrust using functions from MoveUtils
+        applyVelocityDecay(this, deltaTime);
+        applyThrust(this, deltaTime);
 
         // Update the position using parent update method
         super.update(deltaTime);
@@ -139,11 +144,25 @@ export class Missile extends MovableEntity {
         const soundManager = this.game.soundManager;
         if (soundManager && this.property.sound && this.property.sound.fire) {
             const fireSound = this.property.sound.fire;
+            const options = soundPropertyToOption(fireSound, this);
+
+            // Play the sound
             soundManager.playSound(
-                this, // The player who owns the weapon
+                this,
                 fireSound.name as SoundEnum,
-                soundPropertyToOption(fireSound, this),
+                options
             );
+
+            this.missileSoundId = options.soundId;
+        }
+    }
+
+    private updateSound(): void {
+        if (this.missileSoundId) {
+            const sound = this.game.soundManager.getSoundById(this.missileSoundId);
+            if (sound instanceof THREE.PositionalAudio) {
+                sound.position.copy(this.getPosition());
+            }
         }
     }
 
@@ -152,7 +171,27 @@ export class Missile extends MovableEntity {
     }
 
     public dispose(): void {
+        // Remove missile from projectile map
         this.game.projectileMap.delete(this.entityId);
+
+        const explosionSoundProperty = this.property.sound?.explosion;
+        if (explosionSoundProperty) {
+            const options = soundPropertyToOption(explosionSoundProperty, this);
+
+            // Play the sound and store the sound ID if needed
+            this.game.soundManager.playSound(
+                this,
+                explosionSoundProperty.name as SoundEnum,
+                options,
+            );
+        }
+
+        // Stop and remove the missile sound
+        if (this.missileSoundId) {
+            this.game.soundManager.stopSoundById(this.missileSoundId);
+            this.missileSoundId = null;
+        }
+
         super.dispose();
     }
 }

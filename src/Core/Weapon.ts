@@ -158,4 +158,8 @@ export class Weapon {
             console.warn('Not enough available firing slots to fire all missiles.');
         }
     }
+
+    public dispose(): void {
+
+    }
 }

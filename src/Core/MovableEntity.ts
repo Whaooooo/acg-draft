@@ -36,6 +36,10 @@ export class MovableEntity extends Entity {
     }
 
     public dispose() {
+        for (const weapon of this.weapons) {
+            weapon.dispose();
+        }
+        this.weapons = [];
         super.dispose();
     }
 }

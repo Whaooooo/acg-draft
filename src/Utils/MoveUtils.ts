@@ -1,6 +1,7 @@
 // src/Utils/MoveUtils.ts
 
 import * as THREE from 'three';
+import { MovableEntity } from "../Core/MovableEntity";
 
 /**
  * Helper function to update control variables like pulsion and rotational speeds.
@@ -132,4 +133,43 @@ export function updatePlaneState(
         velocity: newVelocity,
         lostSpeed: lostSpeed,
     };
+}
+
+
+/**
+ * Applies velocity decay to the entity's velocity.
+ * @param entity The MovableEntity (e.g., Missile)
+ * @param deltaTime Time since the last update
+ */
+export function applyVelocityDecay(entity: MovableEntity, deltaTime: number): void {
+    const property = (entity as any).property;
+    if (!property) return;
+
+    const inverseQuaternion = entity.getQuaternion().clone().invert();
+    const localVelocity = entity.velocity.clone().applyQuaternion(inverseQuaternion);
+
+    // Apply velocity decay in the x, y, and z axes
+    const xDecayFactor = Math.pow(property.xSpeedDecrease, deltaTime);
+    const yDecayFactor = Math.pow(property.ySpeedDecrease, deltaTime);
+    const zDecayFactor = Math.pow(property.zSpeedDecrease, deltaTime);
+
+    localVelocity.x *= xDecayFactor;
+    localVelocity.y *= yDecayFactor;
+    localVelocity.z *= zDecayFactor;
+
+    entity.velocity.copy(localVelocity.applyQuaternion(entity.getQuaternion()));
+}
+
+/**
+ * Applies thrust to the entity's velocity.
+ * @param entity The MovableEntity (e.g., Missile)
+ * @param deltaTime Time since the last update
+ */
+export function applyThrust(entity: MovableEntity, deltaTime: number): void {
+    const property = (entity as any).property;
+    if (!property) return;
+
+    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(entity.getQuaternion()).normalize();
+    const thrust = forward.multiplyScalar(property.pulsion * deltaTime);
+    entity.velocity.add(thrust);
 }

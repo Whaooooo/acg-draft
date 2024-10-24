@@ -16,6 +16,7 @@ import {
     initializeEmptyPlaneAnimationBoundConfig
 } from '../Configs/AnimationBound';
 import { updatePlaneAnimations } from '../Utils/AnimationUtils';
+import {SoundEnum} from "../Configs/SoundPaths";
 
 export class Plane extends MovableEntity {
     public name: EntityName;
@@ -254,7 +255,17 @@ export class Plane extends MovableEntity {
     }
 
     public dispose(): void {
-        // ... existing disposal logic ...
+        const explosionSoundProperty = this.property.sound?.explosion;
+        if (explosionSoundProperty) {
+            const options = soundPropertyToOption(explosionSoundProperty, this);
+
+            // Play the sound and store the sound ID if needed
+            this.game.soundManager.playSound(
+                this,
+                explosionSoundProperty.name as SoundEnum,
+                options,
+            );
+        }
 
         // Stop and remove the engine sounds
         this.engineSounds.forEach(({ soundId }) => {
