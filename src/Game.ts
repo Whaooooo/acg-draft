@@ -238,6 +238,10 @@ export class Game {
 
         // Update the scene
         this.sceneManager.update(deltaTime);
+
+        if (this.playerMap.size === 0) {
+            this.end();
+        }
     }
 
     public getTime(): number {
@@ -253,5 +257,9 @@ export class Game {
             }
         }
         throw new Error('No available entity IDs');
+    }
+
+    public end(): void {
+
     }
 }
