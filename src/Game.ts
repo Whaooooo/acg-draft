@@ -105,9 +105,11 @@ export class Game {
         // Create two players at different positions
         console.log('Request creating player')
         const player1 = new Player(this, this.requestNewEntityId(), 'f22', new THREE.Vector3(-10, 20, 0), undefined, undefined, 1, 0);
-        // const player2 = new Player(this, 'f22', new THREE.Vector3(10, 0, 0), undefined, undefined, undefined, 1, 1);
+        //const player2 = new Player(this, this.requestNewEntityId(), 'f22', new THREE.Vector3(10, 20, 0), undefined, undefined, 2, 1);
+
 
         this.players.push(player1);
+        //this.players.push(player2);
 
         // Optionally, add some NPCs for testing
         console.log('Request creating npc');

@@ -1,9 +1,8 @@
 ### TODO
 
-- [ ] F-22 animation
+- [x] F-22 animation
 - [ ] Fluid
 - [ ] Collision
-- [ ] Camera motion control
 - [ ] camera shake during collision
 - [ ] interface
 - [ ] layout and design
@@ -21,4 +20,5 @@
 - [ ] replace entity loader with inheritance
 - [ ] update method for each entity & collision
 - [ ] mesh of ground
+- [ ] Camera motion control
 - [ ] 
