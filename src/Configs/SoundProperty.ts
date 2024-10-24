@@ -88,6 +88,7 @@ export function createSoundProperty(props: _SoundProperty): SoundProperty {
 export const F14EngineSound: SoundProperty = createSoundProperty({
     name: 'f14engine',
     loop: true,
+    refDistance: 2,
     displacement: new THREE.Vector3(0, 0, 4),
 });
 
@@ -95,7 +96,7 @@ export const F14AfterburnerSound: SoundProperty = createSoundProperty({
     name: 'f14afterburner',
     loop: true,
     volume: 0,
-    refDistance: 1,
+    refDistance: 3,
     maxDistance: 50,
     displacement: new THREE.Vector3(0, 0, 4),
 });
@@ -108,6 +109,8 @@ export const WindSound: SoundProperty = createSoundProperty({
 
 export const ExplosionSound: SoundProperty = createSoundProperty({
     name: 'explosion',
+    refDistance: 100,
+    maxDistance: 500,
 });
 
 export const Fox2Sound: SoundProperty = createSoundProperty({

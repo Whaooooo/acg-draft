@@ -17,7 +17,6 @@ export class Missile extends MovableEntity {
         game: Game,
         owner: Entity,
         property: MissileProperty,
-        entityId: number,
         assetName: EntityName,
         pos?: THREE.Vector3,
         qua?: THREE.Quaternion,
@@ -25,7 +24,7 @@ export class Missile extends MovableEntity {
         iFFNumber?: number,
         target?: Entity,
     ) {
-        super(game, entityId, assetName, pos, qua, velocity, iFFNumber);
+        super(game, assetName, pos, qua, velocity, iFFNumber);
         this.owner = owner;
         this.target = target || null;
 
@@ -36,7 +35,12 @@ export class Missile extends MovableEntity {
             console.error(`Missile properties not found for ${assetName}`);
         }
 
+        this.collisionDamage = this.property.damage;
+
         this.initializeSound()
+
+        // Add missile to the game
+        this.game.projectileMap.set(this.entityId, this);
     }
 
     public update(deltaTime: number): void {
@@ -145,5 +149,10 @@ export class Missile extends MovableEntity {
 
     public getOwnerPlayer(): Player[] {
         return this.owner.getOwnerPlayer();
+    }
+
+    public dispose(): void {
+        this.game.projectileMap.delete(this.entityId);
+        super.dispose();
     }
 }

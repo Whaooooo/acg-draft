@@ -32,6 +32,7 @@ export class CameraManager {
 
     constructor(players: Player[]) {
         this.cameras = new Map<Player, THREE.PerspectiveCamera>();
+        console.log(`Total number of players: ${players.length}`);
 
         players.forEach((player) => {
             const camera = new THREE.PerspectiveCamera(
@@ -117,7 +118,7 @@ export class CameraManager {
     /**
      * Updates all cameras based on player movements and mouse input.
      */
-    public updateCameras(): void {
+    public updateCameras(deltaTime: number): void {
         this.cameras.forEach((camera, player) => {
             const inputManager = player.game.inputManager;
             const { deltaX, deltaY } = inputManager.getMouseMovement();

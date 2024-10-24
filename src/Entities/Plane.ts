@@ -47,7 +47,6 @@ export class Plane extends MovableEntity {
 
     constructor(
         game: Game,
-        entityId: number,
         assetName: EntityName,
         planeProperty: PlaneProperty,
         pos?: THREE.Vector3,
@@ -55,7 +54,7 @@ export class Plane extends MovableEntity {
         velocity?: THREE.Vector3,
         iFFNumber?: number
     ) {
-        super(game, entityId, assetName, pos, qua, velocity, iFFNumber);
+        super(game, assetName, pos, qua, velocity, iFFNumber);
         this.name = assetName;
         this.property = planeProperty;
 
@@ -93,6 +92,8 @@ export class Plane extends MovableEntity {
             this.animationStates.set(animType, false);
             this.previousAnimationStates.set(animType, false);
         }
+
+        this.currentHP = this.property.hp;
     }
 
     /**

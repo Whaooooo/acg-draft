@@ -4,7 +4,8 @@ import * as THREE from 'three';
 import { SoundPaths, SoundEnum } from '../Configs/SoundPaths';
 import { Config } from '../Configs/Config';
 import { Player } from '../Entities/Player';
-import { Entity } from '../Core/Entity'; // Assuming Entity is a base class/interface for Player and others
+import { Entity } from '../Core/Entity';
+import {property} from "three/src/nodes/core/PropertyNode"; // Assuming Entity is a base class/interface for Player and others
 
 export class SoundManager {
     private soundBuffers: Map<SoundEnum, AudioBuffer>;
@@ -13,6 +14,7 @@ export class SoundManager {
     private listeners: Map<Player, THREE.AudioListener>;
     private cameras: Map<Player, THREE.Camera>;
     private scene: THREE.Scene;
+    public _ready: Map<SoundEnum, boolean> = new Map<SoundEnum, boolean>();
 
     /**
      * Initializes the SoundManager.
@@ -27,6 +29,9 @@ export class SoundManager {
         this.listeners = new Map<Player, THREE.AudioListener>();
         this.cameras = cameras;
         this.scene = scene;
+        Object.keys(SoundPaths).forEach(key => {
+            this._ready.set(key as SoundEnum, false);
+        });
 
         // Initialize listeners and attach them to cameras
         players.forEach((player) => {
@@ -59,6 +64,8 @@ export class SoundManager {
                 soundPath,
                 (buffer) => {
                     this.soundBuffers.set(soundKey, buffer);
+                    this._ready.set(soundKey, true);
+                    console.log(`Loaded sound for ${SoundPaths[soundKey]}`);
                 },
                 undefined,
                 (err) => {
@@ -228,5 +235,9 @@ export class SoundManager {
             // It's automatically removed from the camera
         });
         this.listeners.clear();
+    }
+
+    get ready(): boolean {
+        return Array.from(this._ready.values()).every(item => item);
     }
 }

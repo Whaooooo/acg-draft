@@ -115,7 +115,6 @@ export class Weapon {
                     this.game,
                     this.owner,
                     this.property,
-                    this.game.requestNewEntityId(),
                     `${this.parentPlaneName}_${this.name}` as EntityName,
                     firePositionWorld.clone(),
                     this.owner.getQuaternion(),
@@ -123,9 +122,6 @@ export class Weapon {
                     this.owner.iFFNumber,
                     target
                 );
-
-                // Add missile to the game
-                this.game.projectiles.push(missile);
 
                 // Update weapon state
                 this.missilesLoaded--;

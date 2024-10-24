@@ -1,6 +1,7 @@
 // src/Game.ts
 
 import * as THREE from 'three';
+import { Entity } from "./Core/Entity";
 import { Player } from './Entities/Player';
 import { NPCPlane } from './Entities/NPCPlane';
 import { CollisionManager } from './Managers/CollisionManager';
@@ -13,6 +14,8 @@ import { SceneManager } from './Managers/SceneManager';
 import { SoundEnum } from "./Configs/SoundPaths";
 import { TargetManager } from './Managers/TargetManager';
 import { Config } from './Configs/Config';
+import * as events from "node:events";
+
 
 export class Game {
     //###################################################
@@ -26,10 +29,10 @@ export class Game {
     public cameraManager: CameraManager;
     public sceneManager: SceneManager;
 
-    public entityIdSet: Set<number>;
-    public players: Player[];
-    public npcPlanes: NPCPlane[];
-    public projectiles: Missile[];
+    public entityMap: Map<number, Entity> = new Map();
+    public playerMap: Map<number, Player> = new Map();
+    public npcPlaneMap: Map<number, NPCPlane> = new Map();
+    public projectileMap: Map<number, Missile> = new Map();
 
     public collisionManager: CollisionManager;
     public inputManager: InputManager;
@@ -55,12 +58,6 @@ export class Game {
         // Initialize the loading bar
         this.loadingBar = new LoadingBar();
 
-        // Initialize empty arrays for entities
-        this.entityIdSet = new Set<number>
-        this.players = [];
-        this.npcPlanes = [];
-        this.projectiles = [];
-
         // Initialize the InputManager
         this.inputManager = new InputManager();
 
@@ -71,7 +68,7 @@ export class Game {
         // Initialize the SceneManager
         this.scene = new THREE.Scene();
 
-        // Initialize the LightManager
+        // Initialize the SceneManager (assuming SceneManager takes the scene as a parameter)
         this.sceneManager = new SceneManager(this.scene);
 
         // Check if loadPath exists
@@ -86,78 +83,89 @@ export class Game {
             console.log('Debug scene created');
         }
 
+        // Wait for entities to be ready
+        this.waitForEntitiesToBeReady();
+
         // Initialize the CameraManager after players are created
-        this.cameraManager = new CameraManager(this.players);
+        this.cameraManager = new CameraManager(Array.from(this.playerMap.values()));
 
         // Initialize the SoundManagers for each player
-        this.soundManager = new SoundManager(this.players, this.cameraManager.cameras, this.scene);
+        this.soundManager = new SoundManager(Array.from(this.playerMap.values()), this.cameraManager.cameras, this.scene);
 
-        this.targetManager = new TargetManager([this.players, this.npcPlanes]);
+        // Initialize TargetManager with players and NPCs
+        this.targetManager = new TargetManager([
+            Array.from(this.playerMap.values()),  // Players array
+            Array.from(this.npcPlaneMap.values()) // NPC planes array
+        ]);
 
+
+        // Initialize CollisionManager
         this.collisionManager = new CollisionManager(this);
 
-
-        this.waitForEntitiesToBeReady();
+        // Wait for sound to be ready before starting the game
+        this.waitForSoundToBeReady();
     }
 
     private createDebugScene(): void {
-
         // Create two players at different positions
         console.log('Request creating player')
-        const player1 = new Player(this, this.requestNewEntityId(), 'f22', new THREE.Vector3(-10, 20, 0), undefined, undefined, 1, 0);
-        //const player2 = new Player(this, this.requestNewEntityId(), 'f22', new THREE.Vector3(10, 20, 0), undefined, undefined, 2, 1);
+        const player1 = new Player(this, 'f22', new THREE.Vector3(0, 20, 0), undefined, undefined, 1, 0);
 
-
-        this.players.push(player1);
-        //this.players.push(player2);
+        //const player2 = new Player(this, 'f22', new THREE.Vector3(10, 20, 0), undefined, undefined, 2, 1);
+        //this.playerMap.set(player2.id, player2); // Add if needed
 
         // Optionally, add some NPCs for testing
         console.log('Request creating npc');
-        const npcPosition = new THREE.Vector3(0, 20, -50);
-        const npc = new NPCPlane(this, this.requestNewEntityId(), 'plane', npcPosition);
-        this.npcPlanes.push(npc);
+        const npcPosition = new THREE.Vector3(0, 60, -50);
+        const npc = new NPCPlane(this, 'plane', npcPosition);
     }
 
     public loadGame(): void {
         // Placeholder for loading game data from this.loadPath
         console.log(`Loading game from ${this.loadPath}`);
+        // Implement loading logic here
     }
 
     public saveGame(): void {
         // Placeholder for saving game data to this.savePath
         console.log(`Saving game to ${this.savePath}`);
+        // Implement saving logic here
     }
 
     //###################################################
     //################### START #########################
     //###################################################
 
-    // In Game.ts
-
     public start(): void {
-        // console.log('Start adding entities to scene');
-        // this.players.forEach((player) => {
-        //     player.addToScene(this.sceneManager.scene);
-        // });
-        //
-        // this.npcs.forEach((npc) => {
-        //     npc.addToScene(this.sceneManager.scene);
-        // });
-        // Start the game loop
-        this.players.forEach(player => player.initializeSound())
-        this.npcPlanes.forEach(npc => npc.initializeSound())
+        // Initialize sounds for players and NPCs
+        this.playerMap.forEach(player => player.initializeSound());
+        this.npcPlaneMap.forEach(npc => npc.initializeSound());
 
-        console.log('Start game loop')
+        console.log('Start game loop');
         this.loop();
     }
 
     private waitForEntitiesToBeReady(): void {
         const checkReady = () => {
-            const allPlayersReady = this.players.every(player => player.ready);
-            const allNPCsReady = this.npcPlanes.every(npc => npc.ready);
+            const allEntitiesReady = Array.from(this.entityMap.values()).every(entity => entity.ready);
 
-            if (allPlayersReady && allNPCsReady) {
-                console.log('All entities are ready. Starting game.');
+            if (allEntitiesReady) {
+                console.log('All entities ready. Proceeding.');
+            } else {
+                // Continue checking
+                requestAnimationFrame(checkReady);
+            }
+        };
+
+        checkReady();
+    }
+
+    private waitForSoundToBeReady(): void {
+        const checkReady = () => {
+            const soundReady = this.soundManager.ready;
+
+            if (soundReady) {
+                console.log('Sound ready. Starting game.');
                 this.start();
             } else {
                 // Continue checking
@@ -181,16 +189,19 @@ export class Game {
             var fps = this.frameCount / ((performance.now() - this.lastFrameTime) / 1000);
             this.frameCount = 0;
             this.lastFrameTime = performance.now();
-            document.getElementById('fps-display')!.innerText = `FPS: ${Math.round(fps)}`;
+            const fpsDisplay = document.getElementById('fps-display');
+            if (fpsDisplay) {
+                fpsDisplay.innerText = `FPS: ${Math.round(fps)}`;
+            }
         }
 
-        const numPlayers = this.players.length;
+        const numPlayers = this.playerMap.size;
         const width = window.innerWidth;
         const height = window.innerHeight;
         const playerCameras = this.cameraManager.cameras;
 
         let index = 0;
-        this.players.forEach((player) => {
+        this.playerMap.forEach((player) => {
             const camera = playerCameras.get(player);
             if (camera) {
                 const left = Math.floor((index / numPlayers) * width);
@@ -206,42 +217,41 @@ export class Game {
 
     private update(deltaTime: number): void {
         // Update players
-        this.players.forEach((player) => {
+        this.playerMap.forEach((player) => {
             if (player.ready) {
                 player.update(deltaTime);
             }
         });
 
         // Update NPCs
-        this.npcPlanes.forEach((npc) => {
+        this.npcPlaneMap.forEach((npc) => {
             if (npc.ready) {
                 npc.update(deltaTime);
             }
         });
 
-
-        this.cameraManager.updateCameras();
+        // Update camera positions and orientations based on player inputs
+        this.cameraManager.updateCameras(deltaTime);
 
         // Check collisions
         this.collisionManager.update(deltaTime);
 
+        // Update the scene
         this.sceneManager.update(deltaTime);
     }
 
     public getTime(): number {
         // Return the current game time in seconds
-        // This could be based on a THREE.Clock instance
         return this.clock.getElapsedTime();
     }
 
-    public requestNewEntityId(): number {
+    public requestNewEntityId(entity: Entity): number {
         for (let i = 0; i < 10000; i++) {
-            if (!this.entityIdSet.has(i)) {
-                this.entityIdSet.add(i); // Add the new ID to the set
+            if (!this.entityMap.has(i)) {
+                this.entityMap.set(i, entity); // Add the new ID to the set
                 return i;             // Return the ID
             }
         }
         throw new Error('No available entity IDs');
     }
-
 }

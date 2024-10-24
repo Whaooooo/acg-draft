@@ -30,9 +30,11 @@ export class Entity {
 
     public iFFNumber: number;
     public targets: Entity[];
+    public currentHP: number = 1;
+    public collisionDamage: number = 2000;
 
-    constructor(game: Game, entityId: number, assetName: EntityName, pos?: THREE.Vector3, qua?: THREE.Quaternion, iFFNumber?: number) {
-        this.entityId = entityId;
+    constructor(game: Game, assetName: EntityName, pos?: THREE.Vector3, qua?: THREE.Quaternion, iFFNumber?: number) {
+        this.entityId = game.requestNewEntityId(this);
         this.assetsPath = Config.assetsPath;
         this.assetName = assetName;
         this.assetConfig = EntityConfigs[assetName];
@@ -143,7 +145,7 @@ export class Entity {
 
     public dispose(): void {
         if (this.removed) return;
-        this.game.entityIdSet.delete(this.entityId);
+        this.game.entityMap.delete(this.entityId);
         this.scene.remove(this.model);
         this.removed = true;
         this.ready = false;

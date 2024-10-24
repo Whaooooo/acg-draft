@@ -7,51 +7,98 @@ import { Missile } from '../Entities/Missile';
 
 export class CollisionManager {
     public game: Game;
-    public bounds: number = 10000;
+    public bounds: number = 100000;
+
+    // Cache to store bounding boxes for entities
+    private entityBoundingBoxes: Map<Entity, THREE.Box3> = new Map();
 
     constructor(game: Game) {
         this.game = game;
     }
 
-    private checkCollision(entity1: Entity, entity2: Entity): boolean {
-        if (!entity1._model || !entity2._model) return false;
+    /**
+     * Initializes or updates the bounding box for a given entity.
+     * @param entity The entity to update.
+     */
+    private updateBoundingBox(entity: Entity): void {
+        if (!entity._model || !entity.ready || entity.removed) {
+            // If the entity is removed or not ready, remove its bounding box from the cache
+            if (this.entityBoundingBoxes.has(entity)) {
+                this.entityBoundingBoxes.delete(entity);
+            }
+            return;
+        }
 
-        const box1 = new THREE.Box3().setFromObject(entity1._model);
-        const box2 = new THREE.Box3().setFromObject(entity2._model);
-
-        return box1.intersectsBox(box2);
+        let box = this.entityBoundingBoxes.get(entity);
+        if (!box) {
+            // If bounding box doesn't exist, create and add it to the cache
+            box = new THREE.Box3().setFromObject(entity._model, true);
+            this.entityBoundingBoxes.set(entity, box);
+        } else {
+            // If bounding box exists, update its dimensions
+            box.setFromObject(entity._model, true);
+        }
     }
 
-    private checkCollisionAndIFFNumber(entity1: Entity, entity2: Entity): boolean {
-        if (!entity1._model || !entity2._model) return false;
+    /**
+     * Checks collision between two entities and applies damage if necessary.
+     * @param entity1 First entity
+     * @param entity2 Second entity
+     */
+    private checkBoxCollisionAndIFFNumber(entity1: Entity, entity2: Entity): void {
+        if (entity1.iFFNumber === entity2.iFFNumber) return; // Skip if same IFFNumber
 
-        const box1 = new THREE.Box3().setFromObject(entity1._model);
-        const box2 = new THREE.Box3().setFromObject(entity2._model);
+        const box1 = this.entityBoundingBoxes.get(entity1);
+        const box2 = this.entityBoundingBoxes.get(entity2);
 
-        return box1.intersectsBox(box2) && entity1.iFFNumber !== entity2.iFFNumber;
+        if (!box1 || !box2) return; // Bounding boxes must exist
+
+        if (box1.intersectsBox(box2)) {
+            entity1.currentHP -= entity2.collisionDamage;
+            entity2.currentHP -= entity1.collisionDamage;
+
+            // Dispose entities if HP drops to zero or below
+            if (entity1.currentHP <= 0) {
+                entity1.dispose();
+                this.entityBoundingBoxes.delete(entity1);
+            }
+            if (entity2.currentHP <= 0) {
+                entity2.dispose();
+                this.entityBoundingBoxes.delete(entity2);
+            }
+        }
     }
 
+    /**
+     * Checks collision between a projectile and an entity.
+     * @param projectile The projectile entity
+     * @param entity The target entity
+     */
+    private checkProjectileCollision(projectile: Missile, entity: Entity): void {
+        if (projectile.iFFNumber === entity.iFFNumber) return; // Skip if same IFFNumber
 
-    // In CollisionManager.ts
-    public checkProjectileCollisions(): void {
-        this.game.projectiles.forEach(projectile => {
-            if (!projectile._model) return;
+        const projectileBox = this.entityBoundingBoxes.get(projectile);
+        const entityBox = this.entityBoundingBoxes.get(entity);
 
-            this.game.npcPlanes.forEach(npc => {
-                if (this.checkCollisionAndIFFNumber(projectile, npc)) {
-                    // Handle collision (e.g., apply damage, remove projectile)
-                    console.log('Missile hit enemy');
-                    // Remove projectile
-                    const index = this.game.projectiles.indexOf(projectile);
-                    if (index > -1) {
-                        this.game.projectiles.splice(index, 1);
-                        projectile.dispose();
-                    }
-                }
-            });
-        });
+        if (!projectileBox || !entityBox) return; // Bounding boxes must exist
+
+        if (projectileBox.intersectsBox(entityBox)) {
+            entity.currentHP -= projectile.collisionDamage;
+            projectile.dispose(); // Projectile is consumed upon collision
+
+            // Dispose entity if HP drops to zero or below
+            if (entity.currentHP <= 0) {
+                entity.dispose();
+                this.entityBoundingBoxes.delete(entity);
+            }
+        }
     }
 
+    /**
+     * Checks if a projectile is out of bounds.
+     * @param projectile Missile entity
+     * @returns boolean indicating if out of bounds
+     */
     public isProjectileOutOfBounds(projectile: Missile): boolean {
         if (projectile.removed) return true;
         if (!projectile._model) return false;
@@ -65,16 +112,41 @@ export class CollisionManager {
         );
     }
 
+    /**
+     * Updates all collisions and handles projectiles.
+     * @param deltaTime Time elapsed since last update
+     */
     public update(deltaTime: number): void {
-        // Update projectiles
-        this.game.projectiles.forEach((projectile, index) => {
+        // Update and handle projectiles
+        this.game.projectileMap.forEach((projectile) => {
+            if (projectile.removed) return;
+
             projectile.update(deltaTime);
-            // Remove projectiles that are out of bounds or have expired
+
+            // Remove projectiles that are out of bounds
             if (this.isProjectileOutOfBounds(projectile)) {
                 console.log('Missile out of bounds');
                 projectile.dispose();
-                this.game.projectiles.splice(index, 1);
+                this.entityBoundingBoxes.delete(projectile);
+                return;
             }
         });
+
+        // Update bounding boxes for all entities
+        this.game.entityMap.forEach((entity) => {
+            this.updateBoundingBox(entity);
+        });
+
+        // Convert entityMap to an array for pairwise collision checking
+        const entities = Array.from(this.game.entityMap.values()).filter(entity => !entity.removed && entity.ready);
+
+        // Perform pairwise collision checks among entities
+        for (let i = 0; i < entities.length; i++) {
+            for (let j = i + 1; j < entities.length; j++) {
+                const entity1 = entities[i];
+                const entity2 = entities[j];
+                this.checkBoxCollisionAndIFFNumber(entity1, entity2);
+            }
+        }
     }
 }

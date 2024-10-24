@@ -10,7 +10,6 @@ import * as THREE from 'three';
 export class NPCPlane extends Plane {
     constructor(
         game: Game,
-        entityId: number,
         assetName: EntityName,
         pos?: THREE.Vector3,
         qua?: THREE.Quaternion,
@@ -18,7 +17,8 @@ export class NPCPlane extends Plane {
         iFFNumber?: number
     ) {
         const planeProperty = NPCProperties[assetName] as PlaneProperty;
-        super(game, entityId, assetName, planeProperty, pos, qua, velocity, iFFNumber);
+        super(game, assetName, planeProperty, pos, qua, velocity, iFFNumber);
+        this.game.npcPlaneMap.set(this.entityId, this);
     }
 
     public getOwnerPlayer(): Player[] {
@@ -39,5 +39,10 @@ export class NPCPlane extends Plane {
     private controlAI(deltaTime: number): void {
         // Implement AI logic to control NPC's movement
         // Adjust yawSpeed, pitchSpeed, rollSpeed, and pulsion based on AI decisions
+    }
+
+    public dispose(): void {
+        this.game.npcPlaneMap.delete(this.entityId);
+        super.dispose();
     }
 }
