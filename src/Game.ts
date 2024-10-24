@@ -28,7 +28,7 @@ export class Game {
 
     public entityIdSet: Set<number>;
     public players: Player[];
-    public npcs: NPCPlane[];
+    public npcPlanes: NPCPlane[];
     public projectiles: Missile[];
 
     public collisionManager: CollisionManager;
@@ -58,7 +58,7 @@ export class Game {
         // Initialize empty arrays for entities
         this.entityIdSet = new Set<number>
         this.players = [];
-        this.npcs = [];
+        this.npcPlanes = [];
         this.projectiles = [];
 
         // Initialize the InputManager
@@ -92,7 +92,7 @@ export class Game {
         // Initialize the SoundManagers for each player
         this.soundManager = new SoundManager(this.players, this.cameraManager.cameras, this.scene);
 
-        this.targetManager = new TargetManager([this.players, this.npcs]);
+        this.targetManager = new TargetManager([this.players, this.npcPlanes]);
 
         this.collisionManager = new CollisionManager(this);
 
@@ -115,7 +115,7 @@ export class Game {
         console.log('Request creating npc');
         const npcPosition = new THREE.Vector3(0, 20, -50);
         const npc = new NPCPlane(this, this.requestNewEntityId(), 'plane', npcPosition);
-        this.npcs.push(npc);
+        this.npcPlanes.push(npc);
     }
 
     public loadGame(): void {
@@ -145,7 +145,7 @@ export class Game {
         // });
         // Start the game loop
         this.players.forEach(player => player.initializeSound())
-        this.npcs.forEach(npc => npc.initializeSound())
+        this.npcPlanes.forEach(npc => npc.initializeSound())
 
         console.log('Start game loop')
         this.loop();
@@ -154,7 +154,7 @@ export class Game {
     private waitForEntitiesToBeReady(): void {
         const checkReady = () => {
             const allPlayersReady = this.players.every(player => player.ready);
-            const allNPCsReady = this.npcs.every(npc => npc.ready);
+            const allNPCsReady = this.npcPlanes.every(npc => npc.ready);
 
             if (allPlayersReady && allNPCsReady) {
                 console.log('All entities are ready. Starting game.');
@@ -213,7 +213,7 @@ export class Game {
         });
 
         // Update NPCs
-        this.npcs.forEach((npc) => {
+        this.npcPlanes.forEach((npc) => {
             if (npc.ready) {
                 npc.update(deltaTime);
             }

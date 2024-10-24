@@ -19,6 +19,7 @@ import { updatePlaneAnimations } from '../Utils/AnimationUtils';
 
 export class Plane extends MovableEntity {
     public name: EntityName;
+    public currentHP: number = 0;
     public property: PlaneProperty;
 
     public weapons: Weapon[];
@@ -146,7 +147,7 @@ export class Plane extends MovableEntity {
     }
 
     public update(deltaTime: number): void {
-        if (!this.ready || !this.model) return;
+        if (!this.ready) return;
 
         // Update weapons
         for (const weapon of this.weapons) {
@@ -158,7 +159,7 @@ export class Plane extends MovableEntity {
 
         // Prepare plane state for update
         const planeState: PlaneState = {
-            quaternion: this.model.quaternion,
+            quaternion: this.getQuaternion(),
             velocity: this.velocity,
             yawSpeed: this.yawSpeed,
             pitchSpeed: this.pitchSpeed,
@@ -173,7 +174,7 @@ export class Plane extends MovableEntity {
         const updatedState = updatePlaneState(planeState, deltaTime);
 
         // Apply the updated quaternion and velocity
-        this.model.quaternion.copy(updatedState.quaternion);
+        this.setQuaternion(updatedState.quaternion);
         this.velocity.copy(updatedState.velocity);
 
         // Store the lost speed norm for wind sound volume calculation

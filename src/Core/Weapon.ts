@@ -108,7 +108,7 @@ export class Weapon {
                 const firePositionWorld = firePositionLocal.clone().applyMatrix4(this.owner.model.matrixWorld);
 
                 // Calculate initial direction
-                const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.owner.model.quaternion);
+                const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.owner.getQuaternion());
 
                 // Create missile
                 const missile = new Missile(
@@ -118,7 +118,7 @@ export class Weapon {
                     this.game.requestNewEntityId(),
                     `${this.parentPlaneName}_${this.name}` as EntityName,
                     firePositionWorld.clone(),
-                    this.owner.model.quaternion.clone(),
+                    this.owner.getQuaternion(),
                     forward.clone().multiplyScalar(this.property.pulsion),
                     this.owner.iFFNumber,
                     target

@@ -90,14 +90,14 @@ export class Entity {
         if (this._model) {
             this.tmpPos = this._model.position;
         }
-        return this.tmpPos;
+        return this.tmpPos.clone();
     }
 
     public getQuaternion(): THREE.Quaternion {
         if (this._model) {
             this.tmpQua = this._model.quaternion;
         }
-        return this.tmpQua;
+        return this.tmpQua.clone();
     }
 
     public setPosition(position: THREE.Vector3): void {
@@ -118,21 +118,8 @@ export class Entity {
         this.scene.add(this.model);
     }
 
-    public dispose(): void {
-        if (this.removed) return;
-        this.game.entityIdSet.delete(this.entityId);
-        this.scene.remove(this.model);
-        this.removed = true;
-
-        // Dispose of the mixer
-        if (this.mixer) {
-            this.mixer.stopAllAction();
-            this.mixer.uncacheRoot(this.model);
-            this.mixer = undefined;
-        }
-    }
-
     public update(deltaTime: number): void {
+        if (!this.ready) return;
         // Update animations if mixer exists
         if (this.mixer) {
             this.mixer.update(deltaTime);
@@ -152,5 +139,20 @@ export class Entity {
     get model(): THREE.Group {
         if (!this._model) { throw Error('Entity not loaded'); }
         return this._model;
+    }
+
+    public dispose(): void {
+        if (this.removed) return;
+        this.game.entityIdSet.delete(this.entityId);
+        this.scene.remove(this.model);
+        this.removed = true;
+        this.ready = false;
+
+        // Dispose of the mixer
+        if (this.mixer) {
+            this.mixer.stopAllAction();
+            this.mixer.uncacheRoot(this.model);
+            this.mixer = undefined;
+        }
     }
 }

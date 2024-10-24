@@ -65,8 +65,8 @@ export class Missile extends MovableEntity {
             return false;
         }
 
-        const targetPosition = this.target.model.position.clone();
-        const currentPosition = this.model.position.clone();
+        const targetPosition = this.target.getPosition();
+        const currentPosition = this.getPosition();
         const toTarget = targetPosition.sub(currentPosition);
         const distanceToTarget = toTarget.length();
 
@@ -76,7 +76,7 @@ export class Missile extends MovableEntity {
         }
 
         // Check if the target is within lockAngle
-        const currentDirection = new THREE.Vector3(0, 0, -1).applyQuaternion(this.model.quaternion).normalize();
+        const currentDirection = new THREE.Vector3(0, 0, -1).applyQuaternion(this.getQuaternion()).normalize();
         const directionToTarget = toTarget.clone().normalize();
         const angleToTarget = currentDirection.angleTo(directionToTarget) * (180 / Math.PI); // Convert to degrees
 
@@ -89,12 +89,12 @@ export class Missile extends MovableEntity {
     }
 
     private homeTowardsTarget(deltaTime: number): void {
-        const targetPosition = this.target!.model.position.clone();
-        const currentPosition = this.model.position.clone();
+        const targetPosition = this.target!.getPosition();
+        const currentPosition = this.getPosition();
         const toTarget = targetPosition.sub(currentPosition).normalize();
 
         // Calculate rotation towards the target using rotation speed
-        const currentDirection = new THREE.Vector3(0, 0, -1).applyQuaternion(this.model.quaternion).normalize();
+        const currentDirection = new THREE.Vector3(0, 0, -1).applyQuaternion(this.getQuaternion()).normalize();
         const rotationAxis = new THREE.Vector3().crossVectors(currentDirection, toTarget).normalize();
         const angleToTarget = currentDirection.angleTo(toTarget);
 
@@ -105,19 +105,19 @@ export class Missile extends MovableEntity {
         // Avoid NaN in case rotationAxis is zero vector
         if (!isNaN(rotationAxis.x) && !isNaN(rotationAxis.y) && !isNaN(rotationAxis.z)) {
             const rotationQuat = new THREE.Quaternion().setFromAxisAngle(rotationAxis, rotationAngle);
-            this.model.quaternion.premultiply(rotationQuat);
+            this.setQuaternion(this.getQuaternion().premultiply(rotationQuat));
         }
     }
 
     private applyThrust(deltaTime: number): void {
-        const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.model.quaternion).normalize();
+        const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.getQuaternion()).normalize();
         const thrust = forward.multiplyScalar(this.property.pulsion * deltaTime);
         this.velocity.add(thrust);
     }
 
     private applyVelocityDecay(deltaTime: number): void {
 
-        const inverseQuaternion = this.model.quaternion.clone().invert();
+        const inverseQuaternion = this.getQuaternion().invert();
         const localVelocity = this.velocity.clone().applyQuaternion(inverseQuaternion);
         // Apply velocity decay in the x, y, and z axes
         const xDecayFactor = Math.pow(this.property.xSpeedDecrease, deltaTime);
@@ -128,7 +128,7 @@ export class Missile extends MovableEntity {
         localVelocity.y *= yDecayFactor;
         localVelocity.z *= zDecayFactor;
 
-        this.velocity = localVelocity.clone().applyQuaternion(this.model.quaternion);
+        this.velocity = localVelocity.clone().applyQuaternion(this.getQuaternion());
     }
 
     public initializeSound(): void {

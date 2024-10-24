@@ -37,7 +37,7 @@ export class CollisionManager {
         this.game.projectiles.forEach(projectile => {
             if (!projectile._model) return;
 
-            this.game.npcs.forEach(npc => {
+            this.game.npcPlanes.forEach(npc => {
                 if (this.checkCollisionAndIFFNumber(projectile, npc)) {
                     // Handle collision (e.g., apply damage, remove projectile)
                     console.log('Missile hit enemy');
@@ -56,7 +56,7 @@ export class CollisionManager {
         if (projectile.removed) return true;
         if (!projectile._model) return false;
 
-        const position = projectile._model.position;
+        const position = projectile.getPosition();
 
         return (
             Math.abs(position.x) > this.bounds ||
