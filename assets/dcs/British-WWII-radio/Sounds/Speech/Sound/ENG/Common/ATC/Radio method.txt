@@ -1,0 +1,9 @@
+Climb 3-0-0 at QFE
+
+High pass
+Amplify
+High pass
+Amplify
+Generate noise -33
+Amplify voice
+Amplify voice
