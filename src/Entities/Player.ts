@@ -120,6 +120,16 @@ export class Player extends Plane {
             deltaTime
         ).value;
 
+        // Update animation states based on input
+        this.setAnimationState('yawLeft', inputManager.checkInput(keyConfig.yawLeft) && !inputManager.checkInput(keyConfig.yawRight));
+        this.setAnimationState('yawRight', inputManager.checkInput(keyConfig.yawRight) && !inputManager.checkInput(keyConfig.yawLeft));
+        this.setAnimationState('pitchUp', inputManager.checkInput(keyConfig.pitchUp) && !inputManager.checkInput(keyConfig.pitchDown));
+        this.setAnimationState('pitchDown', inputManager.checkInput(keyConfig.pitchDown) && !inputManager.checkInput(keyConfig.pitchUp));
+        this.setAnimationState('rollLeft', inputManager.checkInput(keyConfig.rollLeft) && !inputManager.checkInput(keyConfig.rollRight));
+        this.setAnimationState('rollRight', inputManager.checkInput(keyConfig.rollRight) && !inputManager.checkInput(keyConfig.rollLeft));
+        this.setAnimationState('increaseThrust', inputManager.checkInput(keyConfig.increaseThrust) && !inputManager.checkInput(keyConfig.decreaseThrust));
+        this.setAnimationState('decreaseThrust', inputManager.checkInput(keyConfig.decreaseThrust) && !inputManager.checkInput(keyConfig.increaseThrust));
+
         // Fire weapon
         if (inputManager.checkInput(keyConfig.fireWeapon)) {
             this.fireWeapon();

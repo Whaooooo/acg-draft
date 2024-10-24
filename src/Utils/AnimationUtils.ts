@@ -1,51 +1,25 @@
-// src/Utils/AnimationUtils.ts
-
 import { Plane } from '../Entities/Plane';
 import { Animation } from '../Configs/AnimationBound';
 import * as THREE from 'three';
+import { FADE_DURATION_IN, FADE_DURATION_OUT } from "../Configs/AnimationBound";
 
 export function updatePlaneAnimations(plane: Plane, deltaTime: number): void {
-    // Define thresholds
-    const yawThreshold = 0.01;
-    const pitchThreshold = 0.01;
-    const rollThreshold = 0.01;
-    const pulsionThreshold = 0.1;
+    for (const [animationType, isActive] of plane.animationStates.entries()) {
+        const wasActive = plane.previousAnimationStates.get(animationType) || false;
+        if (!isActive && wasActive) {
+            // Animation became inactive
+            console.log(`Stopping animation ${animationType}`);
+            stopAnimations(plane, animationType);
+        }
+    }
 
-    // Keep track of which animation types are active
-    const newAnimationStates = new Map<string, boolean>();
-
-    // Determine if each animation type is active
-    const increaseThrustActive = plane.pulsion > plane.property.defaultPulsion + pulsionThreshold;
-    const decreaseThrustActive = plane.pulsion < plane.property.defaultPulsion - pulsionThreshold;
-    const yawLeftActive = plane.yawSpeed > yawThreshold;
-    const yawRightActive = plane.yawSpeed < -yawThreshold;
-    const pitchUpActive = plane.pitchSpeed > pitchThreshold;
-    const pitchDownActive = plane.pitchSpeed < -pitchThreshold;
-    const rollLeftActive = plane.rollSpeed > rollThreshold;
-    const rollRightActive = plane.rollSpeed < -rollThreshold;
-
-    // Update newAnimationStates
-    newAnimationStates.set('increaseThrust', increaseThrustActive);
-    newAnimationStates.set('decreaseThrust', decreaseThrustActive);
-    newAnimationStates.set('yawLeft', yawLeftActive);
-    newAnimationStates.set('yawRight', yawRightActive);
-    newAnimationStates.set('pitchUp', pitchUpActive);
-    newAnimationStates.set('pitchDown', pitchDownActive);
-    newAnimationStates.set('rollLeft', rollLeftActive);
-    newAnimationStates.set('rollRight', rollRightActive);
-
-    // For each animation type
-    for (const [animationType, isActive] of newAnimationStates.entries()) {
-        const wasActive = plane.animationStates.get(animationType) || false;
+    // Then, play animations that became active
+    for (const [animationType, isActive] of plane.animationStates.entries()) {
+        const wasActive = plane.previousAnimationStates.get(animationType) || false;
         if (isActive && !wasActive) {
             // Animation became active
             playAnimations(plane, animationType);
-        } else if (!isActive && wasActive) {
-            // Animation became inactive
-            stopAnimations(plane, animationType);
         }
-        // Update the animation state
-        plane.animationStates.set(animationType, isActive);
     }
 }
 
@@ -53,35 +27,64 @@ function playAnimations(plane: Plane, animationType: string): void {
     const animations = plane.animationConfig[animationType as keyof typeof plane.animationConfig];
     if (!animations || animations.length === 0) return;
 
-
     for (const anim of animations) {
+        const animNameLower = anim.name.toLowerCase();
+
         // Check if the animation is already active
-        if (plane.activeAnimations.has(anim.name)) {
-            console.log(`Animation '${anim.name}' is already active.`);
+        if (plane.activeAnimations.has(animNameLower)) {
             continue; // Already playing
         }
 
-
-        // Find the corresponding AnimationClip in plane.animations
-        const clip = plane.animations.get(anim.name.toLowerCase());
-        if (!clip) {
-            console.warn(`Animation clip '${anim.name}' not found in plane '${plane.name}'`);
-            console.log('Available animations:', Array.from(plane.animations.keys()));
+        // Get the AnimationAction from plane.actions
+        const action = plane.actions.get(animNameLower);
+        if (!action) {
             continue;
         }
 
-        // Create an AnimationAction
-        const action = plane.mixer!.clipAction(clip);
+        // Remove any existing 'finished' event listener for this action
+        const previousListener = plane.actionEventListeners.get(animNameLower);
+        if (previousListener) {
+            plane.mixer!.removeEventListener('finished', previousListener);
+            plane.actionEventListeners.delete(animNameLower);
+        }
+
+        // Ensure the action is enabled
+        action.enabled = true;
 
         action.loop = anim.loop ? THREE.LoopRepeat : THREE.LoopOnce;
         action.clampWhenFinished = true; // Keep the last frame after finish
         action.reset();
+
+        // Apply fade-in
+        const fadeInDuration = anim.fadeInDuration ?? FADE_DURATION_IN;
+        action.fadeIn(fadeInDuration);
         action.play();
 
-        console.log(`Action '${anim.name}' details: isRunning=${action.isRunning()}, enabled=${action.enabled}, weight=${action.getEffectiveWeight()}`);
-        console.log('Action details:', action);
+        // If not looping, listen for finished event using the mixer's event system
+        if (!anim.loop) {
+            const onFinished = (event: THREE.AnimationMixerEventMap['finished']) => {
+                if (event.action === action) {
+                    // Handle recoverAfterAnimationEnd
+                    if (anim.recoverAfterAnimationEnd) {
+                        action.reset();
+                    }
+                    // Remove from activeAnimations
+                    plane.activeAnimations.delete(animNameLower);
+                    // Cleanup listener
+                    plane.mixer!.removeEventListener('finished', onFinished);
+                    plane.actionEventListeners.delete(animNameLower);
+                }
+            };
+            plane.mixer!.addEventListener('finished', onFinished);
+            // Store the listener so we can remove it later
+            plane.actionEventListeners.set(animNameLower, onFinished);
+        } else {
+            // For looping animations, ensure they are removed from activeAnimations when stopped
+            plane.actionEventListeners.delete(animNameLower);
+        }
 
-        // ... rest of your code ...
+        // Store the action in activeAnimations
+        plane.activeAnimations.set(animNameLower, action);
     }
 }
 
@@ -91,20 +94,27 @@ function stopAnimations(plane: Plane, animationType: string): void {
     if (!animations || animations.length === 0) return;
 
     for (const anim of animations) {
-        // Get the action from activeAnimations
-        const action = plane.activeAnimations.get(anim.name);
+        const animNameLower = anim.name.toLowerCase();
+
+        // Get the action from plane.actions
+        const action = plane.actions.get(animNameLower);
         if (!action) continue;
+
+        // Remove any existing 'finished' event listener for this action
+        const previousListener = plane.actionEventListeners.get(animNameLower);
+        if (previousListener) {
+            plane.mixer!.removeEventListener('finished', previousListener);
+            plane.actionEventListeners.delete(animNameLower);
+        }
+
+        // Remove from activeAnimations immediately
+        plane.activeAnimations.delete(animNameLower);
 
         // Stop the action
         action.stop();
+        action.reset();
+        action.enabled = false;
 
-        // Remove from activeAnimations
-        plane.activeAnimations.delete(anim.name);
-
-        // Handle recoverAfterActiveEnd
-        if (anim.recoverAfterActiveEnd) {
-            // Reset the action to initial state
-            action.reset();
-        }
+        // No need to add a new 'finished' event listener
     }
 }

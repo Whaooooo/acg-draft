@@ -40,7 +40,9 @@ export class Plane extends MovableEntity {
     // Animation properties
     public activeAnimations: Map<string, THREE.AnimationAction> = new Map();
     public animationStates: Map<string, boolean> = new Map();
+    public previousAnimationStates: Map<string, boolean> = new Map();
     public animationConfig: PlaneAnimationBoundConfig;
+    public actionEventListeners: Map<string, (event: THREE.AnimationMixerEventMap["finished"]) => void> = new Map();
 
     constructor(
         game: Game,
@@ -80,6 +82,16 @@ export class Plane extends MovableEntity {
 
         // Load animation config
         this.animationConfig = PlaneAnimationBoundConfigs[this.name] || initializeEmptyPlaneAnimationBoundConfig();
+
+        const animationTypes = [
+            'increaseThrust', 'decreaseThrust', 'yawLeft', 'yawRight',
+            'pitchUp', 'pitchDown', 'rollLeft', 'rollRight',
+            'fireWeapon', 'openMagazine'
+        ];
+        for (const animType of animationTypes) {
+            this.animationStates.set(animType, false);
+            this.previousAnimationStates.set(animType, false);
+        }
     }
 
     /**
@@ -179,7 +191,7 @@ export class Plane extends MovableEntity {
 
     public updateAnimation(deltaTime: number): void {
         // Update plane-specific animations
-        if (this.mixer && this.animations.size > 0) {
+        if (this.mixer && this.actions.size > 0) {
             updatePlaneAnimations(this, deltaTime);
         }
     }
@@ -215,6 +227,11 @@ export class Plane extends MovableEntity {
                 sound.position.copy(this.getPosition());
             }
         });
+    }
+
+    public setAnimationState(animationType: string, isActive: boolean): void {
+        this.previousAnimationStates.set(animationType, this.animationStates.get(animationType) as boolean);
+        this.animationStates.set(animationType, isActive);
     }
 
     public selectWeapon(id: number): void {

@@ -108,18 +108,18 @@ export const EntityLoaders: { [key: string]: LoaderFunction } = {
                 entity._model = model;
                 entity.scene.add(model);
 
-                // Store animations
-                gltf.animations.forEach((animation) => {
-                    console.log(animation)
-                    entity.animations.set(animation.name.toLowerCase(), animation);
-                });
-
                 const armature = model.getObjectByName('Armature');
                 if (armature) {
                     entity.mixer = new THREE.AnimationMixer(armature);
                 } else {
                     entity.mixer = new THREE.AnimationMixer(model);
                 }
+
+                // Store animations
+                gltf.animations.forEach((animation) => {
+                    console.log(animation)
+                    entity.actions.set(animation.name.toLowerCase(), entity.mixer!.clipAction(animation));
+                });
 
                 // Set position and orientation
                 model.position.copy(entity.tmpPos);

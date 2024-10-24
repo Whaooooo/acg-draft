@@ -27,12 +27,12 @@ export function updateControlVariable(
     let increased = false;
     let decreased = false;
 
-    if (increase) {
+    if (increase && !decrease) {
         // Increase the value
         currentValue += sensitivity * deltaTime;
         if (currentValue > maxValue) currentValue = maxValue;
         increased = true;
-    } else if (decrease) {
+    } else if (decrease && !increase) {
         // Decrease the value
         currentValue -= sensitivity * deltaTime;
         if (currentValue < minValue) currentValue = minValue;

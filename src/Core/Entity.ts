@@ -19,7 +19,7 @@ export class Entity {
     public scene: THREE.Scene;
 
     public _model?: THREE.Group;
-    public animations: Map<string, THREE.AnimationClip> = new Map();
+    public actions: Map<string, THREE.AnimationAction> = new Map();
     public mixer?: THREE.AnimationMixer;
 
     public ready: boolean = false;
