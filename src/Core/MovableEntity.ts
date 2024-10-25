@@ -28,8 +28,6 @@ export class MovableEntity extends Entity {
     }
 
     public update(deltaTime: number): void {
-        if (!this.ready) return;
-
         this.setPosition(this.getPosition().add(this.velocity.clone().multiplyScalar(deltaTime)));
 
         super.update(deltaTime)

@@ -48,7 +48,9 @@ export class Missile extends MovableEntity {
     }
 
     public update(deltaTime: number): void {
-        if (!this.ready || !this.model) return;
+        // Apply velocity decay and thrust using functions from MoveUtils
+        applyVelocityDecay(this, deltaTime);
+        applyThrust(this, deltaTime);
 
         // Update the sound's position
         this.updateSound();
@@ -60,10 +62,6 @@ export class Missile extends MovableEntity {
             // Target lost; missile flies straight forward
             this.target = null;
         }
-
-        // Apply velocity decay and thrust using functions from MoveUtils
-        applyVelocityDecay(this, deltaTime);
-        applyThrust(this, deltaTime);
 
         // Update the position using parent update method
         super.update(deltaTime);

@@ -9,6 +9,7 @@ import { SoundEnum } from "../Configs/SoundPaths";
 import { Entity } from "./Entity";
 import { soundPropertyToOption } from "../Configs/SoundProperty";
 import * as THREE from 'three';
+import {MovableEntity} from "./MovableEntity";
 
 export class Weapon {
     public name: string;
@@ -107,8 +108,6 @@ export class Weapon {
                 const firePositionLocal = new THREE.Vector3(...firePosArray);
                 const firePositionWorld = firePositionLocal.clone().applyMatrix4(this.owner.model.matrixWorld);
 
-                // Calculate initial direction
-                const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.owner.getQuaternion());
 
                 // Create missile
                 const missile = new Missile(
@@ -118,7 +117,7 @@ export class Weapon {
                     `${this.parentPlaneName}_${this.name}` as EntityName,
                     firePositionWorld.clone(),
                     this.owner.getQuaternion(),
-                    forward.clone().multiplyScalar(this.property.pulsion),
+                    (this.owner instanceof MovableEntity) ? this.owner.velocity.clone() : undefined,
                     this.owner.iFFNumber,
                     target
                 );

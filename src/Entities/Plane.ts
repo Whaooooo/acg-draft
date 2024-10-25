@@ -149,8 +149,6 @@ export class Plane extends MovableEntity {
     }
 
     public update(deltaTime: number): void {
-        if (!this.ready) return;
-
         // Update weapons
         for (const weapon of this.weapons) {
             weapon.update(deltaTime);

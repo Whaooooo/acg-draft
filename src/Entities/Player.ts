@@ -40,8 +40,6 @@ export class Player extends Plane {
     }
 
     public update(deltaTime: number): void {
-        if (!this.ready || !this.model) return;
-
         // Handle input
         this.handleInput(deltaTime);
 
@@ -50,7 +48,6 @@ export class Player extends Plane {
     }
 
     private handleInput(deltaTime: number): void {
-        if (!this.ready || !this.model) return;
         const inputManager = this.game.inputManager;
         const keyConfig = this.keyConfig;
 

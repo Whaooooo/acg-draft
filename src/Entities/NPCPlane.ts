@@ -27,8 +27,6 @@ export class NPCPlane extends Plane {
     }
 
     public update(deltaTime: number): void {
-        if (!this.ready || !this.model) return;
-
         // Implement AI-specific update logic here
         this.controlAI(deltaTime);
 
