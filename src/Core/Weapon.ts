@@ -14,14 +14,14 @@ export class Weapon {
     public name: string;
     public parentPlaneName: EntityName;
     public property: MissileProperty;
-    private game: Game;
-    private owner: Entity;
+    public game: Game;
+    public owner: Entity;
 
     // Weapon state
-    private cooldownTimer: number = 0;
-    private loadTimers: number[] = [];
-    private missilesLoaded: number = 0;
-    private totalMissilesFired: number = 0;
+    public cooldownTimer: number = 0;
+    public loadTimers: number[] = [];
+    public missilesLoaded: number = 0;
+    public totalMissilesFired: number = 0;
     public lastSoundPlayTime: number = 0;
 
 
@@ -115,7 +115,6 @@ export class Weapon {
                     this.game,
                     this.owner,
                     this.property,
-                    this.game.requestNewEntityId(),
                     `${this.parentPlaneName}_${this.name}` as EntityName,
                     firePositionWorld.clone(),
                     this.owner.getQuaternion(),
@@ -123,9 +122,6 @@ export class Weapon {
                     this.owner.iFFNumber,
                     target
                 );
-
-                // Add missile to the game
-                this.game.projectiles.push(missile);
 
                 // Update weapon state
                 this.missilesLoaded--;
@@ -161,5 +157,9 @@ export class Weapon {
         if (missilesFired < missilesToFire) {
             console.warn('Not enough available firing slots to fire all missiles.');
         }
+    }
+
+    public dispose(): void {
+
     }
 }

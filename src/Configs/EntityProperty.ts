@@ -16,7 +16,7 @@ import {
 export type SoundPropertyName = keyof SoundProperty;
 
 export interface PlaneProperty {
-    hP: number;
+    hp: number;
     minPulsion: number;
     defaultPulsion: number;
     maxPulsion: number;
@@ -57,7 +57,7 @@ export const PlayerProperties: {
     [key in EntityName]?: PlaneProperty | MissileProperty;
 } = {
     f22: {
-        hP: 1000,
+        hp: 10000,
         minPulsion: 5,
         defaultPulsion: 10,
         maxPulsion: 25,
@@ -108,7 +108,7 @@ export const NPCProperties: {
     [key in EntityName]?: PlaneProperty | MissileProperty;
 } = {
     f22: {
-        hP: 600,
+        hp: 600,
         minPulsion: 50,
         defaultPulsion: 70,
         maxPulsion: 150,
@@ -153,7 +153,7 @@ export const NPCProperties: {
         },
     },
     plane: {
-        hP: 300,
+        hp: 300,
         minPulsion: 1,
         defaultPulsion: 1,
         maxPulsion: 2,

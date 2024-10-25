@@ -16,6 +16,7 @@ import {
     initializeEmptyPlaneAnimationBoundConfig
 } from '../Configs/AnimationBound';
 import { updatePlaneAnimations } from '../Utils/AnimationUtils';
+import {SoundEnum} from "../Configs/SoundPaths";
 
 export class Plane extends MovableEntity {
     public name: EntityName;
@@ -47,7 +48,6 @@ export class Plane extends MovableEntity {
 
     constructor(
         game: Game,
-        entityId: number,
         assetName: EntityName,
         planeProperty: PlaneProperty,
         pos?: THREE.Vector3,
@@ -55,7 +55,7 @@ export class Plane extends MovableEntity {
         velocity?: THREE.Vector3,
         iFFNumber?: number
     ) {
-        super(game, entityId, assetName, pos, qua, velocity, iFFNumber);
+        super(game, assetName, pos, qua, velocity, iFFNumber);
         this.name = assetName;
         this.property = planeProperty;
 
@@ -93,6 +93,8 @@ export class Plane extends MovableEntity {
             this.animationStates.set(animType, false);
             this.previousAnimationStates.set(animType, false);
         }
+
+        this.currentHP = this.property.hp;
     }
 
     /**
@@ -253,7 +255,17 @@ export class Plane extends MovableEntity {
     }
 
     public dispose(): void {
-        // ... existing disposal logic ...
+        const explosionSoundProperty = this.property.sound?.explosion;
+        if (explosionSoundProperty) {
+            const options = soundPropertyToOption(explosionSoundProperty, this);
+
+            // Play the sound and store the sound ID if needed
+            this.game.soundManager.playSound(
+                this,
+                explosionSoundProperty.name as SoundEnum,
+                options,
+            );
+        }
 
         // Stop and remove the engine sounds
         this.engineSounds.forEach(({ soundId }) => {

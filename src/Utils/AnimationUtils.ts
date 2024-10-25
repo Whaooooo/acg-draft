@@ -1,5 +1,4 @@
 import { Plane } from '../Entities/Plane';
-import { Animation } from '../Configs/AnimationBound';
 import * as THREE from 'three';
 import { FADE_DURATION_IN, FADE_DURATION_OUT } from "../Configs/AnimationBound";
 
@@ -8,7 +7,6 @@ export function updatePlaneAnimations(plane: Plane, deltaTime: number): void {
         const wasActive = plane.previousAnimationStates.get(animationType) || false;
         if (!isActive && wasActive) {
             // Animation became inactive
-            console.log(`Stopping animation ${animationType}`);
             stopAnimations(plane, animationType);
         }
     }

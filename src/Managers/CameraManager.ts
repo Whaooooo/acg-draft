@@ -32,6 +32,7 @@ export class CameraManager {
 
     constructor(players: Player[]) {
         this.cameras = new Map<Player, THREE.PerspectiveCamera>();
+        console.log(`Total number of players: ${players.length}`);
 
         players.forEach((player) => {
             const camera = new THREE.PerspectiveCamera(
@@ -117,7 +118,7 @@ export class CameraManager {
     /**
      * Updates all cameras based on player movements and mouse input.
      */
-    public updateCameras(): void {
+    public updateCameras(deltaTime: number): void {
         this.cameras.forEach((camera, player) => {
             const inputManager = player.game.inputManager;
             const { deltaX, deltaY } = inputManager.getMouseMovement();
@@ -226,5 +227,20 @@ export class CameraManager {
                 camera.up.set(0, 1, 0);
             }
         }
+    }
+
+    public getViewportForPlayer(player: Player): { left: number; top: number; width: number; height: number } {
+        const numPlayers = this.cameras.size;
+        const index = Array.from(this.cameras.keys()).indexOf(player);
+
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+
+        const viewportWidth = Math.floor(width / numPlayers);
+        const viewportHeight = height;
+        const left = Math.floor((index / numPlayers) * width);
+        const top = 0; // Assuming the viewport starts at the top of the window
+
+        return { left, top, width: viewportWidth, height: viewportHeight };
     }
 }

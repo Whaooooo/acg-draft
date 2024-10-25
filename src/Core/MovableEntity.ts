@@ -14,14 +14,13 @@ export class MovableEntity extends Entity {
 
     constructor(
         game: Game,
-        entityId: number,
         assetName: EntityName,
         pos?: THREE.Vector3,
         qua?: THREE.Quaternion,
         velocity?: THREE.Vector3,
         iFFNumber?: number,
     ) {
-        super(game, entityId, assetName, pos, qua, iFFNumber);
+        super(game, assetName, pos, qua, iFFNumber);
         this.velocity = velocity ? velocity : new THREE.Vector3();
         //############################################### Need to implement weapons initialization
         this.targets = []
@@ -37,6 +36,10 @@ export class MovableEntity extends Entity {
     }
 
     public dispose() {
+        for (const weapon of this.weapons) {
+            weapon.dispose();
+        }
+        this.weapons = [];
         super.dispose();
     }
 }

@@ -85,7 +85,6 @@ export const EntityLoaders: { [key: string]: LoaderFunction } = {
             fileName,
             (gltf) => {
                 const model = gltf.scene;
-                console.log('Model structure:', model);
 
                 model.traverse((node) => {
                     if ((node as THREE.Mesh).isMesh) {
@@ -100,8 +99,6 @@ export const EntityLoaders: { [key: string]: LoaderFunction } = {
                     }
                     if ((node as THREE.SkinnedMesh).isSkinnedMesh) {
                         const skinnedMesh = node as THREE.SkinnedMesh;
-                        console.log('Found SkinnedMesh:', skinnedMesh.name);
-                        console.log('Bones:', skinnedMesh.skeleton.bones);
                     }
                 });
 
@@ -117,7 +114,6 @@ export const EntityLoaders: { [key: string]: LoaderFunction } = {
 
                 // Store animations
                 gltf.animations.forEach((animation) => {
-                    console.log(animation)
                     entity.actions.set(animation.name.toLowerCase(), entity.mixer!.clipAction(animation));
                 });
 

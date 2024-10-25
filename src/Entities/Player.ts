@@ -17,7 +17,6 @@ export class Player extends Plane {
 
     constructor(
         game: Game,
-        entityId: number,
         assetName: EntityName,
         pos?: THREE.Vector3,
         qua?: THREE.Quaternion,
@@ -26,7 +25,8 @@ export class Player extends Plane {
         keyConfigIndex: number = 0 // Index of the key mapping configuration
     ) {
         const planeProperty = PlayerProperties[assetName] as PlaneProperty;
-        super(game, entityId, assetName, planeProperty, pos, qua, velocity, iFFNumber);
+        super(game, assetName, planeProperty, pos, qua, velocity, iFFNumber);
+        game.playerMap.set(this.entityId, this);
 
         this.viewMode = ViewMode.ThirdPerson;
 
@@ -153,5 +153,10 @@ export class Player extends Plane {
 
     public reTarget(): void {
         // Implement re-targeting logic if needed
+    }
+
+    public dispose(): void {
+        this.game.playerMap.delete(this.entityId);
+        super.dispose();
     }
 }
