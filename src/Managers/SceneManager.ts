@@ -5,6 +5,7 @@ import { Water } from '../Entities/Water';
 import { Cloud } from '../Entities/Cloud';
 import { MapPaths, MapName } from '../Configs/MapPaths';
 import { Config } from '../Configs/Config';
+import { ImprovedNoise } from '../Utils/ImprovedNoise';
 
 export class SceneManager {
     public scene: THREE.Scene;
@@ -134,8 +135,6 @@ export class SceneManager {
         this.scene.add(sphere);
 
 
-
-
         const waterGeometry = new THREE.PlaneGeometry(100000, 100000);
         const water = new Water(
             waterGeometry,
@@ -161,9 +160,127 @@ export class SceneManager {
         this.scene.add(water);
         this.water = water;
 
-        const cloud = new Cloud({ size: [512, 128, 512], opacity: 0.2, threshold: 0.25, boxBound: new THREE.Vector3(2000.0, 320.0, 2000.0) });
-        cloud.position.set(50, 600, 80);
+        const cloud = new Cloud({ size: [512, 80, 512], opacity: 0.3, threshold: 0.45, range: 0.1, steps: 75, boxBound: new THREE.Vector3(40000.0, 400.0, 40000.0) });
+        cloud.position.set(0, 2400, 0);
         this.scene.add(cloud);
+
+        console.log('cloud');
+
+        const worldWidth = 1024, worldDepth = 1024,
+            worldHalfWidth = worldWidth / 2, worldHalfDepth = worldDepth / 2;
+        const data = this.generateHeight(worldWidth, worldDepth);
+        const geometry = new THREE.PlaneGeometry(75000, 75000, worldWidth - 1, worldDepth - 1);
+        geometry.rotateX(- Math.PI / 2);
+
+        const vertices = geometry.attributes.position.array;
+
+        for (let i = 0, j = 0, l = vertices.length; i < l; i++, j += 3) {
+
+            vertices[j + 1] = data[i] * 40 - 2500;
+
+        }
+
+        const texture = new THREE.CanvasTexture(this.generateTexture(data, worldWidth, worldDepth));
+        texture.wrapS = THREE.ClampToEdgeWrapping;
+        texture.wrapT = THREE.ClampToEdgeWrapping;
+        texture.colorSpace = THREE.SRGBColorSpace;
+
+        const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ map: texture }));
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        this.scene.add(mesh);
+    }
+
+    generateTexture(data: any, width: number, height: number) {
+
+        // bake lighting into texture
+
+        let context: any, image, imageData, shade;
+
+        const vector3 = new THREE.Vector3(0, 0, 0);
+
+        const sun = new THREE.Vector3(1, 1, 1);
+        sun.normalize();
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+
+        context = canvas.getContext('2d');
+        context.fillStyle = '#000';
+        context.fillRect(0, 0, width, height);
+
+        image = context.getImageData(0, 0, canvas.width, canvas.height);
+        imageData = image.data;
+
+        for (let i = 0, j = 0, l = imageData.length; i < l; i += 4, j++) {
+
+            vector3.x = data[j - 2] - data[j + 2];
+            vector3.y = 2;
+            vector3.z = data[j - width * 2] - data[j + width * 2];
+            vector3.normalize();
+
+            shade = vector3.dot(sun);
+
+            imageData[i] = (96 + shade * 128) * (0.5 + data[j] * 0.007);
+            imageData[i + 1] = (32 + shade * 96) * (0.5 + data[j] * 0.007);
+            imageData[i + 2] = (shade * 96) * (0.5 + data[j] * 0.007);
+
+        }
+
+        context.putImageData(image, 0, 0);
+
+        // Scaled 4x
+
+        const canvasScaled = document.createElement('canvas');
+        canvasScaled.width = width * 4;
+        canvasScaled.height = height * 4;
+
+        context = canvasScaled.getContext('2d');
+        context.scale(4, 4);
+        context.drawImage(canvas, 0, 0);
+
+        image = context.getImageData(0, 0, canvasScaled.width, canvasScaled.height);
+        imageData = image.data;
+
+        for (let i = 0, l = imageData.length; i < l; i += 4) {
+
+            const v = ~ ~(Math.random() * 5);
+
+            imageData[i] += v;
+            imageData[i + 1] += v;
+            imageData[i + 2] += v;
+
+        }
+
+        context.putImageData(image, 0, 0);
+
+        return canvasScaled;
+
+    }
+
+    generateHeight(width: number, height: number) {
+
+        const size = width * height, data = new Uint8Array(size),
+            perlin = new ImprovedNoise(), z = Math.random() * 256;
+
+        let quality = 1;
+
+        for (let j = 0; j < 4; j++) {
+
+            for (let i = 0; i < size; i++) {
+
+                const x = i % width, y = ~ ~(i / width);
+                data[i] += Math.abs(perlin.noise(x / quality, y / quality, z) * quality * 1.75);
+
+            }
+
+            quality *= 5;
+
+        }
+
+        return data;
+
     }
 
     public addtoScene(object: THREE.Object3D): void {

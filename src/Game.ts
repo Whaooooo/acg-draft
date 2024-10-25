@@ -134,7 +134,7 @@ export class Game {
 
     // In Game.ts
 
-    public start(): void {
+    public async start(): Promise<void> {
         // console.log('Start adding entities to scene');
         // this.players.forEach((player) => {
         //     player.addToScene(this.sceneManager.scene);

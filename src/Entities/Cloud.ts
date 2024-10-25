@@ -18,7 +18,7 @@ class Cloud extends Mesh {
 
     constructor(options: CloudOptions) {
         const boxBound = options.boxBound !== undefined ? options.boxBound : new THREE.Vector3(1.0, 1.0, 1.0);
-        const geometry = new THREE.BoxGeometry(boxBound.x, boxBound.y, boxBound.z);
+        const geometry = new THREE.BoxGeometry(boxBound.x * 1.2, boxBound.y * 1.2, boxBound.z * 1.2);
 
         super(geometry);
 
@@ -43,14 +43,15 @@ class Cloud extends Mesh {
         const perlin = new ImprovedNoise();
         const vector = new THREE.Vector3();
         const sizeVec = new THREE.Vector3(size[0], size[1], size[2]);
+        const halfSize = sizeVec.clone().multiplyScalar(0.5);
 
-        for (let z = 0; z < size[0]; z++) {
+        for (let z = 0; z < size[2]; z++) {
 
             for (let y = 0; y < size[1]; y++) {
 
-                for (let x = 0; x < size[2]; x++) {
+                for (let x = 0; x < size[0]; x++) {
 
-                    const d = 1.0 - vector.set(x, y, z).sub(sizeVec.clone().multiplyScalar(0.5)).divide(sizeVec).length();
+                    const d = 1.0 - vector.set(x, y, z).sub(halfSize).divide(sizeVec).length();
                     data[i] = (128 + 128 * perlin.noise(x * scale / 1.5, y * scale, z * scale / 1.5)) * d * d;
                     i++;
 
