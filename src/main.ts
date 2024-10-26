@@ -1,12 +1,13 @@
 // src/main.ts
 
 import { Game } from './Game';
-// import './styles.css'; // Removed since styles are handled via <link> in index.html
+
+let gameInstance: Game | null = null; // Keep a reference to the game instance
 
 function initGame(loadPath?: string): void {
     // Create a new Game instance
     console.log("Request creating new game...");
-    const game = new Game(loadPath);
+    gameInstance = new Game(loadPath);
 }
 
 function onStartButtonClick(): void {
@@ -16,14 +17,14 @@ function onStartButtonClick(): void {
         mainMenu.style.display = 'none';
     }
 
+    // Hide the cursor
+    document.body.style.cursor = 'none';
+
     // Initialize the game
     initGame();
 
     // Stop background music if needed
     stopBackgroundMusic();
-
-    // Optionally, start game-specific music
-    // startGameMusic();
 
     // Remove global event listeners to prevent further unmuting
     document.removeEventListener('click', unmuteAudio);
@@ -31,6 +32,36 @@ function onStartButtonClick(): void {
     document.removeEventListener('touchstart', unmuteAudio);
 }
 
+function onMainMenuButtonClick(): void {
+    // Hide the mission failed screen
+    const missionFailedScreen = document.getElementById('mission-failed-screen');
+    if (missionFailedScreen) {
+        missionFailedScreen.style.display = 'none';
+    }
+
+    // Show the main menu
+    const mainMenu = document.getElementById('main-menu');
+    if (mainMenu) {
+        mainMenu.style.display = 'flex';
+    }
+
+    // Dispose of the game instance
+    if (gameInstance) {
+        gameInstance.dispose();
+        gameInstance = null;
+    }
+
+    // Ensure cursor is visible
+    document.body.style.cursor = 'default';
+
+    // Play background music again
+    playBackgroundMusic();
+
+    // Re-add global event listeners to unmute audio
+    document.addEventListener('click', unmuteAudio, { once: true });
+    document.addEventListener('keydown', unmuteAudio, { once: true });
+    document.addEventListener('touchstart', unmuteAudio, { once: true });
+}
 
 let backgroundMusic: HTMLAudioElement | null = null;
 
@@ -52,23 +83,12 @@ function stopBackgroundMusic(): void {
     }
 }
 
-function startGameMusic(): void {
-    if (backgroundMusic) {
-        backgroundMusic.muted = false; // Unmute the audio
-        backgroundMusic.play().catch((error) => {
-            console.error('Failed to play background music:', error);
-        });
-    }
-}
-
 function init(): void {
     // Add event listener to the Start Game button
     const startButton = document.getElementById('start-button');
     if (startButton) {
         startButton.addEventListener('click', () => {
             onStartButtonClick();
-            // Play game-specific music if desired
-            // startGameMusic();
         });
     }
 
@@ -79,6 +99,14 @@ function init(): void {
     document.addEventListener('click', unmuteAudio, { once: true });
     document.addEventListener('keydown', unmuteAudio, { once: true });
     document.addEventListener('touchstart', unmuteAudio, { once: true });
+
+    // Add event listener to the Main Menu button in mission failed screen
+    const mainMenuButton = document.getElementById('main-menu-button');
+    if (mainMenuButton) {
+        mainMenuButton.addEventListener('click', () => {
+            onMainMenuButtonClick();
+        });
+    }
 }
 
 function unmuteAudio(): void {

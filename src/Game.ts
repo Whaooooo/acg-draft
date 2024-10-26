@@ -14,7 +14,6 @@ import { SceneManager } from './Managers/SceneManager';
 import { TargetManager } from './Managers/TargetManager';
 import { HUDManager } from "./Managers/HUDManager";
 
-
 export class Game {
     //###################################################
     //################### MEMBERS #######################
@@ -44,6 +43,7 @@ export class Game {
     private lastFrameTime: number = 0;
     private frameCount: number = 0;
 
+    private isRunning: boolean = true; // Add this flag
 
     //###################################################
     //################### INIT ##########################
@@ -97,28 +97,26 @@ export class Game {
             Array.from(this.npcPlaneMap.values()) // NPC planes array
         ]);
 
-
         // Initialize CollisionManager
         this.collisionManager = new CollisionManager(this);
 
-        this.hudManager = new HUDManager(Array.from(this.playerMap.values()), this.cameraManager, this.sceneManager.renderer)
+        this.hudManager = new HUDManager(Array.from(this.playerMap.values()), this.cameraManager, this.sceneManager.renderer);
 
         // Wait for sound to be ready before starting the game
         this.waitForSoundToBeReady();
     }
 
     private createDebugScene(): void {
-        // Create two players at different positions
-        console.log('Request creating player')
+        // Create a player
+        console.log('Request creating player');
         const player1 = new Player(this, 'f22', new THREE.Vector3(0, 20, 0), undefined, undefined, 1, 0);
-
-        //const player2 = new Player(this, 'f22', new THREE.Vector3(10, 20, 0), undefined, undefined, 2, 1);
-        //this.playerMap.set(player2.id, player2); // Add if needed
+        this.playerMap.set(player1.entityId, player1);
 
         // Optionally, add some NPCs for testing
         console.log('Request creating npc');
         const npcPosition = new THREE.Vector3(0, 60, -50);
         const npc = new NPCPlane(this, 'plane', npcPosition);
+        this.npcPlaneMap.set(npc.entityId, npc);
     }
 
     public loadGame(): void {
@@ -178,6 +176,8 @@ export class Game {
     }
 
     private loop(): void {
+        if (!this.isRunning) return; // Stop the loop if the game is over
+
         requestAnimationFrame(() => this.loop());
 
         const deltaTime = this.clock.getDelta();
@@ -265,6 +265,72 @@ export class Game {
     }
 
     public end(): void {
+        this.isRunning = false;
 
+        // Show the mission failed screen
+        const missionFailedScreen = document.getElementById('mission-failed-screen');
+        if (missionFailedScreen) {
+            missionFailedScreen.style.display = 'flex';
+        }
+
+        // Release pointer lock
+        if (this.inputManager) {
+            this.inputManager.releasePointerLock();
+        }
+
+        // Ensure cursor is visible
+        document.body.style.cursor = 'default';
+
+        // Play the mission failed sound
+        this.playMissionFailedSound();
+
+        this.dispose();
+    }
+
+    private playMissionFailedSound(): void {
+        const missionFailedAudio = document.getElementById('mission-failed-sound') as HTMLAudioElement;
+        if (missionFailedAudio) {
+            missionFailedAudio.play().catch((error) => {
+                console.error('Failed to play mission failed sound:', error);
+            });
+        }
+    }
+
+    public dispose(): void {
+        console.log('Disposing game resources...');
+        // Dispose HUDManager
+        if (this.hudManager) {
+            this.hudManager.dispose();
+        }
+
+        // Dispose InputManager
+        if (this.inputManager) {
+            this.inputManager.dispose();
+        }
+
+        // Remove renderer from DOM
+        if (this.sceneManager.renderer.domElement.parentNode) {
+            this.sceneManager.renderer.domElement.parentNode.removeChild(this.sceneManager.renderer.domElement);
+        }
+
+        // Dispose of Three.js objects
+        this.scene.traverse((object) => {
+            if ((object as any).geometry) {
+                (object as any).geometry.dispose();
+            }
+            if ((object as any).material) {
+                if (Array.isArray((object as any).material)) {
+                    (object as any).material.forEach((material: any) => material.dispose());
+                } else {
+                    (object as any).material.dispose();
+                }
+            }
+        });
+
+        // Clear maps
+        this.entityMap.clear();
+        this.playerMap.clear();
+        this.npcPlaneMap.clear();
+        this.projectileMap.clear();
     }
 }

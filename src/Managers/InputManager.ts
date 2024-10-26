@@ -11,27 +11,51 @@ export class InputManager {
     public pointerLocked: boolean = false;
     private wheelDelta: number = 0;
 
+    // Bound event handlers
+    private boundPreventBrowserShortcuts: (event: KeyboardEvent) => void;
+    private boundOnKeyDown: (event: KeyboardEvent) => void;
+    private boundOnKeyUp: (event: KeyboardEvent) => void;
+    private boundOnMouseDown: (event: MouseEvent) => void;
+    private boundOnMouseUp: (event: MouseEvent) => void;
+    private boundOnMouseMove: (event: MouseEvent) => void;
+    private boundOnWheel: (event: WheelEvent) => void;
+    private boundOnPointerLockChange: (event: Event) => void;
+    private boundContextMenuHandler: (event: MouseEvent) => void;
+
     constructor() {
+        // Bind event handlers
+        this.boundPreventBrowserShortcuts = this.preventBrowserShortcuts.bind(this);
+        this.boundOnKeyDown = this.onKeyDown.bind(this);
+        this.boundOnKeyUp = this.onKeyUp.bind(this);
+        this.boundOnMouseDown = this.onMouseDown.bind(this);
+        this.boundOnMouseUp = this.onMouseUp.bind(this);
+        this.boundOnMouseMove = this.onMouseMove.bind(this);
+        this.boundOnWheel = this.onWheel.bind(this);
+        this.boundOnPointerLockChange = this.onPointerLockChange.bind(this);
+        this.boundContextMenuHandler = this.contextMenuHandler.bind(this);
+
         this.initEventListeners();
     }
 
     private initEventListeners(): void {
         // Use capture phase to prevent default browser shortcuts
-        window.addEventListener('keydown', (event) => this.preventBrowserShortcuts(event), true);
-        window.addEventListener('keydown', (event) => this.onKeyDown(event), false);
-        window.addEventListener('keyup', (event) => this.onKeyUp(event), false);
-        window.addEventListener('mousedown', this.onMouseDown.bind(this), false);
-        window.addEventListener('mouseup', this.onMouseUp.bind(this), false);
-        window.addEventListener('mousemove', this.onMouseMove.bind(this), false);
-        window.addEventListener('wheel', this.onWheel.bind(this), { passive: false });
-        document.addEventListener('pointerlockchange', this.onPointerLockChange.bind(this), false);
+        window.addEventListener('keydown', this.boundPreventBrowserShortcuts, true);
+        window.addEventListener('keydown', this.boundOnKeyDown, false);
+        window.addEventListener('keyup', this.boundOnKeyUp, false);
+        window.addEventListener('mousedown', this.boundOnMouseDown, false);
+        window.addEventListener('mouseup', this.boundOnMouseUp, false);
+        window.addEventListener('mousemove', this.boundOnMouseMove, false);
+        window.addEventListener('wheel', this.boundOnWheel, { passive: false });
+        document.addEventListener('pointerlockchange', this.boundOnPointerLockChange, false);
 
         // Prevent right-click context menu
-        window.addEventListener('contextmenu', (event) => {
-            if (this.pointerLocked) {
-                event.preventDefault();
-            }
-        }, false);
+        window.addEventListener('contextmenu', this.boundContextMenuHandler, false);
+    }
+
+    private contextMenuHandler(event: MouseEvent): void {
+        if (this.pointerLocked) {
+            event.preventDefault();
+        }
     }
 
     private onKeyDown(event: KeyboardEvent): void {
@@ -159,6 +183,58 @@ export class InputManager {
         const delta = this.wheelDelta;
         this.wheelDelta = 0;
         return delta;
+    }
+
+    public dispose(): void {
+        // Remove event listeners
+        window.removeEventListener('keydown', this.boundPreventBrowserShortcuts, true);
+        window.removeEventListener('keydown', this.boundOnKeyDown, false);
+        window.removeEventListener('keyup', this.boundOnKeyUp, false);
+        window.removeEventListener('mousedown', this.boundOnMouseDown, false);
+        window.removeEventListener('mouseup', this.boundOnMouseUp, false);
+        window.removeEventListener('mousemove', this.boundOnMouseMove, false);
+        window.removeEventListener('wheel', this.boundOnWheel, false );
+        document.removeEventListener('pointerlockchange', this.boundOnPointerLockChange, false);
+        window.removeEventListener('contextmenu', this.boundContextMenuHandler, false);
+
+        // Release pointer lock if it's still active
+        if (this.pointerLocked) {
+            if (document.exitPointerLock) {
+                document.exitPointerLock();
+            } else if ((document as any).mozExitPointerLock) {
+                (document as any).mozExitPointerLock();
+            } else if ((document as any).webkitExitPointerLock) {
+                (document as any).webkitExitPointerLock();
+            } else if ((document as any).msExitPointerLock) {
+                (document as any).msExitPointerLock();
+            }
+            this.pointerLocked = false;
+        }
+
+
+        // Reset internal state
+        this.keysPressed = {};
+        this.keysDown = {};
+        this.mouseButtonsPressed = {};
+        this.mouseButtonsDown = {};
+        this.mouseDeltaX = 0;
+        this.mouseDeltaY = 0;
+        this.wheelDelta = 0;
+    }
+
+    public releasePointerLock(): void {
+        if (this.pointerLocked) {
+            if (document.exitPointerLock) {
+                document.exitPointerLock();
+            } else if ((document as any).mozExitPointerLock) {
+                (document as any).mozExitPointerLock();
+            } else if ((document as any).webkitExitPointerLock) {
+                (document as any).webkitExitPointerLock();
+            } else if ((document as any).msExitPointerLock) {
+                (document as any).msExitPointerLock();
+            }
+            this.pointerLocked = false;
+        }
     }
 }
 

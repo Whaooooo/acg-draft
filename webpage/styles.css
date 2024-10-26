@@ -83,3 +83,43 @@ body, html {
     pointer-events: none;
     transform: translate(-50%, -50%);
 }
+
+/* webpage/styles.css */
+
+/* ... existing styles ... */
+
+/* Mission Failed Screen Styles */
+#mission-failed-screen {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: url('../assets/webpage/mission_fail.png') no-repeat center center fixed;
+    background-size: cover;
+    display: none; /* Initially hidden */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 20;
+}
+
+#mission-failed-screen h1 {
+    color: red;
+    font-size: 72px;
+    margin-bottom: 50px;
+    text-shadow: 2px 2px 5px black;
+}
+
+#mission-failed-screen button {
+    padding: 15px 30px;
+    font-size: 24px;
+    margin: 10px;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    background-color: #007BFF;
+    color: white;
+}
+
+#mission-failed-screen button:hover {
+    background-color: #0056b3;
+}

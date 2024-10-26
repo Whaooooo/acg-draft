@@ -126,4 +126,15 @@ export class HUDManager {
         }
         return totalMissiles;
     }
+
+    public dispose(): void {
+        // Remove HUD elements from the DOM
+        this.domElements.forEach((hudElement) => {
+            if (hudElement.parentNode) {
+                hudElement.parentNode.removeChild(hudElement);
+            }
+        });
+        // Clear the map
+        this.domElements.clear();
+    }
 }
