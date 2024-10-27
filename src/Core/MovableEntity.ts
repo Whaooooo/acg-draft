@@ -9,8 +9,11 @@ import { Weapon } from "./Weapon";
 export class MovableEntity extends Entity {
     public velocity: THREE.Vector3;
 
-    public targets: Entity[];
     public weapons: Weapon[];
+
+    public targets: Entity[];
+    public currentHP: number = 1;
+    public collisionDamage: number = 2000;
 
     constructor(
         game: Game,
@@ -20,9 +23,10 @@ export class MovableEntity extends Entity {
         velocity?: THREE.Vector3,
         iFFNumber?: number,
     ) {
-        super(game, assetName, pos, qua, iFFNumber);
+        super(game, assetName, pos, qua);
         this.velocity = velocity ? velocity : new THREE.Vector3();
         //############################################### Need to implement weapons initialization
+        this.game.movableEntityMap.set(this.entityId, this);
         this.targets = []
         this.weapons = []
     }

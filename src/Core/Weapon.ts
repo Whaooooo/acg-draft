@@ -16,7 +16,7 @@ export class Weapon {
     public parentPlaneName: EntityName;
     public property: MissileProperty;
     public game: Game;
-    public owner: Entity;
+    public owner: MovableEntity;
 
     // Weapon state
     public cooldownTimer: number = 0;
@@ -26,7 +26,7 @@ export class Weapon {
     public lastSoundPlayTime: number = 0;
 
 
-    constructor(game: Game, owner: Entity, parentPlaneName: EntityName, weaponName: string) {
+    constructor(game: Game, owner: MovableEntity, parentPlaneName: EntityName, weaponName: string) {
         this.game = game;
         this.owner = owner;
         this.name = weaponName;

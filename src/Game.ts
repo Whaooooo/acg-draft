@@ -13,6 +13,7 @@ import { CameraManager } from './Managers/CameraManager';
 import { SceneManager } from './Managers/SceneManager';
 import { TargetManager } from './Managers/TargetManager';
 import { HUDManager } from "./Managers/HUDManager";
+import {MovableEntity} from "./Core/MovableEntity";
 
 export class Game {
     //###################################################
@@ -27,6 +28,7 @@ export class Game {
     public sceneManager: SceneManager;
 
     public entityMap: Map<number, Entity> = new Map();
+    public movableEntityMap: Map<number, MovableEntity> = new Map();
     public playerMap: Map<number, Player> = new Map();
     public npcPlaneMap: Map<number, NPCPlane> = new Map();
     public projectileMap: Map<number, Missile> = new Map();

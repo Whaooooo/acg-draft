@@ -4,6 +4,7 @@ import { Game } from '../Game';
 import * as THREE from 'three';
 import { Entity } from "../Core/Entity";
 import { Missile } from '../Entities/Missile';
+import {MovableEntity} from "../Core/MovableEntity";
 
 export class CollisionManager {
     public game: Game;
@@ -45,7 +46,7 @@ export class CollisionManager {
      * @param entity1 First entity
      * @param entity2 Second entity
      */
-    private checkBoxCollisionAndIFFNumber(entity1: Entity, entity2: Entity): void {
+    private checkBoxCollisionAndIFFNumber(entity1: MovableEntity, entity2: MovableEntity): void {
         if (entity1.iFFNumber === entity2.iFFNumber) return; // Skip if same IFFNumber
 
         const box1 = this.entityBoundingBoxes.get(entity1);
@@ -69,30 +70,6 @@ export class CollisionManager {
         }
     }
 
-    /**
-     * Checks collision between a projectile and an entity.
-     * @param projectile The projectile entity
-     * @param entity The target entity
-     */
-    private checkProjectileCollision(projectile: Missile, entity: Entity): void {
-        if (projectile.iFFNumber === entity.iFFNumber) return; // Skip if same IFFNumber
-
-        const projectileBox = this.entityBoundingBoxes.get(projectile);
-        const entityBox = this.entityBoundingBoxes.get(entity);
-
-        if (!projectileBox || !entityBox) return; // Bounding boxes must exist
-
-        if (projectileBox.intersectsBox(entityBox)) {
-            entity.currentHP -= projectile.collisionDamage;
-            projectile.dispose(); // Projectile is consumed upon collision
-
-            // Dispose entity if HP drops to zero or below
-            if (entity.currentHP <= 0) {
-                entity.dispose();
-                this.entityBoundingBoxes.delete(entity);
-            }
-        }
-    }
 
     /**
      * Checks if a projectile is out of bounds.
@@ -138,7 +115,7 @@ export class CollisionManager {
         });
 
         // Convert entityMap to an array for pairwise collision checking
-        const entities = Array.from(this.game.entityMap.values()).filter(entity => !entity.removed && entity.ready);
+        const entities = Array.from(this.game.movableEntityMap.values()).filter(entity => !entity.removed && entity.ready);
 
         // Perform pairwise collision checks among entities
         for (let i = 0; i < entities.length; i++) {

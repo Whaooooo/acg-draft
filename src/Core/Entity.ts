@@ -29,9 +29,6 @@ export class Entity {
     public tmpQua: THREE.Quaternion;
 
     public iFFNumber: number;
-    public targets: Entity[];
-    public currentHP: number = 1;
-    public collisionDamage: number = 2000;
 
     constructor(game: Game, assetName: EntityName, pos?: THREE.Vector3, qua?: THREE.Quaternion, iFFNumber?: number) {
         this.entityId = game.requestNewEntityId(this);
@@ -48,7 +45,6 @@ export class Entity {
         this.tmpQua = qua ? qua : new THREE.Quaternion();
 
         this.iFFNumber = iFFNumber ? iFFNumber : 0;
-        this.targets = [];
 
         this.load();
     }
@@ -146,7 +142,9 @@ export class Entity {
     public dispose(): void {
         if (this.removed) return;
         this.game.entityMap.delete(this.entityId);
-        this.scene.remove(this.model);
+        if (this._model) {
+            this.scene.remove(this._model);
+        }
         this.removed = true;
         this.ready = false;
 
