@@ -17,6 +17,7 @@ import {
 } from '../Configs/AnimationBound';
 import { updatePlaneAnimations } from '../Utils/AnimationUtils';
 import {SoundEnum} from "../Configs/SoundPaths";
+import {Explosion} from "./Explosion";
 
 export class Plane extends MovableEntity {
     public name: EntityName;
@@ -264,6 +265,8 @@ export class Plane extends MovableEntity {
                 options,
             );
         }
+
+        new Explosion(this.game, this.getPosition(), this.getQuaternion(), 50, 2.0, 0.1, 0.45, 0.8);
 
         // Stop and remove the engine sounds
         this.engineSounds.forEach(({ soundId }) => {

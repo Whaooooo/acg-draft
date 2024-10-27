@@ -23,7 +23,7 @@ export class MovableEntity extends Entity {
         velocity?: THREE.Vector3,
         iFFNumber?: number,
     ) {
-        super(game, assetName, pos, qua);
+        super(game, assetName, pos, qua, iFFNumber);
         this.velocity = velocity ? velocity : new THREE.Vector3();
         //############################################### Need to implement weapons initialization
         this.game.movableEntityMap.set(this.entityId, this);
@@ -41,6 +41,7 @@ export class MovableEntity extends Entity {
         for (const weapon of this.weapons) {
             weapon.dispose();
         }
+        this.game.movableEntityMap.delete(this.entityId);
         this.weapons = [];
         super.dispose();
     }

@@ -94,10 +94,7 @@ export class Game {
         this.soundManager = new SoundManager(Array.from(this.playerMap.values()), this.cameraManager.cameras, this.scene);
 
         // Initialize TargetManager with players and NPCs
-        this.targetManager = new TargetManager([
-            Array.from(this.playerMap.values()),  // Players array
-            Array.from(this.npcPlaneMap.values()) // NPC planes array
-        ]);
+        this.targetManager = new TargetManager(this);
 
         // Initialize CollisionManager
         this.collisionManager = new CollisionManager(this);
@@ -219,19 +216,7 @@ export class Game {
     }
 
     private update(deltaTime: number): void {
-        // Update players
-        this.playerMap.forEach((player) => {
-            if (player.ready) {
-                player.update(deltaTime);
-            }
-        });
-
-        // Update NPCs
-        this.npcPlaneMap.forEach((npc) => {
-            if (npc.ready) {
-                npc.update(deltaTime);
-            }
-        });
+        this.entityMap.forEach(entity => entity.update(deltaTime));
 
         // Update camera positions and orientations based on player inputs
         this.cameraManager.updateCameras(deltaTime);

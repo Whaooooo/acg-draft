@@ -1,44 +1,14 @@
-// src/Managers/CollisionManager.ts
-
 import { Game } from '../Game';
 import * as THREE from 'three';
-import { Entity } from "../Core/Entity";
 import { Missile } from '../Entities/Missile';
-import {MovableEntity} from "../Core/MovableEntity";
+import { MovableEntity } from "../Core/MovableEntity";
 
 export class CollisionManager {
     public game: Game;
     public bounds: number = 100000;
 
-    // Cache to store bounding boxes for entities
-    private entityBoundingBoxes: Map<Entity, THREE.Box3> = new Map();
-
     constructor(game: Game) {
         this.game = game;
-    }
-
-    /**
-     * Initializes or updates the bounding box for a given entity.
-     * @param entity The entity to update.
-     */
-    private updateBoundingBox(entity: Entity): void {
-        if (!entity._model || !entity.ready || entity.removed) {
-            // If the entity is removed or not ready, remove its bounding box from the cache
-            if (this.entityBoundingBoxes.has(entity)) {
-                this.entityBoundingBoxes.delete(entity);
-            }
-            return;
-        }
-
-        let box = this.entityBoundingBoxes.get(entity);
-        if (!box) {
-            // If bounding box doesn't exist, create and add it to the cache
-            box = new THREE.Box3().setFromObject(entity._model, true);
-            this.entityBoundingBoxes.set(entity, box);
-        } else {
-            // If bounding box exists, update its dimensions
-            box.setFromObject(entity._model, true);
-        }
     }
 
     /**
@@ -46,41 +16,33 @@ export class CollisionManager {
      * @param entity1 First entity
      * @param entity2 Second entity
      */
-    private checkBoxCollisionAndIFFNumber(entity1: MovableEntity, entity2: MovableEntity): void {
-        if (entity1.iFFNumber === entity2.iFFNumber) return; // Skip if same IFFNumber
+    private checkCollision(entity1: MovableEntity, entity2: MovableEntity): void {
+        if (entity1.iFFNumber === entity2.iFFNumber) return;
 
-        const box1 = this.entityBoundingBoxes.get(entity1);
-        const box2 = this.entityBoundingBoxes.get(entity2);
+        if (!(entity1._model && entity2._model)) {return;}
 
-        if (!box1 || !box2) return; // Bounding boxes must exist
+        const box1 = new THREE.Box3().setFromObject(entity1._model);
+        const box2 = new THREE.Box3().setFromObject(entity2._model);
 
         if (box1.intersectsBox(box2)) {
             entity1.currentHP -= entity2.collisionDamage;
             entity2.currentHP -= entity1.collisionDamage;
 
-            // Dispose entities if HP drops to zero or below
-            if (entity1.currentHP <= 0) {
-                entity1.dispose();
-                this.entityBoundingBoxes.delete(entity1);
-            }
-            if (entity2.currentHP <= 0) {
-                entity2.dispose();
-                this.entityBoundingBoxes.delete(entity2);
-            }
+            if (entity1.currentHP <= 0) entity1.dispose();
+            if (entity2.currentHP <= 0) entity2.dispose();
         }
     }
 
-
     /**
      * Checks if a projectile is out of bounds.
-     * @param projectile Missile entity
+     * @param entity MovableEntity entity
      * @returns boolean indicating if out of bounds
      */
-    public isProjectileOutOfBounds(projectile: Missile): boolean {
-        if (projectile.removed) return true;
-        if (!projectile._model) return false;
+    private isOutOfBounds(entity: MovableEntity): boolean {
+        if (entity.removed) return true;
+        if (!entity._model) return false;
 
-        const position = projectile.getPosition();
+        const position = entity.getPosition();
 
         return (
             Math.abs(position.x) > this.bounds ||
@@ -90,39 +52,33 @@ export class CollisionManager {
     }
 
     /**
-     * Updates all collisions and handles projectiles.
+     * Updates all collisions and handles out-of-bounds detection.
      * @param deltaTime Time elapsed since last update
      */
     public update(deltaTime: number): void {
-        // Update and handle projectiles
+        // Update projectiles and check for out-of-bounds
         this.game.projectileMap.forEach((projectile) => {
             if (projectile.removed) return;
 
             projectile.update(deltaTime);
 
-            // Remove projectiles that are out of bounds
-            if (this.isProjectileOutOfBounds(projectile)) {
+            if (this.isOutOfBounds(projectile)) {
                 console.log('Missile out of bounds');
                 projectile.dispose();
-                this.entityBoundingBoxes.delete(projectile);
-                return;
             }
         });
 
-        // Update bounding boxes for all entities
-        this.game.entityMap.forEach((entity) => {
-            this.updateBoundingBox(entity);
-        });
-
-        // Convert entityMap to an array for pairwise collision checking
+        // Perform pairwise collision checks among movable entities
         const entities = Array.from(this.game.movableEntityMap.values()).filter(entity => !entity.removed && entity.ready);
 
-        // Perform pairwise collision checks among entities
         for (let i = 0; i < entities.length; i++) {
+            if (this.isOutOfBounds(entities[i])) {
+                console.log(`Entity ${entities[i].entityId} is out of bounds`);
+                entities[i].dispose();
+                continue;
+            }
             for (let j = i + 1; j < entities.length; j++) {
-                const entity1 = entities[i];
-                const entity2 = entities[j];
-                this.checkBoxCollisionAndIFFNumber(entity1, entity2);
+                this.checkCollision(entities[i], entities[j]);
             }
         }
     }

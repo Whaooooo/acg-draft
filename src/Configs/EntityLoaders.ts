@@ -3,6 +3,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { Entity } from '../Core/Entity';
+import {TextureLoader} from "three";
+import {texture} from "three/src/nodes/accessors/TextureNode";
 
 export type LoaderFunction = (
     entity: Entity,
@@ -50,19 +52,45 @@ export const EntityLoaders: { [key: string]: LoaderFunction } = {
         onProgress: (xhr: ProgressEvent<EventTarget>) => void,
         onError: (error: ErrorEvent) => void
     ): void => {
-        const geometry = new THREE.BoxGeometry();
-        const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-        const mesh = new THREE.Mesh(geometry, material);
-        entity._model = new THREE.Group();
-        entity._model.add(mesh);
-        entity._model.position.copy(entity.tmpPos);
-        entity._model.quaternion.copy(entity.tmpQua);
-        entity.scene.add(entity._model);
-
-        // Initialize the mixer even if there are no animations
-        entity.mixer = new THREE.AnimationMixer(entity._model);
-
         onLoad();
+    },
+
+    texture: (
+        entity: Entity,
+        onLoad: () => void,
+        onProgress: (xhr: ProgressEvent<EventTarget>) => void,
+        onError: (error: ErrorEvent) => void
+    ): void => {
+        const pathParts = entity.assetPath.split('/');
+        const fileName = pathParts.pop();
+        if (!fileName) {
+            console.error(`Undefined fileName in ${entity.assetPath}`);
+            return;
+        }
+        const dir = pathParts.join('/');
+
+        const loader = new TextureLoader().setPath(`${entity.assetsPath}${dir}/`);
+
+        loader.load(
+            fileName,
+            (texture) => {
+                // @ts-ignore
+                entity.texture = texture;
+                onLoad();
+            },
+            (xhr) => {
+                onProgress(xhr);
+            },
+            (err) => {
+                if (err instanceof ErrorEvent) {
+                    onError(err);
+                } else if (typeof err === 'string') {
+                    onError(new ErrorEvent(err));
+                } else {
+                    onError(new ErrorEvent('An unknown error occurred during loading.'));
+                }
+            }
+        );
     },
 
     gltf: (

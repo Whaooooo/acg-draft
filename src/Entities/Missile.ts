@@ -10,6 +10,7 @@ import {SoundEnum} from "../Configs/SoundPaths";
 import {Player} from "./Player";
 import { applyVelocityDecay, applyThrust } from "../Utils/MoveUtils";
 import {soundPropertyToOption} from "../Configs/SoundProperty";
+import {Explosion} from "./Explosion";
 
 export class Missile extends MovableEntity {
     public target: Entity | null;
@@ -183,6 +184,8 @@ export class Missile extends MovableEntity {
                 options,
             );
         }
+
+        new Explosion(this.game, this.getPosition(), this.getQuaternion(), 20, 1.5, 0.05);
 
         // Stop and remove the missile sound
         if (this.missileSoundId) {

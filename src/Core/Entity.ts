@@ -41,10 +41,10 @@ export class Entity {
         this.game = game;
         this.scene = game.scene;
 
-        this.tmpPos = pos ? pos : new THREE.Vector3();
-        this.tmpQua = qua ? qua : new THREE.Quaternion();
+        this.tmpPos = pos ?? new THREE.Vector3();
+        this.tmpQua = qua ?? new THREE.Quaternion();
 
-        this.iFFNumber = iFFNumber ? iFFNumber : 0;
+        this.iFFNumber = iFFNumber ?? 0;
 
         this.load();
     }
@@ -145,8 +145,6 @@ export class Entity {
         if (this._model) {
             this.scene.remove(this._model);
         }
-        this.removed = true;
-        this.ready = false;
 
         // Dispose of the mixer
         if (this.mixer) {
@@ -154,5 +152,8 @@ export class Entity {
             this.mixer.uncacheRoot(this.model);
             this.mixer = undefined;
         }
+
+        this.removed = true;
+        this.ready = false;
     }
 }

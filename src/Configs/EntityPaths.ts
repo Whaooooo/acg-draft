@@ -2,7 +2,7 @@
 
 export interface EntityConfig {
     path: string;
-    loaderType: 'gltf' | 'minimal';
+    loaderType: 'gltf' | 'minimal' | 'texture';
     children: readonly string[];
     // Add other configuration options as needed
 }
@@ -28,6 +28,11 @@ export const EntityConfigs = {
         loaderType: 'gltf',
         children: [],
     },
+    explosion: {
+        path: 'plane/explosion.png',
+        loaderType: 'texture',
+        children: [],
+    }
     // Add other entities as needed
 } as const;
 
