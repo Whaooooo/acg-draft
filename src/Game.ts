@@ -108,14 +108,13 @@ export class Game {
     private createDebugScene(): void {
         // Create a player
         console.log('Request creating player');
-        const player1 = new Player(this, 'f22', new THREE.Vector3(0, 20, 0), undefined, undefined, 1, 0);
-        this.playerMap.set(player1.entityId, player1);
+        const player1 = new Player(this, 'f22', new THREE.Vector3(20, 20, 0), undefined, undefined, 1, 0);
+        // const player2 = new Player(this, 'f22', new THREE.Vector3(-20, 20, 0), undefined, undefined, 1, 0);
 
         // Optionally, add some NPCs for testing
         console.log('Request creating npc');
         const npcPosition = new THREE.Vector3(0, 30, -60);
         const npc = new NPCPlane(this, 'f22', npcPosition);
-        this.npcPlaneMap.set(npc.entityId, npc);
     }
 
     public loadGame(): void {
