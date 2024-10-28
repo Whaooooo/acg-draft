@@ -89,6 +89,7 @@ export const F14EngineSound: SoundProperty = createSoundProperty({
     name: 'f14engine',
     loop: true,
     refDistance: 2,
+    maxDistance: 70,
     displacement: new THREE.Vector3(0, 0, 4),
 });
 
@@ -97,7 +98,7 @@ export const F14AfterburnerSound: SoundProperty = createSoundProperty({
     loop: true,
     volume: 0,
     refDistance: 3,
-    maxDistance: 50,
+    maxDistance: 100,
     displacement: new THREE.Vector3(0, 0, 4),
 });
 
@@ -125,8 +126,8 @@ export const Fox2Sound: SoundProperty = createSoundProperty({
 export const MissileShotSound: SoundProperty = createSoundProperty({
     name: 'missileshot',
     loop: true,
-    refDistance: 3,
-    maxDistance: 30,
+    refDistance: 5,
+    maxDistance: 50,
     targetAll: true,
 });
 

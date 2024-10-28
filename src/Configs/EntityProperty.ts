@@ -84,8 +84,8 @@ export const PlayerProperties: {
     f22_stdm: {
         damage: 300,
         pulsion: 200,
-        xSpeedDecrease: 0.5,
-        ySpeedDecrease: 0.5,
+        xSpeedDecrease: 0.3,
+        ySpeedDecrease: 0.3,
         zSpeedDecrease: 0.9,
         rotationSpeed: 90,
         lockRange: 2000,

@@ -28,7 +28,7 @@ export class Player extends Plane {
         super(game, assetName, planeProperty, pos, qua, velocity, iFFNumber);
         game.playerMap.set(this.entityId, this);
 
-        this.viewMode = ViewMode.ThirdPerson;
+        this.viewMode = ViewMode.FirstPerson;
 
         // Initialize key mapping configuration
         this.keyConfig = KeyBoundConfigs[keyConfigIndex] || KeyBoundConfigs[0];
