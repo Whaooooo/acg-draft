@@ -25,7 +25,7 @@ body, html {
 #main-menu h1 {
     color: #fff;
     font-size: 48px;
-    margin-bottom: 50px;
+    margin-bottom: 20px;
     text-shadow: 2px 2px 5px black;
 }
 
@@ -42,6 +42,27 @@ body, html {
 
 #main-menu button:hover {
     background-color: #0056b3;
+}
+
+/* Controls Section Styles */
+#controls {
+    margin-top: 30px;
+    text-align: left;
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 20px;
+    border-radius: 10px;
+}
+
+#controls h2 {
+    font-size: 32px;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+#controls p {
+    font-size: 18px;
+    margin: 5px 0;
+    color: #333;
 }
 
 /* Game Container Styles */
@@ -72,21 +93,6 @@ body, html {
 .hud-container .missile-display {
     top: 30px; /* Position below HP display */
 }
-
-/* Enemy Marker Styles */
-.enemy-marker {
-    width: 10px;
-    height: 10px;
-    background-color: red;
-    border: 2px solid white;
-    border-radius: 50%;
-    pointer-events: none;
-    transform: translate(-50%, -50%);
-}
-
-/* webpage/styles.css */
-
-/* ... existing styles ... */
 
 /* Mission Failed Screen Styles */
 #mission-failed-screen {
