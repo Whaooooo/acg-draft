@@ -43,6 +43,9 @@ export class Player extends Plane {
         // Handle input
         this.handleInput(deltaTime);
 
+        // Update camera shake based on lostSpeedNorm
+        this.updateCameraShake();
+
         // Call the parent update
         super.update(deltaTime);
     }
@@ -141,6 +144,19 @@ export class Player extends Plane {
         if (inputManager.checkInput(keyConfig.reTarget)) {
             this.reTarget();
         }
+    }
+
+    private updateCameraShake(): void {
+        // Use lostSpeedNorm to calculate shake intensity
+        const maxLostSpeedForShake = this.property.maxPulsion; // Or adjust as appropriate
+        let intensity = Math.min(1, this.lostSpeedNorm / maxLostSpeedForShake);
+
+        // Scale the intensity to control the shake effect
+        const scalingFactor = 0.2; // Adjust this value as needed
+        intensity *= scalingFactor;
+
+        // Set the shake intensity in the camera manager
+        this.game.cameraManager.setShakeIntensity(this, intensity);
     }
 
     public getOwnerPlayer(): Player[] {

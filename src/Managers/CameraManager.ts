@@ -19,6 +19,32 @@ interface CameraControl {
     thirdPersonDistance: number; // Distance from the player
 }
 
+class ShakeEffect {
+    public initialIntensity: number;
+    public duration: number;
+    public decayRate: number;
+    public elapsedTime: number;
+
+    constructor(initialIntensity: number, duration: number, decayRate: number) {
+        this.initialIntensity = initialIntensity;
+        this.duration = duration;
+        this.decayRate = decayRate;
+        this.elapsedTime = 0;
+    }
+
+    public getCurrentIntensity(): number {
+        return this.initialIntensity * Math.exp(-this.decayRate * this.elapsedTime);
+    }
+
+    public update(deltaTime: number): void {
+        this.elapsedTime += deltaTime;
+    }
+
+    public isFinished(): boolean {
+        return this.elapsedTime >= this.duration;
+    }
+}
+
 export class CameraManager {
     public cameras: Map<Player, THREE.PerspectiveCamera>;
     public cameraControls: Map<Player, CameraControl> = new Map();
@@ -29,6 +55,10 @@ export class CameraManager {
     // Clamp angles to prevent extreme rotations
     private readonly maxPitch: number = THREE.MathUtils.degToRad(85);
     private readonly minPitch: number = THREE.MathUtils.degToRad(-85);
+
+    // New map to store shake effects per player
+    private shakeEffects: Map<Player, ShakeEffect[]> = new Map();
+    private currentShakeIntensity: Map<Player, number> = new Map();
 
     constructor(players: Player[]) {
         this.cameras = new Map<Player, THREE.PerspectiveCamera>();
@@ -115,6 +145,17 @@ export class CameraManager {
         });
     }
 
+    public addShake(player: Player, intensity: number, duration: number, decayRate: number): void {
+        if (!this.shakeEffects.has(player)) {
+            this.shakeEffects.set(player, []);
+        }
+        this.shakeEffects.get(player)!.push(new ShakeEffect(intensity, duration, decayRate));
+    }
+
+    public setShakeIntensity(player: Player, intensity: number): void {
+        this.currentShakeIntensity.set(player, intensity);
+    }
+
     /**
      * Updates all cameras based on player movements and mouse input.
      */
@@ -156,6 +197,8 @@ export class CameraManager {
 
             // Always update camera position and orientation to stick to the player
             this.updateCameraPositionAndOrientation(player);
+            // Apply shake effect
+            this.applyShakeEffect(player, camera);
         });
     }
 
@@ -226,6 +269,20 @@ export class CameraManager {
                 // Ensure the camera's up vector is consistent
                 camera.up.set(0, 1, 0);
             }
+        }
+    }
+
+    private applyShakeEffect(player: Player, camera: THREE.PerspectiveCamera): void {
+        const intensity = this.currentShakeIntensity.get(player) || 0;
+
+        if (intensity > 0) {
+            const shakeOffset = new THREE.Vector3(
+                (Math.random() - 0.5) * 2 * intensity,
+                (Math.random() - 0.5) * 2 * intensity,
+                (Math.random() - 0.5) * 2 * intensity
+            );
+
+            camera.position.add(shakeOffset);
         }
     }
 

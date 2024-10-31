@@ -2,6 +2,7 @@ import { Game } from '../Game';
 import * as THREE from 'three';
 import { Missile } from '../Entities/Missile';
 import { MovableEntity } from "../Core/MovableEntity";
+import {Player} from "../Entities/Player";
 
 export class CollisionManager {
     public game: Game;
@@ -27,6 +28,16 @@ export class CollisionManager {
         if (box1.intersectsBox(box2)) {
             entity1.currentHP -= entity2.collisionDamage;
             entity2.currentHP -= entity1.collisionDamage;
+
+            [entity1, entity2].forEach(entity => {
+                if (entity instanceof Player) {
+                    const intensity = 2.0; // Adjust as needed
+                    const duration = 0.3; // Short duration
+                    const decayRate = 10; // Quick decay
+
+                    this.game.cameraManager.addShake(entity, intensity, duration, decayRate);
+                }
+            });
 
             if (entity1.currentHP <= 0) entity1.dispose();
             if (entity2.currentHP <= 0) entity2.dispose();
