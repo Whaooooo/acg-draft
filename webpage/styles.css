@@ -74,25 +74,131 @@ body, html {
     left: 0;
 }
 
-/* HUD Styles */
+/* HUD 容器 */
 .hud-container {
     position: absolute;
-    pointer-events: none; /* So HUD doesn't block mouse events */
-    color: white;
-    font-size: 16px;
-    text-shadow: 1px 1px 2px black;
+    overflow: hidden;
+    width: 700px;
+    height: 500px;
 }
 
-.hud-container .hp-display,
-.hud-container .missile-display {
+/* 血量条容器 */
+.hp-bar-container {
     position: absolute;
-    left: 10px;
-    top: 10px;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 40px; /* 根据需要调整高度 */
+    background-color: #f00; /* 红色背景 */
+    border: 2px solid #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.hud-container .missile-display {
-    top: 30px; /* Position below HP display */
+/* 血量条 */
+.hp-bar {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 100%;
+    background-color: #0f0; /* 绿色 */
 }
+
+/* 血量文本 */
+.hp-text {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 16px;
+    color: white;
+    z-index: 1;
+}
+
+/* 上方容器 */
+.upper-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    bottom: 40px; /* 留出给血量条的空间 */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px; /* 向上调整，与血量条拉开距离 */
+}
+
+/* 左侧装填状态容器 */
+.reload-container {
+    width: 40%; /* 左右等分 */
+    height: 100%;
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-end;
+}
+
+/* 装填状态竖条 */
+.reload-bar {
+    width: 3%; /* 变窄 */
+    background-color: gray;
+    height: 90%; /* 略小于容器高度 */
+}
+
+/* 右侧武器列表容器 */
+.weapon-list-container {
+    width: 55%; /* 左右等分 */
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+}
+
+/* 武器条目 */
+.weapon-entry {
+    width: 100%;
+    height: 22%; /* 高度等分为 4 份，留出间距 */
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+/* 武器名称 */
+.weapon-name {
+    position: absolute;
+    left: 5px;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 20px; /* 放大字体 */
+    color: #00ff00;
+}
+
+/* 剩余数量 */
+.weapon-count {
+    position: absolute;
+    left: 110px; /* 根据需要调整位置 */
+    font-family: 'Press Start 2P', cursive;
+    font-size: 20px; /* 放大字体 */
+    color: #00ff00;
+}
+
+/* 迷你装填指示容器 */
+.mini-reload-container {
+    position: absolute;
+    right: 5px;
+    display: flex;
+    align-items: flex-end;
+    height: 80%; /* 略小于条目高度 */
+    width: 20%; /* 根据需要调整宽度 */
+}
+
+/* 迷你装填竖条 */
+.mini-reload-bar {
+    width: 20%; /* 占容器宽度的 20% */
+    background-color: gray;
+    height: 100%;
+    margin-right: 2px;
+}
+
+/* 字体引入 */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
 
 /* Mission Failed Screen Styles */
 #mission-failed-screen {
