@@ -86,14 +86,14 @@ export class Entity {
 
     public getPosition(): THREE.Vector3 {
         if (this._model) {
-            this.tmpPos = this._model.position;
+            this.tmpPos = this._model.position.clone();
         }
         return this.tmpPos.clone();
     }
 
     public getQuaternion(): THREE.Quaternion {
         if (this._model) {
-            this.tmpQua = this._model.quaternion;
+            this.tmpQua = this._model.quaternion.clone();
         }
         return this.tmpQua.clone();
     }

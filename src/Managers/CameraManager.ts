@@ -56,8 +56,10 @@ export class CameraManager {
     private readonly maxPitch: number = THREE.MathUtils.degToRad(85);
     private readonly minPitch: number = THREE.MathUtils.degToRad(-85);
 
-    // New map to store shake effects per player
+    // Map to store shake effects per player
     private shakeEffects: Map<Player, ShakeEffect[]> = new Map();
+
+    // Map to store current shake intensity per player (for infinite or continuous shaking)
     private currentShakeIntensity: Map<Player, number> = new Map();
 
     constructor(players: Player[]) {
@@ -81,7 +83,7 @@ export class CameraManager {
                 // Third-Person Controls
                 thirdPersonYaw: 0,
                 thirdPersonPitch: THREE.MathUtils.degToRad(-30), // Slight downward pitch
-                thirdPersonDistance: 50, // Default distance as per your latest requirement
+                thirdPersonDistance: 50, // Default distance
             };
 
             // Store the camera and controls associated with the player
@@ -124,7 +126,7 @@ export class CameraManager {
                 // Initialize relative position based on accumulated yaw and pitch
                 controls.thirdPersonYaw = 0;
                 controls.thirdPersonPitch = THREE.MathUtils.degToRad(-30); // Slight pitch down
-                controls.thirdPersonDistance = 50; // Set third-person distance as per requirement
+                controls.thirdPersonDistance = 50; // Set third-person distance
 
                 // Reset accumulated first-person angles
                 controls.firstPersonYaw = 0;
@@ -145,6 +147,13 @@ export class CameraManager {
         });
     }
 
+    /**
+     * Adds a shake effect to a player's camera.
+     * @param player The player whose camera should shake.
+     * @param intensity The initial intensity of the shake.
+     * @param duration The total duration of the shake effect.
+     * @param decayRate The rate at which the shake intensity decays.
+     */
     public addShake(player: Player, intensity: number, duration: number, decayRate: number): void {
         if (!this.shakeEffects.has(player)) {
             this.shakeEffects.set(player, []);
@@ -152,6 +161,11 @@ export class CameraManager {
         this.shakeEffects.get(player)!.push(new ShakeEffect(intensity, duration, decayRate));
     }
 
+    /**
+     * Sets the current shake intensity for a player's camera.
+     * @param player The player whose camera should shake.
+     * @param intensity The intensity of the shake.
+     */
     public setShakeIntensity(player: Player, intensity: number): void {
         this.currentShakeIntensity.set(player, intensity);
     }
@@ -197,8 +211,9 @@ export class CameraManager {
 
             // Always update camera position and orientation to stick to the player
             this.updateCameraPositionAndOrientation(player);
+
             // Apply shake effect
-            this.applyShakeEffect(player, camera);
+            this.applyShakeEffect(player, camera, deltaTime);
         });
     }
 
@@ -272,14 +287,41 @@ export class CameraManager {
         }
     }
 
-    private applyShakeEffect(player: Player, camera: THREE.PerspectiveCamera): void {
-        const intensity = this.currentShakeIntensity.get(player) || 0;
+    /**
+     * Applies the combined shake effect to the camera based on the current intensity and active shake effects.
+     * @param player The player whose camera is being shaken.
+     * @param camera The camera to apply the shake to.
+     * @param deltaTime The time since the last update.
+     */
+    private applyShakeEffect(player: Player, camera: THREE.PerspectiveCamera, deltaTime: number): void {
+        let totalIntensity = this.currentShakeIntensity.get(player) || 0;
 
-        if (intensity > 0) {
+        const shakeEffects = this.shakeEffects.get(player);
+        if (shakeEffects) {
+            // Update shake effects and remove any finished ones
+            for (let i = shakeEffects.length - 1; i >= 0; i--) {
+                const shake = shakeEffects[i];
+                shake.update(deltaTime);
+
+                if (shake.isFinished()) {
+                    shakeEffects.splice(i, 1);
+                } else {
+                    totalIntensity += shake.getCurrentIntensity();
+                }
+            }
+
+            // Clean up if no more shake effects
+            if (shakeEffects.length === 0) {
+                this.shakeEffects.delete(player);
+            }
+        }
+
+        // Apply shake if there's any intensity
+        if (totalIntensity > 0) {
             const shakeOffset = new THREE.Vector3(
-                (Math.random() - 0.5) * 2 * intensity,
-                (Math.random() - 0.5) * 2 * intensity,
-                (Math.random() - 0.5) * 2 * intensity
+                (Math.random() - 0.5) * 2 * totalIntensity,
+                (Math.random() - 0.5) * 2 * totalIntensity,
+                (Math.random() - 0.5) * 2 * totalIntensity
             );
 
             camera.position.add(shakeOffset);

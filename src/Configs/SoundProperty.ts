@@ -123,6 +123,15 @@ export const Fox2Sound: SoundProperty = createSoundProperty({
     targetAll: false,
 });
 
+export const Fox3Sound: SoundProperty = createSoundProperty({
+    name: 'fox3',
+    cooldown: 30,
+    refDistance: 1000,
+    maxDistance: 1000,
+    loop: false,
+    targetAll: false,
+});
+
 export const MissileShotSound: SoundProperty = createSoundProperty({
     name: 'missileshot',
     loop: true,

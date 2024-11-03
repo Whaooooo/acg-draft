@@ -131,7 +131,7 @@ export class SoundManager {
             if (soundPosition) {
                 // Positional sound
                 sound = new THREE.PositionalAudio(listener);
-                sound.position.copy(soundPosition);
+                sound.position.copy(soundPosition.clone());
                 sound.setRefDistance(options?.refDistance ?? 1);
                 sound.setMaxDistance(options?.maxDistance ?? 20);
                 sound.setRolloffFactor(options?.rolloffFactor ?? 1);

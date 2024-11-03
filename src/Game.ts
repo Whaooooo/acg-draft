@@ -99,7 +99,7 @@ export class Game {
         // Initialize CollisionManager
         this.collisionManager = new CollisionManager(this);
 
-        this.hudManager = new HUDManager(Array.from(this.playerMap.values()), this.cameraManager, this.sceneManager.renderer);
+        this.hudManager = new HUDManager(this);
 
         // Wait for sound to be ready before starting the game
         this.waitForSoundToBeReady();
@@ -108,13 +108,15 @@ export class Game {
     private createDebugScene(): void {
         // Create a player
         console.log('Request creating player');
-        const player1 = new Player(this, 'f22', new THREE.Vector3(20, 20, 0), undefined, undefined, 1, 0);
-        // const player2 = new Player(this, 'f22', new THREE.Vector3(-20, 20, 0), undefined, undefined, 1, 0);
+        const player1 = new Player(this, 'f22', new THREE.Vector3(20, 2000, 0), undefined, undefined, 1, 0);
+        // const player2 = new Player(this, 'f22', new THREE.Vector3(20, 200, -100), undefined, undefined, 0, 1);
 
         // Optionally, add some NPCs for testing
         console.log('Request creating npc');
-        const npcPosition = new THREE.Vector3(0, 30, -60);
-        const npc = new NPCPlane(this, 'f22', npcPosition);
+        const npc1 = new NPCPlane(this, 'plane', new THREE.Vector3(20, 2000, -200));
+        const npc2 = new NPCPlane(this, 'plane', new THREE.Vector3(20, 2000, -250));
+        const npc3 = new NPCPlane(this, 'plane', new THREE.Vector3(20, 2000, -300));
+        const npc4 = new NPCPlane(this, 'plane', new THREE.Vector3(20, 2000, -350));
     }
 
     public loadGame(): void {
@@ -297,6 +299,10 @@ export class Game {
         // Remove renderer from DOM
         if (this.sceneManager.renderer.domElement.parentNode) {
             this.sceneManager.renderer.domElement.parentNode.removeChild(this.sceneManager.renderer.domElement);
+        }
+
+        if (this.soundManager) {
+            this.soundManager.dispose();
         }
 
         // Dispose of Three.js objects

@@ -7,7 +7,7 @@ import {
     ExplosionSound, Exs2EngineSound,
     F14AfterburnerSound,
     F14EngineSound,
-    Fox2Sound, MissileShotSound, PropellerSound,
+    Fox2Sound, Fox3Sound, MissileShotSound, PropellerSound,
     SoundProperty,
     WindSound
 } from './SoundProperty';
@@ -101,6 +101,26 @@ export const PlayerProperties: {
             'fire' : MissileShotSound
         },
     },
+    f22_6aam: {
+        damage: 600,
+        pulsion: 200,
+        xSpeedDecrease: 0.4,
+        ySpeedDecrease: 0.4,
+        zSpeedDecrease: 0.7,
+        rotationSpeed: 90,
+        lockRange: 3000,
+        lockAngle: 40,
+        lockNumber: 1,
+        loadTime: 24,
+        loadNumber: 6,
+        totalNumber: 60,
+        firePosition: [[2.0, -3.0, 7], [1.2, -3.0, 7], [0.4, -3.0, 7], [-0.4, -3.0, 7], [-1.2, -3.0, 7], [-2.0, -2.5, 7]],
+        sound: {
+            'speech' : Fox3Sound,
+            'explosion' : ExplosionSound,
+            'fire' : MissileShotSound
+        },
+    },
     // Add other entities as needed
 } as const;
 
@@ -148,6 +168,26 @@ export const NPCProperties: {
         firePosition: [[2.5, -2.5, 7], [-2.5, -2.5, 7]],
         sound: {
             'speech' : Fox2Sound,
+            'explosion' : ExplosionSound,
+            'fire' : MissileShotSound
+        },
+    },
+    f22_6aam: {
+        damage: 600,
+        pulsion: 200,
+        xSpeedDecrease: 0.4,
+        ySpeedDecrease: 0.4,
+        zSpeedDecrease: 0.7,
+        rotationSpeed: 90,
+        lockRange: 3000,
+        lockAngle: 40,
+        lockNumber: 1,
+        loadTime: 24,
+        loadNumber: 6,
+        totalNumber: 60,
+        firePosition: [[2.0, -3.0, 7], [1.2, -3.0, 7], [0.4, -3.0, 7], [-0.4, -3.0, 7], [-1.2, -3.0, 7], [-2.0, -2.5, 7]],
+        sound: {
+            'speech' : Fox3Sound,
             'explosion' : ExplosionSound,
             'fire' : MissileShotSound
         },

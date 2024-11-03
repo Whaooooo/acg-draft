@@ -4,27 +4,36 @@ import * as THREE from 'three';
 import { Player } from '../Entities/Player';
 import { CameraManager } from './CameraManager';
 import { Weapon } from '../Core/Weapon';
-
-interface Viewport {
-    left: number;
-    bottom: number;
-    width: number;
-    height: number;
-}
+import { Game } from '../Game';
 
 export class HUDManager {
+    private game: Game;
     private players: Player[];
     private cameraManager: CameraManager;
-    private renderer: THREE.WebGLRenderer;
     private domElements: Map<Player, HTMLDivElement>;
 
-    constructor(players: Player[], cameraManager: CameraManager, renderer: THREE.WebGLRenderer) {
-        this.players = players;
-        this.cameraManager = cameraManager;
-        this.renderer = renderer;
-        this.domElements = new Map();
+    // 定义 HUD 的尺寸
+    private hudWidth: number = 400;  // 根据需要调整
+    private hudHeight: number = 300; // 根据需要调整
 
-        // Initialize HUD elements for each player
+    constructor(game: Game) {
+        this.game = game;
+        this.players = Array.from(game.playerMap.values());
+        this.cameraManager = game.cameraManager;
+        this.domElements = new Map();
+    }
+
+    /**
+     * 更新 HUD，每次重新绘制所有内容。
+     */
+    public update(deltaTime: number): void {
+        // 清除现有的 HUD 元素
+        this.dispose();
+
+        // 重新获取当前的玩家列表
+        this.players = Array.from(this.game.playerMap.values());
+
+        // 重新绘制所有 HUD 元素
         this.players.forEach((player) => {
             const hudElement = this.createHUDElementForPlayer(player);
             document.body.appendChild(hudElement);
@@ -36,105 +45,169 @@ export class HUDManager {
         const hudContainer = document.createElement('div');
         hudContainer.classList.add('hud-container');
 
-        // Create elements for HP and missiles
-        const hpElement = document.createElement('div');
-        hpElement.classList.add('hp-display');
-        hudContainer.appendChild(hpElement);
+        // 设置 HUD 容器的固定尺寸
+        hudContainer.style.width = `${this.hudWidth}px`;
+        hudContainer.style.height = `${this.hudHeight}px`;
 
-        const missileElement = document.createElement('div');
-        missileElement.classList.add('missile-display');
-        hudContainer.appendChild(missileElement);
+        // 创建血量条
+        const hpBarContainer = document.createElement('div');
+        hpBarContainer.classList.add('hp-bar-container');
+        hudContainer.appendChild(hpBarContainer);
 
-        // Store references to these elements in the hudContainer
-        (hudContainer as any).hpElement = hpElement;
-        (hudContainer as any).missileElement = missileElement;
+        const hpBar = document.createElement('div');
+        hpBar.classList.add('hp-bar');
+        hpBarContainer.appendChild(hpBar);
 
-        // Initial content
-        hpElement.textContent = `HP: ${player.currentHP} / ${player.property.hp}`;
-        missileElement.textContent = `Missiles: ${this.getTotalMissiles(player)}`;
+        const hpText = document.createElement('div');
+        hpText.classList.add('hp-text');
+        hpBarContainer.appendChild(hpText);
 
-        // Style the HUD container
+        // 设置血量条的宽度和文本
+        const hp = Math.max(0, player.currentHP);
+        const maxHP = player.property.hp;
+        const hpPercentage = (hp / maxHP) * 100;
+        hpBar.style.width = `${hpPercentage}%`;
+        hpText.textContent = `${Math.round(hp)} / ${maxHP}`;
+
+        // 创建上方的容器（在血量条上方）
+        const upperContainer = document.createElement('div');
+        upperContainer.classList.add('upper-container');
+        hudContainer.appendChild(upperContainer);
+
+        // 左侧：当前选中武器的装填状态
+        const reloadContainer = document.createElement('div');
+        reloadContainer.classList.add('reload-container');
+        upperContainer.appendChild(reloadContainer);
+
+        // 创建装填状态竖条
+        const selectedWeapon = player.weapons[player.selectedWeaponIndex];
+        const loadNumber = selectedWeapon.property.loadNumber;
+        for (let i = 0; i < loadNumber; i++) {
+            const bar = document.createElement('div');
+            bar.classList.add('reload-bar');
+            reloadContainer.appendChild(bar);
+
+            const missilesRemaining = selectedWeapon.property.totalNumber - selectedWeapon.totalMissilesFired;
+            if (i >= missilesRemaining) {
+                // 没有剩余的导弹，此槽为空
+                bar.style.backgroundColor = 'gray';
+                bar.style.height = '100%';
+            } else {
+                const loadTimer = selectedWeapon.loadTimers[i];
+                if (loadTimer <= 0) {
+                    // 槽已装填
+                    bar.style.backgroundColor = '#00ff00'; // 绿色
+                    bar.style.height = '100%';
+                } else {
+                    // 槽正在装填
+                    const loadPercentage = Math.max(0, Math.min(1, (selectedWeapon.property.loadTime - loadTimer) / selectedWeapon.property.loadTime));
+                    bar.style.backgroundColor = '#ffff00'; // 黄色
+                    bar.style.height = `${loadPercentage * 100}%`;
+                }
+            }
+        }
+
+        // 右侧：武器列表
+        const weaponListContainer = document.createElement('div');
+        weaponListContainer.classList.add('weapon-list-container');
+        upperContainer.appendChild(weaponListContainer);
+
+        // 创建武器条目
+        player.weapons.forEach((weapon, index) => {
+            const weaponEntry = document.createElement('div');
+            weaponEntry.classList.add('weapon-entry');
+
+            // 武器名称
+            const weaponNameElement = document.createElement('div');
+            weaponNameElement.classList.add('weapon-name');
+            const weaponName = this.extractWeaponName(weapon.name);
+            weaponNameElement.textContent = (index === player.selectedWeaponIndex ? '>' : '') + weaponName;
+            weaponEntry.appendChild(weaponNameElement);
+
+            // 剩余数量
+            const weaponCountElement = document.createElement('div');
+            weaponCountElement.classList.add('weapon-count');
+            weaponCountElement.textContent = this.getWeaponRemainingCount(weapon).toString();
+            weaponEntry.appendChild(weaponCountElement);
+
+            // 迷你装填指示容器
+            const miniReloadContainer = document.createElement('div');
+            miniReloadContainer.classList.add('mini-reload-container');
+            weaponEntry.appendChild(miniReloadContainer);
+
+            // 创建迷你竖条
+            for (let i = 0; i < weapon.property.loadNumber; i++) {
+                const miniBar = document.createElement('div');
+                miniBar.classList.add('mini-reload-bar');
+                miniReloadContainer.appendChild(miniBar);
+
+                const missilesRemaining = weapon.property.totalNumber - weapon.totalMissilesFired;
+                if (i >= missilesRemaining) {
+                    // 没有剩余的导弹，此槽为空
+                    miniBar.style.backgroundColor = 'gray';
+                    miniBar.style.height = '100%';
+                } else {
+                    const loadTimer = weapon.loadTimers[i];
+                    if (loadTimer <= 0) {
+                        // 槽已装填
+                        miniBar.style.backgroundColor = '#00ff00'; // 绿色
+                        miniBar.style.height = '100%';
+                    } else {
+                        // 槽正在装填
+                        const loadPercentage = Math.max(0, Math.min(1, (weapon.property.loadTime - loadTimer) / weapon.property.loadTime));
+                        miniBar.style.backgroundColor = '#ffff00'; // 黄色
+                        miniBar.style.height = `${loadPercentage * 100}%`;
+                    }
+                }
+            }
+
+            weaponListContainer.appendChild(weaponEntry);
+        });
+
+        // 设置 HUD 容器样式
         hudContainer.style.position = 'absolute';
-        hudContainer.style.pointerEvents = 'none'; // So it doesn't block mouse events
-        hudContainer.style.color = 'white';
-        hudContainer.style.fontFamily = 'Arial, sans-serif';
-        hudContainer.style.fontSize = '16px';
-        hudContainer.style.textShadow = '1px 1px 2px black';
+        hudContainer.style.pointerEvents = 'none'; // 使其不阻挡鼠标事件
 
         return hudContainer;
     }
 
-    public update(deltaTime: number): void {
-        this.players.forEach((player) => {
-            const hudElement = this.domElements.get(player);
-            if (!hudElement) return;
-
-            // Update HP display
-            const hp = player.currentHP;
-            const maxHP = player.property.hp;
-            const hpDisplay = (hudElement as any).hpElement as HTMLDivElement;
-            if (hpDisplay) {
-                hpDisplay.textContent = `HP: ${Math.round(hp)} / ${maxHP}`;
-            }
-
-            // Update missiles display
-            const totalMissiles = this.getTotalMissiles(player);
-            const missileDisplay = (hudElement as any).missileElement as HTMLDivElement;
-            if (missileDisplay) {
-                missileDisplay.textContent = `Missiles: ${totalMissiles}`;
-            }
-        });
-    }
-
     public render(): void {
-        // Position HUD elements over the correct viewport
+        // 根据视口调整 HUD 元素的位置
         this.players.forEach((player) => {
             const hudElement = this.domElements.get(player);
             if (!hudElement) return;
 
-            // Get viewport dimensions from CameraManager
+            // 从 CameraManager 获取视口尺寸
             const viewport = this.cameraManager.getViewportForPlayer(player);
 
-            // Position the HUD element using CSS
-            hudElement.style.left = `${viewport.left}px`;
-            hudElement.style.top = `${viewport.top}px`;
-            hudElement.style.width = `${viewport.width}px`;
-            hudElement.style.height = `${viewport.height}px`;
+            // 使用 CSS 设置 HUD 元素的位置
+            hudElement.style.left = `${viewport.left + viewport.width - this.hudWidth - 20}px`; // 右侧留出20px边距
+            hudElement.style.top = `${viewport.top + viewport.height - this.hudHeight - 20}px`; // 下方留出20px边距
 
-            // Optionally, position HUD elements inside the container
-            const hpDisplay = (hudElement as any).hpElement as HTMLDivElement;
-            const missileDisplay = (hudElement as any).missileElement as HTMLDivElement;
-
-            if (hpDisplay) {
-                hpDisplay.style.position = 'absolute';
-                hpDisplay.style.left = '10px';
-                hpDisplay.style.top = '10px';
-            }
-
-            if (missileDisplay) {
-                missileDisplay.style.position = 'absolute';
-                missileDisplay.style.left = '10px';
-                missileDisplay.style.top = '30px';
-            }
+            // 固定 HUD 容器的宽度和高度
+            hudElement.style.width = `${this.hudWidth}px`;
+            hudElement.style.height = `${this.hudHeight}px`;
         });
     }
 
-    private getTotalMissiles(player: Player): number {
-        let totalMissiles = 0;
-        for (const weapon of player.weapons) {
-            totalMissiles += weapon.property.totalNumber - weapon.totalMissilesFired;
-        }
-        return totalMissiles;
+    private extractWeaponName(fullName: string): string {
+        const parts = fullName.split('_');
+        const name = parts[parts.length - 1];
+        return name.toUpperCase();
+    }
+
+    private getWeaponRemainingCount(weapon: Weapon): number {
+        return weapon.property.totalNumber - weapon.totalMissilesFired;
     }
 
     public dispose(): void {
-        // Remove HUD elements from the DOM
+        // 从 DOM 中移除 HUD 元素
         this.domElements.forEach((hudElement) => {
             if (hudElement.parentNode) {
                 hudElement.parentNode.removeChild(hudElement);
             }
         });
-        // Clear the map
+        // 清空映射
         this.domElements.clear();
     }
 }

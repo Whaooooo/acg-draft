@@ -31,9 +31,9 @@ export class CollisionManager {
 
             [entity1, entity2].forEach(entity => {
                 if (entity instanceof Player) {
-                    const intensity = 2.0; // Adjust as needed
-                    const duration = 0.3; // Short duration
-                    const decayRate = 10; // Quick decay
+                    const intensity = 0.1; // Adjust as needed
+                    const duration = 0.5; // Short duration
+                    const decayRate = 0.05; // Quick decay
 
                     this.game.cameraManager.addShake(entity, intensity, duration, decayRate);
                 }
