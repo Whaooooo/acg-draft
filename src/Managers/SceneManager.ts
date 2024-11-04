@@ -13,7 +13,7 @@ export class SceneManager {
 
     public water?: Water;
     public mountain?: Mountain;
-    public clouds: Cloud[] = [];
+    public cloud?: Cloud;
     public directionalLight?: THREE.DirectionalLight;
 
     constructor(scene: THREE.Scene) {
@@ -164,8 +164,8 @@ export class SceneManager {
         this.scene.add(water);
         this.water = water;
 
-        const cloud = new Cloud({ size: [1024, 48, 1024], opacity: 0.4, threshold: 0.6, range: 0.2, steps: 75, boxBound: new THREE.Vector3(60000.0, 500.0, 60000.0) }, this.renderer);
-        this.scene.add(cloud);
+        this.cloud = new Cloud({ size: [768, 48, 768], opacity: 0.5, threshold: 0.5, range: 0.15, steps: 100, boxBound: new THREE.Vector3(60000.0, 400.0, 60000.0) }, this.renderer);
+        this.scene.add(this.cloud);
 
         console.log('cloud');
 
@@ -184,6 +184,9 @@ export class SceneManager {
     public update(deltaTime: number): void {
         if (this.water) {
             (this.water.material as any).uniforms['time'].value += deltaTime;
+        }
+        if (this.cloud) {
+            this.cloud.update(deltaTime);
         }
     }
 }

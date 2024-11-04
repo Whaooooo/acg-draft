@@ -60,7 +60,7 @@ vec4 linearToSRGB( in vec4 value ) {
 }
 
 void main() {
-    vec3 origProj = vec3(vUv.x - 0.5, 0.0, vUv.y - 0.5);
+    vec3 origProj = vec3(vUv.x - 0.5, -0.5, vUv.y - 0.5);
 
     vec3 rayDir = normalize(sunLight / boxBound);
     vec2 bounds = hitBox(origProj, rayDir);
@@ -90,6 +90,7 @@ void main() {
 
 const renderVertexShader = /* glsl */`
 uniform vec3 cameraPos;
+uniform vec3 boxBound;
 
 varying vec3 vOrigin;
 varying vec3 vDirection;
@@ -99,6 +100,9 @@ varying vec4 worldPosition;
 #include <fog_pars_vertex>
 #include <shadowmap_pars_vertex>
 #include <logdepthbuf_pars_vertex>
+
+varying vec4 vShadowDirection[ NUM_DIR_LIGHT_SHADOWS ];
+varying vec4 vOriginShadowCoord[ NUM_DIR_LIGHT_SHADOWS ];
 
 void main() {
     vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
@@ -114,6 +118,20 @@ void main() {
     #include <logdepthbuf_vertex>
     #include <fog_vertex>
     #include <shadowmap_vertex>
+
+    #if NUM_DIR_LIGHT_SHADOWS > 0
+
+		#pragma unroll_loop_start
+		for ( int i = 0; i < NUM_DIR_LIGHT_SHADOWS; i ++ ) {
+
+            shadowWorldPosition = modelMatrix * vec4(vOrigin, 1.0) + vec4( shadowWorldNormal * directionalLightShadows[ i ].shadowNormalBias, 0 );
+			vOriginShadowCoord[ i ] = directionalShadowMatrix[ i ] * shadowWorldPosition;
+			vShadowDirection[ i ] = directionalShadowMatrix[ i ] * (modelMatrix *  vec4(vDirection, 0.0));
+
+		}
+		#pragma unroll_loop_end
+
+	#endif
 }`;
 
 const renderFragmentShader = /* glsl */`
@@ -187,6 +205,32 @@ vec4 linearToSRGB( in vec4 value ) {
 #include <shadowmap_pars_fragment>
 #include <shadowmask_pars_fragment>
 
+varying vec4 vShadowDirection[ NUM_DIR_LIGHT_SHADOWS ];
+varying vec4 vOriginShadowCoord[ NUM_DIR_LIGHT_SHADOWS ];
+
+float getCloudShadowMask(float offset) {
+
+	float shadow = 1.0;
+
+	#if NUM_DIR_LIGHT_SHADOWS > 0
+
+	DirectionalLightShadow directionalLight;
+
+	#pragma unroll_loop_start
+	for ( int i = 0; i < NUM_DIR_LIGHT_SHADOWS; i ++ ) {
+
+		directionalLight = directionalLightShadows[ i ];
+		shadow *= getShadow( directionalShadowMap[ i ], directionalLight.shadowMapSize, directionalLight.shadowIntensity, directionalLight.shadowBias, directionalLight.shadowRadius, vOriginShadowCoord[ i ] + offset * vShadowDirection[ i ]);
+
+	}
+	#pragma unroll_loop_end
+
+	#endif
+
+	return shadow;
+
+}
+
 void main() {
 
     #include <logdepthbuf_fragment>
@@ -214,6 +258,8 @@ void main() {
 
     //
 
+    float shadow_intensity = 0.0;
+    float prop = 1.0;
     vec4 ac = vec4( base, 0.0 );
     for ( float t = bounds.x; t < bounds.y; t += delta ) {
         float d = sample1( p + 0.5 );
@@ -223,10 +269,14 @@ void main() {
         ac.rgb += ( 1.0 - ac.a ) * d * col;
         ac.a += ( 1.0 - ac.a ) * d;
         if ( ac.a >= 0.95 ) break;
+        float acc = clamp(10.0 * d, 0.0, 1.0);
+        shadow_intensity += (1.0-getCloudShadowMask(t / length(vDirection / boxBound))) * acc * prop;
+        prop *= (1.0 - acc);
         p += rayDir * delta;
     }
 
     ac.a = smoothstep( 0.1, 0.95, ac.a );
+    ac = vec4( ac.rgb * (1.0-shadow_intensity), ac.a );
 
     gl_FragColor = linearToSRGB( ac );
 
@@ -237,19 +287,20 @@ void main() {
 
 class Cloud extends THREE.Group {
     isCloud: boolean;
+    cloud?: Mesh;
 
     constructor(options: CloudOptions, renderer: THREE.WebGLRenderer) {
         super();
 
         const boxBound = options.boxBound !== undefined ? options.boxBound : new THREE.Vector3(1.0, 1.0, 1.0);
-        const geometry = new THREE.BoxGeometry(boxBound.x, boxBound.y, boxBound.z);
-        const height = 3000;
+        const geometry = new THREE.BoxGeometry(boxBound.x, boxBound.y * 0.9, boxBound.z);
+        const height = 2000;
 
         const scope = this;
         this.isCloud = true;
 
         const size = options.size !== undefined ? options.size : [128, 128, 128];
-        const base = options.base !== undefined ? options.base : new THREE.Color(0x798aa0);
+        const base = options.base !== undefined ? options.base : new THREE.Color(0x808487);
         const threshold = options.threshold !== undefined ? options.threshold : 0.25;
         const opacity = options.opacity !== undefined ? options.opacity : 0.25;
         const range = options.range !== undefined ? options.range : 0.1;
@@ -291,12 +342,12 @@ class Cloud extends THREE.Group {
             transparent: true,
             opacity: 0.0,
             alphaTest: 0.3,
-            side: THREE.DoubleSide,
+            side: THREE.FrontSide,
         });
         const cloudShadowGeometry = new THREE.PlaneGeometry(boxBound.x, boxBound.z);
         cloudShadowGeometry.rotateX(Math.PI / 2);
         const cloudShadow = new THREE.Mesh(cloudShadowGeometry, shadowMaterial);
-        cloudShadow.position.set(0, height, 0);
+        cloudShadow.position.set(0, height - boxBound.y * 0.45 - 1, 0);
         cloudShadow.castShadow = true;
         this.add(cloudShadow);
 
@@ -328,9 +379,12 @@ class Cloud extends THREE.Group {
         });
 
         const cloud = new Mesh(geometry, material);
+        cloud.frustumCulled = false;
+        cloud.receiveShadow = true;
 
         cloud.position.set(0, height, 0);
         this.add(cloud);
+        this.cloud = cloud;
 
         // const debugMaterial = new THREE.ShaderMaterial({
         //     uniforms: {
@@ -412,11 +466,10 @@ class Cloud extends THREE.Group {
             renderer.render(screenQuad, textureCamera);
             const pixels = new Uint8Array(width * height * 4);
             renderer.readRenderTargetPixels(target, 0, 0, width, height, pixels);
-            const red_channel = new Uint8Array(width * height);
+            const offset = i * width * height;
             for (let j = 0; j < width * height; j++) {
-                red_channel[j] = pixels[j * 4];
+                u8[j + offset] = pixels[j * 4];
             }
-            u8.set(red_channel, i * width * height);
         }
 
         renderer.setRenderTarget(currentTarget);
@@ -461,6 +514,12 @@ class Cloud extends THREE.Group {
         texture.needsUpdate = true;
 
         return texture;
+    }
+
+    public update(deltaTime: number): void {
+        if (this.cloud) {
+            (this.cloud.material as any).uniforms['frame'].value += deltaTime * 120;
+        }
     }
 }
 

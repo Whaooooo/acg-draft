@@ -5,8 +5,10 @@ class Mountain extends THREE.Group {
     isMountain = true;
     chunkList: THREE.Mesh[][][] = [];
 
-    constructor(worldWidth = 2048, worldDepth = 2048) {
+    constructor() {
         super();
+
+        const worldWidth = 1024, worldDepth = 1024;
 
         const data = this.generateHeight(worldWidth + 1, worldDepth + 1);
         const geometry = new THREE.PlaneGeometry(35000, 35000, worldWidth, worldDepth);
