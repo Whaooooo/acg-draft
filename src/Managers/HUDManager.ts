@@ -16,6 +16,9 @@ export class HUDManager {
     private hudWidth: number = 400;  // 根据需要调整
     private hudHeight: number = 300; // 根据需要调整
 
+    private lastFrameTime: number = 0;
+    private frameCount: number = 0;
+
     constructor(game: Game) {
         this.game = game;
         this.players = Array.from(game.playerMap.values());
@@ -39,6 +42,16 @@ export class HUDManager {
             document.body.appendChild(hudElement);
             this.domElements.set(player, hudElement);
         });
+
+        if (this.lastFrameTime === 0)
+            this.lastFrameTime = performance.now();
+        this.frameCount++;
+        if (this.frameCount >= 30 || (this.frameCount >= 4 && performance.now() - this.lastFrameTime >= 2000)) {
+            var fps = this.frameCount / ((performance.now() - this.lastFrameTime) / 1000);
+            this.frameCount = 0;
+            this.lastFrameTime = performance.now();
+            document.getElementById('fps-display')!.innerText = `FPS: ${Math.round(fps)}`;
+        }
     }
 
     private createHUDElementForPlayer(player: Player): HTMLDivElement {
