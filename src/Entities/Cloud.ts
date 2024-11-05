@@ -269,9 +269,13 @@ void main() {
         ac.rgb += ( 1.0 - ac.a ) * d * col;
         ac.a += ( 1.0 - ac.a ) * d;
         if ( ac.a >= 0.95 ) break;
-        float acc = clamp(10.0 * d, 0.0, 1.0);
-        shadow_intensity += (1.0-getCloudShadowMask(t / length(vDirection / boxBound))) * acc * prop;
-        prop *= (1.0 - acc);
+        if ( prop > 0.01 ) {
+            float acc = clamp(10.0 * d, 0.0, 1.0);
+            if ( acc > 0.001 ) {
+                shadow_intensity += (1.0-getCloudShadowMask(t / length(vDirection / boxBound))) * acc * prop;
+                prop *= (1.0 - acc);
+            }
+        }
         p += rayDir * delta;
     }
 
