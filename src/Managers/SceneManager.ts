@@ -154,7 +154,8 @@ export class SceneManager {
                 sunColor: 0xffffff,
                 waterColor: 0x001e0f,
                 distortionScale: 2.5,
-                fog: this.scene.fog !== undefined
+                fog: this.scene.fog !== undefined,
+                clipBias: 0.01
             }
         );
         // const water = new THREE.Mesh(waterGeometry, new THREE.MeshStandardMaterial({ color: 0xffffff }));
