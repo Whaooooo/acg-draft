@@ -147,6 +147,7 @@ varying vec4 worldPosition;
 
 uniform vec3 base;
 uniform sampler3D map;
+uniform sampler2D shadowTexture;
 uniform vec3 boxBound;
 
 uniform float threshold;
@@ -247,6 +248,13 @@ void main() {
     float delta = min( inc.x, min( inc.y, inc.z ) );
     delta /= steps;
 
+    vec4 shadowColor = texture2D( shadowTexture, p.xz + 0.5 );
+    float height_dist = bounds.x * abs(rayDir.y) * boxBound.y;
+
+    if ( height_dist > 2500.0 ) {
+        gl_FragColor = shadowColor;
+    } else {
+
     // Jitter
 
     // Nice little seed from
@@ -283,6 +291,13 @@ void main() {
     ac = vec4( ac.rgb * (1.0-shadow_intensity), ac.a );
 
     gl_FragColor = linearToSRGB( ac );
+
+    if (height_dist > 1000.0) {
+        float fac = smoothstep(1000.0, 2500.0, height_dist);
+        gl_FragColor = mix(gl_FragColor, shadowColor, fac);
+    }
+
+    }
 
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
@@ -345,7 +360,7 @@ class Cloud extends THREE.Group {
             alphaMap: ShadowTarget.texture,
             transparent: true,
             opacity: 0.0,
-            alphaTest: 0.3,
+            alphaTest: 0.5,
             side: THREE.FrontSide,
         });
         const cloudShadowGeometry = new THREE.PlaneGeometry(boxBound.x, boxBound.z);
@@ -363,7 +378,6 @@ class Cloud extends THREE.Group {
                 THREE.UniformsLib.lights,
                 {
                     base: { value: base },
-                    map: { value: texture },
                     cameraPos: { value: eye },
                     threshold: { value: threshold },
                     opacity: { value: opacity },
@@ -371,6 +385,8 @@ class Cloud extends THREE.Group {
                     steps: { value: steps },
                     frame: { value: frame },
                     boxBound: { value: boxBound },
+                    map: { value: texture },
+                    shadowTexture: { value: null }
                 }
             ]),
             vertexShader: renderVertexShader,
@@ -381,6 +397,7 @@ class Cloud extends THREE.Group {
             depthTest: true,
             depthWrite: false,
         });
+        material.uniforms.shadowTexture.value = ShadowTarget.texture;
 
         const cloud = new Mesh(geometry, material);
         cloud.frustumCulled = false;
@@ -392,16 +409,16 @@ class Cloud extends THREE.Group {
 
         // const debugMaterial = new THREE.ShaderMaterial({
         //     uniforms: {
-        //         map: { value: texture },
+        //         map: { value: ShadowTarget.texture },
         //     },
         //     vertexShader: shadowVertexShader,
         //     fragmentShader: /* glsl */`
-        //     uniform sampler3D map;
+        //     uniform sampler2D map;
 
         //     varying vec2 vUv;
 
         //     void main() {
-        //         gl_FragColor = vec4(texture(map, vec3(vUv.x, vUv.y, 0.2)).r);
+        //         gl_FragColor = texture(map, vec2(vUv.x, vUv.y));
         //         gl_FragColor.a = 1.0;
         //     }
         //     `,
@@ -414,6 +431,7 @@ class Cloud extends THREE.Group {
 
         // const mesh = new Mesh(debugGeometry, debugMaterial);
         // mesh.position.set(0, height, 0);
+        // this.add(mesh);
 
         cloud.onBeforeRender = function (renderer, scene, camera) {
             material.uniforms.cameraPos.value.copy(camera.position);

@@ -27,7 +27,7 @@ class Mountain extends THREE.Group {
     }
 
     getData(x: number, z: number) {
-        let ret = this.data[x + z * (this.worldWidth + 1)] * 32 - 800;
+        let ret = this.data[x + z * (this.worldWidth + 1)] * 30 - 900;
         if (ret > -2 && ret < 2) {
             if (ret > 0) {
                 ret = 2;
@@ -53,7 +53,6 @@ class Mountain extends THREE.Group {
         const h01 = this.getData(rx, rz + 1);
         const h10 = this.getData(rx + 1, rz);
         const h11 = this.getData(rx + 1, rz + 1);
-        console.log(h00, h01, h10, h11, s, t)
         const h0 = lerp(h00, h01, t);
         const h1 = lerp(h10, h11, t);
         return lerp(h0, h1, s);
@@ -175,7 +174,7 @@ class Mountain extends THREE.Group {
         const size = width * height, data = new Uint8Array(size),
             perlin = new ImprovedNoise();
         // const z = Math.random() * 256;
-        const z = 23.43313245;
+        const z = 53.473368139245;
 
         let quality = 1;
 
