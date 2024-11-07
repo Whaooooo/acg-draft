@@ -211,12 +211,12 @@ export class Plane extends MovableEntity {
                     break;
                 case SoundType.Afterburner:
                     if (!this.pulsionDecreased) {
-                        volume = (this.pulsion - this.property.defaultPulsion) / (this.property.maxPulsion - this.property.defaultPulsion);
+                        volume = Math.max(0, this.pulsion - this.property.defaultPulsion) / (this.property.maxPulsion - this.property.defaultPulsion);
                     }
                     break;
                 case SoundType.Wind:
                     const maxPulsionSpeed = this.property.maxPulsion;
-                    volume = Math.min(1, this.lostSpeedNorm / maxPulsionSpeed);
+                    volume = Math.min(1, this.lostSpeedNorm / maxPulsionSpeed) * 0.8 + 0.2;
                     break;
                 default:
                     console.warn(`Unhandled sound type: ${soundType}`);

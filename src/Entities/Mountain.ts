@@ -21,8 +21,8 @@ class Mountain extends THREE.Group {
         this.data = this.generateHeight(this.worldWidth + 1, this.worldDepth + 1);
         this.chunkWidth = this.totalWidth / this.slice;
         this.chunkHeight = this.totalDepth / this.slice;
-        this.blockWidth = this.worldWidth / this.worldWidth;
-        this.blockHeight = this.worldDepth / this.worldDepth;
+        this.blockWidth = this.totalWidth / this.worldWidth;
+        this.blockHeight = this.totalDepth / this.worldDepth;
         this.generateChunks(this.slice);
     }
 
@@ -42,10 +42,10 @@ class Mountain extends THREE.Group {
         if (x < -this.totalWidth / 2 || x > this.totalWidth / 2 || z < -this.totalDepth / 2 || z > this.totalDepth / 2) {
             return 0;
         }
-        const rx = Math.floor(x / this.blockWidth);
-        const rz = Math.floor(z / this.blockHeight);
-        const s = x / this.blockWidth - rx;
-        const t = z / this.blockHeight - rz;
+        const rx = Math.floor((x + this.totalWidth / 2) / this.blockWidth);
+        const rz = Math.floor((z + this.totalDepth / 2) / this.blockHeight);
+        const s = (x + this.totalWidth / 2) / this.blockWidth - rx;
+        const t = (z + this.totalDepth / 2) / this.blockHeight - rz;
         function lerp(a: number, b: number, t: number) {
             return a + (b - a) * t;
         }
@@ -53,6 +53,7 @@ class Mountain extends THREE.Group {
         const h01 = this.getData(rx, rz + 1);
         const h10 = this.getData(rx + 1, rz);
         const h11 = this.getData(rx + 1, rz + 1);
+        console.log(h00, h01, h10, h11, s, t)
         const h0 = lerp(h00, h01, t);
         const h1 = lerp(h10, h11, t);
         return lerp(h0, h1, s);

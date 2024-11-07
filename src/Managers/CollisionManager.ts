@@ -62,29 +62,30 @@ export class CollisionManager {
         );
     }
 
+    private isUnderTerrain(entity: MovableEntity): boolean {
+        const p = entity.getPosition();
+        const x = p.x;
+        const y = p.y;
+        const z = p.z;
+        return (y < Math.max(this.game.sceneManager.mountain?.getHeight(x, z) ?? 0, 0));
+    }
+
     /**
      * Updates all collisions and handles out-of-bounds detection.
      * @param deltaTime Time elapsed since last update
      */
     public update(deltaTime: number): void {
-        // Update projectiles and check for out-of-bounds
-        this.game.projectileMap.forEach((projectile) => {
-            if (projectile.removed) return;
-
-            projectile.update(deltaTime);
-
-            if (this.isOutOfBounds(projectile)) {
-                console.log('Missile out of bounds');
-                projectile.dispose();
-            }
-        });
-
         // Perform pairwise collision checks among movable entities
         const entities = Array.from(this.game.movableEntityMap.values()).filter(entity => !entity.removed && entity.ready);
 
         for (let i = 0; i < entities.length; i++) {
             if (this.isOutOfBounds(entities[i])) {
                 console.log(`Entity ${entities[i].entityId} is out of bounds`);
+                entities[i].dispose();
+                continue;
+            }
+            if (this.isUnderTerrain(entities[i])) {
+                console.log(`Entity ${entities[i].entityId} is under terrain`);
                 entities[i].dispose();
                 continue;
             }
