@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { ImprovedNoise } from '../Utils/ImprovedNoise';
+import { DDSLoader } from "../Utils/DDSLoader";
 
 class Mountain extends THREE.Group {
     isMountain = true;
@@ -74,7 +75,6 @@ class Mountain extends THREE.Group {
         const chunkWidth = this.totalWidth / slice;
         const chunkHeight = this.totalDepth / slice;
 
-        const meterial = new THREE.MeshPhongMaterial({ color: 0xb0593a, side: THREE.DoubleSide });
 
         for (let i = 0; i < slice; i++) {
             let innnerArray = [];
@@ -88,6 +88,16 @@ class Mountain extends THREE.Group {
             for (let j = 0; j < slice; j++) {
                 const offset1 = i * dx;
                 const offset2 = j * dz;
+
+                const loader = new DDSLoader();
+                const texture = loader.load(`assets/LandTexturesSummer/land_39_${i - 58}_${j - 24}.png.dds`);
+
+                texture.repeat.set(1, 1);
+                texture.wrapS = THREE.RepeatWrapping;
+                texture.wrapT = THREE.RepeatWrapping;
+
+                const meterial = new THREE.MeshPhongMaterial({ map: texture, side: THREE.DoubleSide });
+
                 for (let k = 1; k <= 4; k *= 2) {
                     const geometry = new THREE.PlaneGeometry(chunkWidth, chunkHeight, Math.floor(dx / k), Math.floor(dz / k));
                     geometry.rotateX(- Math.PI / 2);

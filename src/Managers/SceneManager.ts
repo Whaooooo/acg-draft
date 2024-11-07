@@ -130,15 +130,6 @@ export class SceneManager {
     }
 
     private CreateBasicScene(): void {
-        const sphereGeometry = new THREE.SphereGeometry(5, 32, 32);
-        const sphereMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
-        const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-        sphere.position.add(new THREE.Vector3(0, 15, 0));
-        sphere.castShadow = true; //default is false
-        sphere.receiveShadow = true; //default
-        this.scene.add(sphere);
-
-
         const waterGeometry = new THREE.PlaneGeometry(100000, 100000);
         const water = new Water(
             waterGeometry,
@@ -167,8 +158,6 @@ export class SceneManager {
 
         this.cloud = new Cloud({ size: [768, 48, 768], opacity: 0.5, threshold: 0.5, range: 0.15, steps: 100, boxBound: new THREE.Vector3(100000.0, 400.0, 100000.0) }, this.renderer);
         this.scene.add(this.cloud);
-
-        console.log('cloud');
 
         this.mountain = new Mountain();
         this.scene.add(this.mountain);
