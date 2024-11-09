@@ -157,7 +157,7 @@ export class Player extends Plane {
 
         // Re-target
         if (inputState.checkInput(keyConfig.reTarget)) {
-            this.game.targetManager.reTarget(this);
+            this.game.targetManager.reTarget(this, this.weapons[this.selectedWeaponIndex]);
         }
     }
 

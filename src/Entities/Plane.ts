@@ -150,13 +150,6 @@ export class Plane extends MovableEntity {
     }
 
     public update(deltaTime: number): void {
-        // Update weapons
-        for (const weapon of this.weapons) {
-            weapon.update(deltaTime);
-        }
-
-        // Update targets (locked targets)
-        this.targets = this.game.targetManager.getLockList(this);
 
         // Prepare plane state for update
         const planeState: PlaneState = {
@@ -239,6 +232,7 @@ export class Plane extends MovableEntity {
     public selectWeapon(id: number): void {
         if (id >= 0 && id < this.weapons.length) {
             this.selectedWeaponIndex = id;
+            this.game.targetManager.reTarget(this, this.weapons[this.selectedWeaponIndex]);
         } else {
             console.warn(`Weapon index ${id} is out of bounds for entity ${this.entityId}.`);
         }

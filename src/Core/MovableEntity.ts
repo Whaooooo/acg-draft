@@ -8,10 +8,8 @@ import { Weapon } from "./Weapon";
 
 export class MovableEntity extends Entity {
     public velocity: THREE.Vector3;
-
     public weapons: Weapon[];
 
-    public targets: Entity[];
     public currentHP: number = 1;
     public collisionDamage: number = 2000;
 
@@ -25,16 +23,18 @@ export class MovableEntity extends Entity {
     ) {
         super(game, assetName, pos, qua, iFFNumber);
         this.velocity = velocity ? velocity : new THREE.Vector3();
-        //############################################### Need to implement weapons initialization
         this.game.movableEntityMap.set(this.entityId, this);
-        this.targets = []
-        this.weapons = []
+        this.weapons = [];
     }
 
     public update(deltaTime: number): void {
         this.setPosition(this.getPosition().add(this.velocity.clone().multiplyScalar(deltaTime)));
+        // Update weapons
+        for (const weapon of this.weapons) {
+            weapon.update(deltaTime);
+        }
 
-        super.update(deltaTime)
+        super.update(deltaTime);
     }
 
     public dispose() {

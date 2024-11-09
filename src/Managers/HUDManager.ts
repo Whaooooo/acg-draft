@@ -1,10 +1,9 @@
-// src/Managers/HUDManager.ts
-
 import * as THREE from 'three';
 import { Player } from '../Entities/Player';
 import { CameraManager } from './CameraManager';
 import { Weapon } from '../Core/Weapon';
 import { Game } from '../Game';
+import { Entity } from '../Core/Entity';
 
 export class HUDManager {
     private game: Game;
@@ -19,142 +18,209 @@ export class HUDManager {
     private lastFrameTime: number = 0;
     private frameCount: number = 0;
 
+    private hudOverlay: HTMLDivElement;
+
     constructor(game: Game) {
         this.game = game;
         this.players = Array.from(game.playerMap.values()).filter(player => player.isLocalPlayer);
         this.cameraManager = game.cameraManager;
         this.domElements = new Map();
+
+        // Create HUD Overlay
+        this.hudOverlay = document.createElement('div');
+        this.hudOverlay.id = 'hud-overlay';
+        document.body.appendChild(this.hudOverlay);
     }
 
     /**
-     * 更新 HUD，每次重新绘制所有内容。
+     * Updates the HUD, refreshing all HUD elements.
      */
     public update(deltaTime: number): void {
-        // Remove existing HUD elements
-        this.dispose();
-
         // Get the current list of local players
-        this.players = Array.from(this.game.playerMap.values()).filter(player => player.isLocalPlayer);
+        const currentPlayers = Array.from(this.game.playerMap.values()).filter(player => player.isLocalPlayer);
 
-        // Redraw all HUD elements
-        this.players.forEach((player) => {
+        // Check for added or removed players
+        const playersAdded = currentPlayers.filter(p => !this.domElements.has(p));
+        const playersRemoved = Array.from(this.domElements.keys()).filter(p => !currentPlayers.includes(p));
+
+        // Dispose HUD elements of removed players
+        playersRemoved.forEach(player => {
+            const hudElement = this.domElements.get(player);
+            if (hudElement && hudElement.parentNode) {
+                hudElement.parentNode.removeChild(hudElement);
+            }
+            this.domElements.delete(player);
+        });
+
+        // Create HUD elements for newly added players
+        playersAdded.forEach(player => {
             const hudElement = this.createHUDElementForPlayer(player);
             document.body.appendChild(hudElement);
             this.domElements.set(player, hudElement);
         });
 
-        // Update FPS display
-        if (this.lastFrameTime === 0)
-            this.lastFrameTime = performance.now();
-        this.frameCount++;
-        if (this.frameCount >= 30 || (this.frameCount >= 4 && performance.now() - this.lastFrameTime >= 2000)) {
-            var fps = this.frameCount / ((performance.now() - this.lastFrameTime) / 1000);
-            this.frameCount = 0;
-            this.lastFrameTime = performance.now();
-            const fpsDisplay = document.getElementById('fps-display');
-            if (fpsDisplay) {
-                fpsDisplay.innerText = `FPS: ${Math.round(fps)}`;
-            }
-        }
+        // Update HUD elements for all current players
+        currentPlayers.forEach(player => {
+            this.updateHUDElementForPlayer(player);
+        });
 
+        // Update FPS display
+        this.updateFPSDisplay();
+
+        // Render the HUD
         this.render();
     }
 
+    /**
+     * Creates HUD element for a player.
+     */
     private createHUDElementForPlayer(player: Player): HTMLDivElement {
         const hudContainer = document.createElement('div');
         hudContainer.classList.add('hud-container');
 
-        // 设置 HUD 容器的固定尺寸
+        // 使用正确的模板字符串语法
         hudContainer.style.width = `${this.hudWidth}px`;
         hudContainer.style.height = `${this.hudHeight}px`;
+        hudContainer.style.position = 'absolute';
+        hudContainer.style.pointerEvents = 'none'; // Make it non-interactive
 
-        // 创建血量条
+        // Create health bar container
         const hpBarContainer = document.createElement('div');
         hpBarContainer.classList.add('hp-bar-container');
         hudContainer.appendChild(hpBarContainer);
 
+        // Create health bar
         const hpBar = document.createElement('div');
         hpBar.classList.add('hp-bar');
         hpBarContainer.appendChild(hpBar);
 
+        // Create health text
         const hpText = document.createElement('div');
         hpText.classList.add('hp-text');
         hpBarContainer.appendChild(hpText);
 
-        // 设置血量条的宽度和文本
+        // Create upper container (above the health bar)
+        const upperContainer = document.createElement('div');
+        upperContainer.classList.add('upper-container');
+        hudContainer.appendChild(upperContainer);
+
+        // Left side: reload status of selected weapon
+        const reloadContainer = document.createElement('div');
+        reloadContainer.classList.add('reload-container');
+        upperContainer.appendChild(reloadContainer);
+
+        // Right side: weapon list
+        const weaponListContainer = document.createElement('div');
+        weaponListContainer.classList.add('weapon-list-container');
+        upperContainer.appendChild(weaponListContainer);
+
+        // Store references to dynamically updated elements
+        hudContainer.dataset.playerId = player.entityId.toString();
+
+        // Store elements for future updates
+        (hudContainer as any).hpBar = hpBar;
+        (hudContainer as any).hpText = hpText;
+        (hudContainer as any).reloadContainer = reloadContainer;
+        (hudContainer as any).weaponListContainer = weaponListContainer;
+
+        return hudContainer;
+    }
+
+    /**
+     * Updates the HUD element for a player.
+     */
+    private updateHUDElementForPlayer(player: Player): void {
+        const hudElement = this.domElements.get(player);
+        if (!hudElement) return;
+
+        const hpBar = (hudElement as any).hpBar as HTMLDivElement;
+        const hpText = (hudElement as any).hpText as HTMLDivElement;
+        const reloadContainer = (hudElement as any).reloadContainer as HTMLDivElement;
+        const weaponListContainer = (hudElement as any).weaponListContainer as HTMLDivElement;
+
+        // Update health bar
         const hp = Math.max(0, player.currentHP);
         const maxHP = player.property.hp;
         const hpPercentage = (hp / maxHP) * 100;
         hpBar.style.width = `${hpPercentage}%`;
         hpText.textContent = `${Math.round(hp)} / ${maxHP}`;
 
-        // 创建上方的容器（在血量条上方）
-        const upperContainer = document.createElement('div');
-        upperContainer.classList.add('upper-container');
-        hudContainer.appendChild(upperContainer);
+        // Update reload status of selected weapon
+        this.updateReloadContainer(reloadContainer, player);
 
-        // 左侧：当前选中武器的装填状态
-        const reloadContainer = document.createElement('div');
-        reloadContainer.classList.add('reload-container');
-        upperContainer.appendChild(reloadContainer);
+        // Update weapon list
+        this.updateWeaponListContainer(weaponListContainer, player);
 
-        // 创建装填状态竖条
+        // Update target indicators
+        this.updateTargetIndicators(player);
+    }
+
+    /**
+     * Updates the reload container with the selected weapon's reload status.
+     */
+    private updateReloadContainer(container: HTMLDivElement, player: Player): void {
+        // Clear previous reload bars
+        container.innerHTML = '';
+
         const selectedWeapon = player.weapons[player.selectedWeaponIndex];
         const loadNumber = selectedWeapon.property.loadNumber;
+
         for (let i = 0; i < loadNumber; i++) {
             const bar = document.createElement('div');
             bar.classList.add('reload-bar');
-            reloadContainer.appendChild(bar);
+            container.appendChild(bar);
 
             const missilesRemaining = selectedWeapon.property.totalNumber - selectedWeapon.totalMissilesFired;
             if (i >= missilesRemaining) {
-                // 没有剩余的导弹，此槽为空
+                // No missiles left, slot is empty
                 bar.style.backgroundColor = 'gray';
-                bar.style.height = '100%';
+                bar.style.height = `100%`;
             } else {
                 const loadTimer = selectedWeapon.loadTimers[i];
                 if (loadTimer <= 0) {
-                    // 槽已装填
-                    bar.style.backgroundColor = '#00ff00'; // 绿色
-                    bar.style.height = '100%';
+                    // Slot is loaded
+                    bar.style.backgroundColor = '#00ff00'; // Green
+                    bar.style.height = `100%`;
                 } else {
-                    // 槽正在装填
+                    // Slot is loading
                     const loadPercentage = Math.max(0, Math.min(1, (selectedWeapon.property.loadTime - loadTimer) / selectedWeapon.property.loadTime));
-                    bar.style.backgroundColor = '#ffff00'; // 黄色
+                    bar.style.backgroundColor = '#ffff00'; // Yellow
                     bar.style.height = `${loadPercentage * 100}%`;
                 }
             }
         }
+    }
 
-        // 右侧：武器列表
-        const weaponListContainer = document.createElement('div');
-        weaponListContainer.classList.add('weapon-list-container');
-        upperContainer.appendChild(weaponListContainer);
+    /**
+     * Updates the weapon list container with the player's weapons.
+     */
+    private updateWeaponListContainer(container: HTMLDivElement, player: Player): void {
+        // Clear previous weapon entries
+        container.innerHTML = '';
 
-        // 创建武器条目
         player.weapons.forEach((weapon, index) => {
             const weaponEntry = document.createElement('div');
             weaponEntry.classList.add('weapon-entry');
 
-            // 武器名称
+            // Weapon name
             const weaponNameElement = document.createElement('div');
             weaponNameElement.classList.add('weapon-name');
             const weaponName = this.extractWeaponName(weapon.name);
             weaponNameElement.textContent = (index === player.selectedWeaponIndex ? '>' : '') + weaponName;
             weaponEntry.appendChild(weaponNameElement);
 
-            // 剩余数量
+            // Remaining count
             const weaponCountElement = document.createElement('div');
             weaponCountElement.classList.add('weapon-count');
             weaponCountElement.textContent = this.getWeaponRemainingCount(weapon).toString();
             weaponEntry.appendChild(weaponCountElement);
 
-            // 迷你装填指示容器
+            // Mini reload indicator container
             const miniReloadContainer = document.createElement('div');
             miniReloadContainer.classList.add('mini-reload-container');
             weaponEntry.appendChild(miniReloadContainer);
 
-            // 创建迷你竖条
+            // Create mini reload bars
             for (let i = 0; i < weapon.property.loadNumber; i++) {
                 const miniBar = document.createElement('div');
                 miniBar.classList.add('mini-reload-bar');
@@ -162,34 +228,173 @@ export class HUDManager {
 
                 const missilesRemaining = weapon.property.totalNumber - weapon.totalMissilesFired;
                 if (i >= missilesRemaining) {
-                    // 没有剩余的导弹，此槽为空
+                    // No missiles left, slot is empty
                     miniBar.style.backgroundColor = 'gray';
-                    miniBar.style.height = '100%';
+                    miniBar.style.height = `100%`;
                 } else {
                     const loadTimer = weapon.loadTimers[i];
                     if (loadTimer <= 0) {
-                        // 槽已装填
-                        miniBar.style.backgroundColor = '#00ff00'; // 绿色
-                        miniBar.style.height = '100%';
+                        // Slot is loaded
+                        miniBar.style.backgroundColor = '#00ff00'; // Green
+                        miniBar.style.height = `100%`;
                     } else {
-                        // 槽正在装填
+                        // Slot is loading
                         const loadPercentage = Math.max(0, Math.min(1, (weapon.property.loadTime - loadTimer) / weapon.property.loadTime));
-                        miniBar.style.backgroundColor = '#ffff00'; // 黄色
+                        miniBar.style.backgroundColor = '#ffff00'; // Yellow
                         miniBar.style.height = `${loadPercentage * 100}%`;
                     }
                 }
             }
 
-            weaponListContainer.appendChild(weaponEntry);
+            container.appendChild(weaponEntry);
         });
-
-        // 设置 HUD 容器样式
-        hudContainer.style.position = 'absolute';
-        hudContainer.style.pointerEvents = 'none'; // 使其不阻挡鼠标事件
-
-        return hudContainer;
     }
 
+    /**
+     * Updates the target indicators for the player.
+     */
+    private updateTargetIndicators(player: Player): void {
+        // Remove previous target indicators
+        const existingIndicators = this.hudOverlay.querySelectorAll('.target-indicator');
+        existingIndicators.forEach(indicator => indicator.remove());
+
+        const weapon = player.weapons[player.selectedWeaponIndex];
+
+        const potentialTargets = weapon.potentialTargets;
+        const lockedOnTargets = weapon.lockedOnTargets;
+
+        const camera = this.cameraManager.cameras.get(player);
+        if (!camera) return;
+
+        const viewport = this.cameraManager.getViewportForPlayer(player);
+
+        const width = viewport.width;
+        const height = viewport.height;
+
+        const cameraLeft = viewport.left;
+        const cameraTop = viewport.top;
+
+        const frustum = new THREE.Frustum();
+        const projScreenMatrix = new THREE.Matrix4();
+        projScreenMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+        frustum.setFromProjectionMatrix(projScreenMatrix);
+
+        // Iterate over all entities with iFFNumber >= 0 (excluding the player himself)
+        this.game.entityMap.forEach((entity) => {
+            if (entity === player) return; // Exclude the player himself
+            if (entity.iFFNumber < 0) return; // Exclude entities with iFFNumber < 0
+
+            // Get entity position in world coordinates
+            const entityPosition = entity.getPosition();
+
+            // Check if the entity is in the camera's frustum
+            if (!frustum.containsPoint(entityPosition)) return;
+
+            // Project entity position to normalized device coordinates (NDC)
+            const ndc = entityPosition.clone().project(camera);
+
+            // Debug: Log NDC
+            console.log(`Entity ${entity.assetName} NDC: (${ndc.x.toFixed(2)}, ${ndc.y.toFixed(2)}, ${ndc.z.toFixed(2)})`);
+
+            // Check if NDC is within -1 to 1
+            if (ndc.x < -1 || ndc.x > 1 || ndc.y < -1 || ndc.y > 1) return;
+
+            // Convert NDC to screen coordinates
+            const x = (ndc.x * 0.5 + 0.5) * width + cameraLeft;
+            const y = (-ndc.y * 0.5 + 0.5) * height + cameraTop;
+
+            console.log(x, y)
+
+            // Ensure x and y are within screen bounds
+            if (x < 0 || x > width || y < 0 || y > height) return;
+
+            // Create indicator container
+            const indicator = document.createElement('div');
+            indicator.classList.add('target-indicator');
+            indicator.style.left = `${x - 25}px`; // Center the indicator
+            indicator.style.top = `${y - 25}px`;
+
+            // Determine colors
+            const isAlly = (entity.iFFNumber === player.iFFNumber);
+            const isHighestPriority = (entity === potentialTargets[0]);
+            const isLockedOn = lockedOnTargets.includes(entity);
+            const isInPotentialTargets = potentialTargets.includes(entity);
+
+            let squareColor = '';
+            let fontColor = isAlly ? 'blue' : 'green';
+
+            if (isAlly) {
+                squareColor = 'lightblue';
+            } else if (isHighestPriority) {
+                squareColor = isLockedOn ? 'darkred' : 'darkgreen';
+            } else if (isLockedOn) {
+                squareColor = 'lightred';
+            } else if (isInPotentialTargets) {
+                squareColor = 'lightgreen';
+            } else {
+                // Skip non-potential enemy targets
+                return;
+            }
+
+            // Apply styles
+            indicator.style.borderColor = squareColor;
+            indicator.style.color = fontColor;
+
+            // Add extra smaller square for highest priority target
+            if (isHighestPriority) {
+                const extraIndicator = document.createElement('div');
+                extraIndicator.classList.add('highest-priority-indicator');
+                extraIndicator.style.borderColor = squareColor;
+                indicator.appendChild(extraIndicator);
+            }
+
+            // Display entity name at the upper right corner
+            const nameLabel = document.createElement('div');
+            nameLabel.classList.add('indicator-name');
+            nameLabel.textContent = entity.assetName;
+            indicator.appendChild(nameLabel);
+
+            // Display distance at the lower right corner
+            const distance = entity.getPosition().distanceTo(player.getPosition());
+            const distanceLabel = document.createElement('div');
+            distanceLabel.classList.add('indicator-distance');
+            distanceLabel.textContent = `${distance.toFixed(0)}`;
+            indicator.appendChild(distanceLabel);
+
+            // Append to HUD overlay
+            this.hudOverlay.appendChild(indicator);
+        });
+    }
+
+    /**
+     * Updates the FPS display.
+     */
+    private updateFPSDisplay(): void {
+        if (this.lastFrameTime === 0) {
+            this.lastFrameTime = performance.now();
+        }
+
+        this.frameCount++;
+        const now = performance.now();
+
+        if (this.frameCount >= 30 || (this.frameCount >= 4 && now - this.lastFrameTime >= 2000)) {
+            const fps = this.frameCount / ((now - this.lastFrameTime) / 1000);
+            this.frameCount = 0;
+            this.lastFrameTime = now;
+
+            let fpsDisplay = document.getElementById('fps-display');
+            if (!fpsDisplay) {
+                fpsDisplay = document.createElement('div');
+                fpsDisplay.id = 'fps-display';
+                document.body.appendChild(fpsDisplay);
+            }
+            fpsDisplay.innerText = `FPS: ${Math.round(fps)}`;
+        }
+    }
+
+    /**
+     * Renders the HUD by adjusting positions based on viewport.
+     */
     public render(): void {
         // Adjust HUD element positions based on viewport
         this.players.forEach((player) => {
@@ -200,8 +405,8 @@ export class HUDManager {
             const viewport = this.cameraManager.getViewportForPlayer(player);
 
             // Set HUD element position using CSS
-            hudElement.style.left = `${viewport.left + viewport.width - this.hudWidth - 20}px`; // 20px right margin
-            hudElement.style.top = `${viewport.top + viewport.height - this.hudHeight - 20}px`; // 20px bottom margin
+            hudElement.style.left = `${viewport.left + viewport.width - this.hudWidth - 20}px`; // Adjust margins as needed
+            hudElement.style.top = `${viewport.top + viewport.height - this.hudHeight - 20}px`;
 
             // Set HUD container dimensions
             hudElement.style.width = `${this.hudWidth}px`;
@@ -209,16 +414,25 @@ export class HUDManager {
         });
     }
 
+    /**
+     * Extracts the weapon name from the full name.
+     */
     private extractWeaponName(fullName: string): string {
         const parts = fullName.split('_');
         const name = parts[parts.length - 1];
         return name.toUpperCase();
     }
 
+    /**
+     * Calculates the remaining count of a weapon.
+     */
     private getWeaponRemainingCount(weapon: Weapon): number {
         return weapon.property.totalNumber - weapon.totalMissilesFired;
     }
 
+    /**
+     * Disposes of the HUD elements.
+     */
     public dispose(): void {
         // Remove HUD elements from the DOM
         this.domElements.forEach((hudElement) => {
@@ -226,6 +440,10 @@ export class HUDManager {
                 hudElement.parentNode.removeChild(hudElement);
             }
         });
+        // Remove hudOverlay
+        if (this.hudOverlay.parentNode) {
+            this.hudOverlay.parentNode.removeChild(this.hudOverlay);
+        }
         // Clear the map
         this.domElements.clear();
     }

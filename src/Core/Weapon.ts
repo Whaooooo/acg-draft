@@ -1,15 +1,15 @@
 // src/Core/Weapon.ts
 
-import { EntityName, getEntityName } from '../Configs/EntityPaths';
-import {MissileProperty, NPCProperties, PlayerProperties} from '../Configs/EntityProperty';
+import { EntityName } from '../Configs/EntityPaths';
+import { MissileProperty, NPCProperties, PlayerProperties } from '../Configs/EntityProperty';
 import { Player } from '../Entities/Player';
 import { Game } from '../Game';
 import { Missile } from '../Entities/Missile';
-import { SoundEnum } from "../Configs/SoundPaths";
-import { Entity } from "./Entity";
-import { soundPropertyToOption } from "../Configs/SoundProperty";
+import { SoundEnum } from '../Configs/SoundPaths';
+import { soundPropertyToOption } from '../Configs/SoundProperty';
 import * as THREE from 'three';
-import {MovableEntity} from "./MovableEntity";
+import { MovableEntity } from './MovableEntity';
+import {Entity} from "./Entity";
 
 export class Weapon {
     public name: string;
@@ -25,6 +25,9 @@ export class Weapon {
     public totalMissilesFired: number = 0;
     public lastSoundPlayTime: number = 0;
 
+    // Target lists
+    public potentialTargets: Entity[] = [];
+    public lockedOnTargets: Entity[] = [];
 
     constructor(game: Game, owner: MovableEntity, parentPlaneName: EntityName, weaponName: string) {
         this.game = game;
@@ -35,13 +38,13 @@ export class Weapon {
         // Construct the EntityName for the weapon, e.g., 'f22_stdm'
         const weaponEntityName = `${parentPlaneName}_${weaponName}` as EntityName;
 
-        // Retrieve the weapon properties from PlayerProperties
-        const weaponProperty = (this.owner instanceof Player ? PlayerProperties[weaponEntityName] : NPCProperties[weaponEntityName]) as MissileProperty;
+        // Retrieve the weapon properties from PlayerProperties or NPCProperties
+        const weaponProperty = (this.owner instanceof Player
+            ? PlayerProperties[weaponEntityName]
+            : NPCProperties[weaponEntityName]) as MissileProperty;
 
         if (!weaponProperty) {
             console.error(`Weapon properties not found for ${weaponEntityName}`);
-            // Handle the error as needed
-            // For now, throw an error
             throw new Error(`Weapon properties not found for ${weaponEntityName}`);
         }
 
@@ -72,6 +75,47 @@ export class Weapon {
         );
 
         this.lastSoundPlayTime -= deltaTime;
+
+        // Target management
+        const targetManager = this.game.targetManager;
+
+        // If first target is removed or there is no first target, retarget
+        if (this.potentialTargets.length === 0 || this.potentialTargets[0].removed) {
+            targetManager.reTarget(this.owner, this);
+        } else {
+            // Rearrange potentialTargets (excluding the first target)
+            targetManager.rearrangeTargets(this);
+        }
+
+        // Determine number of targets to lock on
+        const maxLockTargets = Math.min(
+            this.missilesLoaded,
+            this.property.lockNumber
+        );
+
+        // Select targets to lock on
+        this.lockedOnTargets = [];
+
+        // Start from the first target and select up to maxLockTargets
+        for (const target of this.potentialTargets) {
+            if (this.lockedOnTargets.length >= maxLockTargets) break;
+
+            if (target.removed) continue;
+
+            // Check if target is within lock range
+            const entityPosition = this.owner.getPosition();
+            const targetPosition = target.getPosition();
+            const toTarget = targetPosition.clone().sub(entityPosition);
+            const distance = toTarget.length();
+
+            const entityForward = this.owner.getForwardDirection();
+            const directionToTarget = toTarget.clone().normalize();
+            const angle = THREE.MathUtils.radToDeg(entityForward.angleTo(directionToTarget));
+
+            if (distance <= this.property.lockRange && angle <= this.property.lockAngle) {
+                this.lockedOnTargets.push(target);
+            }
+        }
     }
 
     public fire(): void {
@@ -83,12 +127,12 @@ export class Weapon {
         // Determine number of missiles to fire
         const missilesToFire = Math.min(
             this.missilesLoaded,
-            this.owner.targets.length,
+            this.lockedOnTargets.length,
             this.property.lockNumber
         );
 
         if (missilesToFire <= 0) {
-            console.warn('No targets to fire at.');
+            console.warn('No locked-on targets to fire at.');
             return;
         }
 
@@ -101,13 +145,14 @@ export class Weapon {
             }
 
             if (this.loadTimers[slotIndex] <= 0) {
-                const target = this.owner.targets[missilesFired];
+                const target = this.lockedOnTargets[missilesFired];
 
                 // Calculate firing position in world coordinates
                 const firePosArray = this.property.firePosition[slotIndex];
                 const firePositionLocal = new THREE.Vector3(...firePosArray);
-                const firePositionWorld = firePositionLocal.clone().applyMatrix4(this.owner.model.matrixWorld);
-
+                const firePositionWorld = firePositionLocal
+                    .clone()
+                    .applyMatrix4(this.owner.model.matrixWorld);
 
                 // Create missile
                 const missile = new Missile(
@@ -134,14 +179,13 @@ export class Weapon {
                     // Play weapon fire sound with positional audio
                     const soundManager = this.game.soundManager;
                     if (soundManager && this.property.sound && this.property.sound.speech && this.owner instanceof Player) {
-                        console.log('Play speech sound')
                         soundManager.playSound(
                             this.owner, // The player who owns the weapon
                             this.property.sound.speech.name as SoundEnum,
-                            soundPropertyToOption(this.property.sound.speech, missile, {position: this.owner.getPosition()}),
+                            soundPropertyToOption(this.property.sound.speech, missile, { position: this.owner.getPosition() }),
                             [this.owner]
                         );
-                        this.lastSoundPlayTime = this.property.sound.speech.cooldown
+                        this.lastSoundPlayTime = this.property.sound.speech.cooldown;
                     }
                 }
 

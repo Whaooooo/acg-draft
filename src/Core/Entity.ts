@@ -156,4 +156,14 @@ export class Entity {
         this.removed = true;
         this.ready = false;
     }
+
+    public getForwardDirection(): THREE.Vector3 {
+        if (this instanceof Player && this.game.cameraManager) {
+            const camera = this.game.cameraManager.cameras.get(this as Player);
+            if (camera) {
+                return new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
+            }
+        }
+        return new THREE.Vector3(0, 0, -1).applyQuaternion(this.getQuaternion()).normalize();
+    }
 }
