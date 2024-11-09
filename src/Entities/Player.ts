@@ -11,6 +11,7 @@ import { updateControlVariable } from '../Utils/MoveUtils';
 
 export class Player extends Plane {
     public viewMode: ViewMode;
+    public shakingFactor = 0.4;
 
     // Key mapping configuration
     private keyConfig: KeyBoundConfig;
@@ -152,8 +153,7 @@ export class Player extends Plane {
         let intensity = Math.min(1, this.lostSpeedNorm / maxLostSpeedForShake);
 
         // Scale the intensity to control the shake effect
-        const scalingFactor = 0.2; // Adjust this value as needed
-        intensity *= scalingFactor;
+        intensity *= this.shakingFactor;
 
         // Set the shake intensity in the camera manager
         this.game.cameraManager.setShakeIntensity(this, intensity);

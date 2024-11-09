@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { Player } from '../Entities/Player';
 import { ViewMode } from '../Enums/ViewMode';
+import { Game } from '../Game';
 
 /**
  * Interface to store camera controls for each player.
@@ -46,7 +47,8 @@ class ShakeEffect {
 }
 
 export class CameraManager {
-    public cameras: Map<Player, THREE.PerspectiveCamera>;
+    public cameras: Map<Player, THREE.PerspectiveCamera> = new Map();
+    public game: Game;
     public cameraControls: Map<Player, CameraControl> = new Map();
 
     // Sensitivity settings
@@ -62,39 +64,67 @@ export class CameraManager {
     // Map to store current shake intensity per player (for infinite or continuous shaking)
     private currentShakeIntensity: Map<Player, number> = new Map();
 
-    constructor(players: Player[]) {
-        this.cameras = new Map<Player, THREE.PerspectiveCamera>();
-        console.log(`Total number of players: ${players.length}`);
+    constructor(game: Game) {
+        this.game = game;
 
-        players.forEach((player) => {
-            const camera = new THREE.PerspectiveCamera(
-                75,
-                window.innerWidth / window.innerHeight,
-                0.1,
-                100000
-            );
-
-            // Initialize camera controls
-            const controls: CameraControl = {
-                // First-Person Controls
-                firstPersonYaw: 0,
-                firstPersonPitch: 0,
-
-                // Third-Person Controls
-                thirdPersonYaw: 0,
-                thirdPersonPitch: THREE.MathUtils.degToRad(-30), // Slight downward pitch
-                thirdPersonDistance: 50, // Default distance
-            };
-
-            // Store the camera and controls associated with the player
-            this.cameras.set(player, camera);
-            this.cameraControls.set(player, controls);
-
-            // Set the initial position and orientation
-            this.updateCameraPositionAndOrientation(player);
-        });
+        // Initialize cameras and controls for existing players
+        this.initializeCameras();
 
         window.addEventListener('resize', this.updateCameraAspectRatios.bind(this), false);
+    }
+
+    /**
+     * Initializes cameras and controls for all players in the game.
+     */
+    private initializeCameras(): void {
+        const players = Array.from(this.game.playerMap.values());
+
+        players.forEach((player) => {
+            this.addPlayerCamera(player);
+        });
+    }
+
+    /**
+     * Adds a camera and controls for a new player.
+     * @param player The player to add.
+     */
+    public addPlayerCamera(player: Player): void {
+        const camera = new THREE.PerspectiveCamera(
+            75,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            100000
+        );
+
+        // Initialize camera controls
+        const controls: CameraControl = {
+            // First-Person Controls
+            firstPersonYaw: 0,
+            firstPersonPitch: 0,
+
+            // Third-Person Controls
+            thirdPersonYaw: 0,
+            thirdPersonPitch: THREE.MathUtils.degToRad(-30), // Slight downward pitch
+            thirdPersonDistance: 50, // Default distance
+        };
+
+        // Store the camera and controls associated with the player
+        this.cameras.set(player, camera);
+        this.cameraControls.set(player, controls);
+
+        // Set the initial position and orientation
+        this.updateCameraPositionAndOrientation(player);
+    }
+
+    /**
+     * Removes the camera and controls for a player who has left the game.
+     * @param player The player to remove.
+     */
+    public removePlayerCamera(player: Player): void {
+        this.cameras.delete(player);
+        this.cameraControls.delete(player);
+        this.shakeEffects.delete(player);
+        this.currentShakeIntensity.delete(player);
     }
 
     /**
@@ -108,9 +138,8 @@ export class CameraManager {
                 : ViewMode.FirstPerson;
 
         const controls = this.cameraControls.get(player);
-        const camera = this.cameras.get(player);
 
-        if (controls && camera) {
+        if (controls) {
             if (player.viewMode === ViewMode.FirstPerson) {
                 // Switch to first-person view
                 // Reset third-person controls
@@ -173,7 +202,10 @@ export class CameraManager {
     /**
      * Updates all cameras based on player movements and mouse input.
      */
-    public updateCameras(deltaTime: number): void {
+    public update(deltaTime: number): void {
+        // Handle dynamic changes in playerMap
+        this.syncCamerasWithPlayers();
+
         this.cameras.forEach((camera, player) => {
             const inputManager = player.game.inputManager;
             const { deltaX, deltaY } = inputManager.getMouseMovement();
@@ -218,6 +250,29 @@ export class CameraManager {
     }
 
     /**
+     * Synchronizes the cameras and controls with the current players in the game.
+     * Adds or removes cameras and controls as players join or leave.
+     */
+    private syncCamerasWithPlayers(): void {
+        const currentPlayers = new Set(this.game.playerMap.values());
+        const existingPlayers = new Set(this.cameras.keys());
+
+        // Add cameras for new players
+        for (const player of currentPlayers) {
+            if (!existingPlayers.has(player)) {
+                this.addPlayerCamera(player);
+            }
+        }
+
+        // Remove cameras for players who have left
+        for (const player of existingPlayers) {
+            if (!currentPlayers.has(player)) {
+                this.removePlayerCamera(player);
+            }
+        }
+    }
+
+    /**
      * Updates the camera's position and orientation based on the player's current state
      * and the stored accumulated angles.
      * @param player The player whose camera is being updated.
@@ -253,7 +308,7 @@ export class CameraManager {
                 // Third-person view: compute camera position and orientation based on accumulated yaw and pitch
 
                 // Step 1: Define the initial relative position in player's local coordinates
-                const initialRelativePosition = new THREE.Vector3(0, 0, 50); // Positioned along negative Z-axis
+                const initialRelativePosition = new THREE.Vector3(0, 0, controls.thirdPersonDistance); // Positioned along negative Z-axis
 
                 // Step 2: Create quaternions for pitch and yaw rotations
                 const quatPitch = new THREE.Quaternion();
@@ -272,14 +327,7 @@ export class CameraManager {
                 camera.position.copy(playerPosition).add(relativePosition);
 
                 // Step 6: Compute the camera's orientation to look at the player
-                // Instead of using lookAt, set the camera's quaternion based on player's rotation and accumulated yaw and pitch
-                // This ensures that the camera's up vector and screen axes align with the player's axes
-                const cameraLookAt = new THREE.Vector3().subVectors(playerPosition, camera.position).normalize();
-                const cameraUp = new THREE.Vector3(0, 1, 0).applyQuaternion(playerQuaternion);
-
-                const cameraOrientation = new THREE.Matrix4();
-                cameraOrientation.lookAt(camera.position, playerPosition, cameraUp);
-                camera.quaternion.setFromRotationMatrix(cameraOrientation);
+                camera.lookAt(playerPosition);
 
                 // Ensure the camera's up vector is consistent
                 camera.up.set(0, 1, 0);
@@ -328,6 +376,11 @@ export class CameraManager {
         }
     }
 
+    /**
+     * Gets the viewport dimensions for rendering the player's camera.
+     * @param player The player whose viewport is being calculated.
+     * @returns An object containing left, top, width, and height properties.
+     */
     public getViewportForPlayer(player: Player): { left: number; top: number; width: number; height: number } {
         const numPlayers = this.cameras.size;
         const index = Array.from(this.cameras.keys()).indexOf(player);

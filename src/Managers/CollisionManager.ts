@@ -7,6 +7,9 @@ import {Player} from "../Entities/Player";
 export class CollisionManager {
     public game: Game;
     public bounds: number = 100000;
+    public intensity = 0.15; // Adjust as needed
+    public duration = 0.5; // Short duration
+    public decayRate = 0.05; // Quick decay
 
     constructor(game: Game) {
         this.game = game;
@@ -31,11 +34,8 @@ export class CollisionManager {
 
             [entity1, entity2].forEach(entity => {
                 if (entity instanceof Player) {
-                    const intensity = 0.1; // Adjust as needed
-                    const duration = 0.5; // Short duration
-                    const decayRate = 0.05; // Quick decay
 
-                    this.game.cameraManager.addShake(entity, intensity, duration, decayRate);
+                    this.game.cameraManager.addShake(entity, this.intensity, this.duration, this.decayRate);
                 }
             });
 
@@ -79,6 +79,10 @@ export class CollisionManager {
         const entities = Array.from(this.game.movableEntityMap.values()).filter(entity => !entity.removed && entity.ready);
 
         for (let i = 0; i < entities.length; i++) {
+            const entity = entities[i];
+            if (!entity.ready || entity.removed) {
+                continue;
+            }
             if (this.isOutOfBounds(entities[i])) {
                 console.log(`Entity ${entities[i].entityId} is out of bounds`);
                 entities[i].dispose();

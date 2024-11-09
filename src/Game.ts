@@ -88,7 +88,7 @@ export class Game {
         this.waitForEntitiesToBeReady();
 
         // Initialize the CameraManager after players are created
-        this.cameraManager = new CameraManager(Array.from(this.playerMap.values()));
+        this.cameraManager = new CameraManager(this);
 
         // Initialize the SoundManagers for each player
         this.soundManager = new SoundManager(Array.from(this.playerMap.values()), this.cameraManager.cameras, this.scene);
@@ -109,7 +109,7 @@ export class Game {
         // Create a player
         console.log('Request creating player');
         const player1 = new Player(this, 'f22', new THREE.Vector3(20, 2000, 0), undefined, undefined, 1, 0);
-        // const player2 = new Player(this, 'f22', new THREE.Vector3(20, 200, -100), undefined, undefined, 0, 1);
+        const player2 = new Player(this, 'f22', new THREE.Vector3(20, 2000, -100), undefined, undefined, 0, 1);
 
         // Optionally, add some NPCs for testing
         console.log('Request creating npc');
@@ -220,7 +220,7 @@ export class Game {
         this.entityMap.forEach(entity => entity.update(deltaTime));
 
         // Update camera positions and orientations based on player inputs
-        this.cameraManager.updateCameras(deltaTime);
+        this.cameraManager.update(deltaTime);
 
         // Check collisions
         this.collisionManager.update(deltaTime);
@@ -234,7 +234,6 @@ export class Game {
 
         // After rendering all cameras, update and render HUD
         this.hudManager.update(deltaTime);
-        this.hudManager.render();
     }
 
     public getTime(): number {

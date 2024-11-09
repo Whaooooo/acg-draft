@@ -1,4 +1,5 @@
 // src/Managers/InputManager.ts
+
 import { InputAction } from "../Configs/KeyBound";
 
 export class InputManager {
@@ -11,6 +12,10 @@ export class InputManager {
     public pointerLocked: boolean = false;
     private wheelDelta: number = 0;
 
+    // Gamepad properties
+    private gamepads: (Gamepad | null)[] = [];
+    public joystickAxes: number[] = []; // To store axes values
+
     // Bound event handlers
     private boundPreventBrowserShortcuts: (event: KeyboardEvent) => void;
     private boundOnKeyDown: (event: KeyboardEvent) => void;
@@ -21,6 +26,10 @@ export class InputManager {
     private boundOnWheel: (event: WheelEvent) => void;
     private boundOnPointerLockChange: (event: Event) => void;
     private boundContextMenuHandler: (event: MouseEvent) => void;
+
+    // Gamepad event handlers
+    private boundOnGamepadConnected: (event: GamepadEvent) => void;
+    private boundOnGamepadDisconnected: (event: GamepadEvent) => void;
 
     constructor() {
         // Bind event handlers
@@ -33,6 +42,10 @@ export class InputManager {
         this.boundOnWheel = this.onWheel.bind(this);
         this.boundOnPointerLockChange = this.onPointerLockChange.bind(this);
         this.boundContextMenuHandler = this.contextMenuHandler.bind(this);
+
+        // Gamepad event handlers
+        this.boundOnGamepadConnected = this.onGamepadConnected.bind(this);
+        this.boundOnGamepadDisconnected = this.onGamepadDisconnected.bind(this);
 
         this.initEventListeners();
     }
@@ -50,6 +63,10 @@ export class InputManager {
 
         // Prevent right-click context menu
         window.addEventListener('contextmenu', this.boundContextMenuHandler, false);
+
+        // Gamepad event listeners
+        window.addEventListener('gamepadconnected', this.boundOnGamepadConnected, false);
+        window.addEventListener('gamepaddisconnected', this.boundOnGamepadDisconnected, false);
     }
 
     private contextMenuHandler(event: MouseEvent): void {
@@ -131,6 +148,49 @@ export class InputManager {
         }
     }
 
+    // Gamepad event handlers
+    private onGamepadConnected(event: GamepadEvent): void {
+        const gamepad = event.gamepad;
+        console.log('Gamepad connected at index %d: %s. %d buttons, %d axes.',
+            gamepad.index, gamepad.id,
+            gamepad.buttons.length, gamepad.axes.length);
+        this.gamepads[gamepad.index] = gamepad;
+    }
+
+    private onGamepadDisconnected(event: GamepadEvent): void {
+        const gamepad = event.gamepad;
+        console.log('Gamepad disconnected from index %d: %s',
+            gamepad.index, gamepad.id);
+        this.gamepads[gamepad.index] = null;
+    }
+
+    // Call this method each frame to update the gamepad state
+    public updateGamepadState(): void {
+        const connectedGamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+
+        // For simplicity, use the first connected gamepad
+        const gamepad = connectedGamepads[0];
+
+        if (gamepad) {
+            this.joystickAxes = gamepad.axes.slice(); // Copy axes values
+
+            // You can also handle gamepad buttons if needed
+            // For example, to handle button presses
+            // this.gamepadButtonsPressed = gamepad.buttons.map(button => button.pressed);
+        } else {
+            this.joystickAxes = []; // No gamepad connected
+        }
+    }
+
+    // Method to get specific joystick axis value
+    public getJoystickAxis(axisIndex: number): number {
+        if (this.joystickAxes && axisIndex >= 0 && axisIndex < this.joystickAxes.length) {
+            return this.joystickAxes[axisIndex];
+        }
+        return 0;
+    }
+
+    // Modify checkInput to handle gamepad buttons if needed
     public checkInput(action: InputAction): boolean {
         const keyType = action.keyType.toLowerCase();
         const keyName = action.keyName.toLowerCase();
@@ -168,6 +228,7 @@ export class InputManager {
                 }
             }
         }
+        // You can add gamepad button handling here if needed
 
         return false;
     }
@@ -193,24 +254,21 @@ export class InputManager {
         window.removeEventListener('mousedown', this.boundOnMouseDown, false);
         window.removeEventListener('mouseup', this.boundOnMouseUp, false);
         window.removeEventListener('mousemove', this.boundOnMouseMove, false);
-        window.removeEventListener('wheel', this.boundOnWheel, false );
+        window.removeEventListener('wheel', this.boundOnWheel, false);
         document.removeEventListener('pointerlockchange', this.boundOnPointerLockChange, false);
         window.removeEventListener('contextmenu', this.boundContextMenuHandler, false);
+
+        // Gamepad event listeners
+        window.removeEventListener('gamepadconnected', this.boundOnGamepadConnected, false);
+        window.removeEventListener('gamepaddisconnected', this.boundOnGamepadDisconnected, false);
 
         // Release pointer lock if it's still active
         if (this.pointerLocked) {
             if (document.exitPointerLock) {
                 document.exitPointerLock();
-            } else if ((document as any).mozExitPointerLock) {
-                (document as any).mozExitPointerLock();
-            } else if ((document as any).webkitExitPointerLock) {
-                (document as any).webkitExitPointerLock();
-            } else if ((document as any).msExitPointerLock) {
-                (document as any).msExitPointerLock();
             }
             this.pointerLocked = false;
         }
-
 
         // Reset internal state
         this.keysPressed = {};
@@ -220,22 +278,16 @@ export class InputManager {
         this.mouseDeltaX = 0;
         this.mouseDeltaY = 0;
         this.wheelDelta = 0;
+        this.joystickAxes = [];
+        this.gamepads = [];
     }
 
     public releasePointerLock(): void {
         if (this.pointerLocked) {
             if (document.exitPointerLock) {
                 document.exitPointerLock();
-            } else if ((document as any).mozExitPointerLock) {
-                (document as any).mozExitPointerLock();
-            } else if ((document as any).webkitExitPointerLock) {
-                (document as any).webkitExitPointerLock();
-            } else if ((document as any).msExitPointerLock) {
-                (document as any).msExitPointerLock();
             }
             this.pointerLocked = false;
         }
     }
 }
-
-

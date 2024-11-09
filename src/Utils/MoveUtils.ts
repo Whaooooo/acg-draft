@@ -122,10 +122,10 @@ export function updatePlaneState(
     localVelocity.z += deltaV;
 
     // Convert local velocity back to world coordinates using the new quaternion
-    const newVelocity = localVelocity.applyQuaternion(newQuaternion);
+    const newVelocity = localVelocity.applyQuaternion(state.quaternion.clone());
 
     // Convert lostLocalSpeed to world coordinates
-    const lostSpeed = lostLocalSpeed.applyQuaternion(newQuaternion);
+    const lostSpeed = lostLocalSpeed.applyQuaternion(state.quaternion.clone());
 
     // Return the updated quaternion, velocity, and lost speed
     return {

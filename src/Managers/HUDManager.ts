@@ -52,6 +52,8 @@ export class HUDManager {
             this.lastFrameTime = performance.now();
             document.getElementById('fps-display')!.innerText = `FPS: ${Math.round(fps)}`;
         }
+
+        this.render();
     }
 
     private createHUDElementForPlayer(player: Player): HTMLDivElement {
