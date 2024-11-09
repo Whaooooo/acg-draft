@@ -251,7 +251,7 @@ void main() {
     vec4 shadowColor = texture2D( shadowTexture, p.xz + 0.5 );
     float height_dist = bounds.x * abs(rayDir.y) * boxBound.y;
 
-    if ( height_dist > 2500.0 ) {
+    if ( height_dist > 3500.0 ) {
         gl_FragColor = shadowColor;
     } else {
 
@@ -292,8 +292,8 @@ void main() {
 
     gl_FragColor = linearToSRGB( ac );
 
-    if (height_dist > 1000.0) {
-        float fac = smoothstep(1000.0, 2500.0, height_dist);
+    if (height_dist > 1500.0) {
+        float fac = smoothstep(1500.0, 3500.0, height_dist);
         gl_FragColor = mix(gl_FragColor, shadowColor, fac);
     }
 

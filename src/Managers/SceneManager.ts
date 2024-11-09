@@ -45,7 +45,9 @@ export class SceneManager {
     public renderCamera(camera: THREE.Camera, left: number, bottom: number, viewportWidth: number, viewportHeight: number): void {
         const position = camera.position.clone();
         if (this.directionalLight) {
-            this.directionalLight.position.copy(position.clone().add(new THREE.Vector3(1000, 1000, 1000)));
+            let light_position = position.clone();
+            light_position.addScalar(5500 - light_position.y);
+            this.directionalLight.position.copy(light_position);
             this.directionalLight.target.position.copy(position.clone().sub(new THREE.Vector3(100, 100, 100)));
         }
         if (this.water) {
@@ -86,7 +88,7 @@ export class SceneManager {
         directionalLight.shadow.mapSize.height = 4096;
 
         directionalLight.shadow.camera.near = 0.01;
-        directionalLight.shadow.camera.far = 5000;
+        directionalLight.shadow.camera.far = 10000;
         directionalLight.shadow.camera.left = -1000;
         directionalLight.shadow.camera.right = 1000;
         directionalLight.shadow.camera.top = 1000;
