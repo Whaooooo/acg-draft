@@ -4,7 +4,7 @@ import { CameraManager } from './CameraManager';
 import { Weapon } from '../Core/Weapon';
 import { Game } from '../Game';
 import { Entity } from '../Core/Entity';
-import { Missile } from '../Entities/Missile'; // 确保导入 Missile 类
+import { Missile } from '../Entities/Missile';
 
 export class HUDManager {
     private game: Game;
@@ -20,6 +20,7 @@ export class HUDManager {
     private frameCount: number = 0;
 
     private hudOverlay: HTMLDivElement;
+    private svgOverlay: SVGSVGElement; // New SVG overlay for drawing lines
 
     constructor(game: Game) {
         this.game = game;
@@ -31,6 +32,18 @@ export class HUDManager {
         this.hudOverlay = document.createElement('div');
         this.hudOverlay.id = 'hud-overlay';
         document.body.appendChild(this.hudOverlay);
+
+        // Create SVG Overlay
+        this.svgOverlay = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        this.svgOverlay.setAttribute('id', 'svg-overlay');
+        this.svgOverlay.setAttribute('width', '100%');
+        this.svgOverlay.setAttribute('height', '100%');
+        this.svgOverlay.style.position = 'absolute';
+        this.svgOverlay.style.top = '0';
+        this.svgOverlay.style.left = '0';
+        this.svgOverlay.style.pointerEvents = 'none';
+        this.svgOverlay.style.zIndex = '16'; // Above HUD overlay
+        document.body.appendChild(this.svgOverlay);
     }
 
     /**
@@ -79,7 +92,6 @@ export class HUDManager {
         const hudContainer = document.createElement('div');
         hudContainer.classList.add('hud-container');
 
-        // 使用正确的模板字符串语法
         hudContainer.style.width = `${this.hudWidth}px`;
         hudContainer.style.height = `${this.hudHeight}px`;
         hudContainer.style.position = 'absolute';
@@ -259,6 +271,11 @@ export class HUDManager {
         const existingIndicators = this.hudOverlay.querySelectorAll('.target-indicator, .missile-indicator');
         existingIndicators.forEach(indicator => indicator.remove());
 
+        // Clear previous SVG elements
+        while (this.svgOverlay.firstChild) {
+            this.svgOverlay.removeChild(this.svgOverlay.firstChild);
+        }
+
         const weapon = player.weapons[player.selectedWeaponIndex];
 
         const potentialTargets = weapon.potentialTargets;
@@ -280,6 +297,16 @@ export class HUDManager {
         projScreenMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
         frustum.setFromProjectionMatrix(projScreenMatrix);
 
+        // Screen center
+        const screenCenterX = width / 2 + cameraLeft;
+        const screenCenterY = height / 2 + cameraTop;
+
+        // Highest priority target
+        const highestPriorityTarget = potentialTargets[0];
+
+        // Flag to check if highest priority target is off-screen
+        let highestPriorityOffScreen = false;
+
         // Iterate over all entities
         this.game.entityMap.forEach((entity) => {
             if (entity === player) return; // Exclude the player himself
@@ -288,25 +315,21 @@ export class HUDManager {
             const entityPosition = entity.getPosition();
 
             // Check if the entity is in the camera's frustum
-            if (!frustum.containsPoint(entityPosition)) return;
+            const isInFrustum = frustum.containsPoint(entityPosition);
 
             // Project entity position to normalized device coordinates (NDC)
             const ndc = entityPosition.clone().project(camera);
-
-            // Check if NDC is within -1 to 1
-            if (ndc.x < -1 || ndc.x > 1 || ndc.y < -1 || ndc.y > 1) return;
 
             // Convert NDC to screen coordinates
             const x = (ndc.x * 0.5 + 0.5) * width + cameraLeft;
             const y = (-ndc.y * 0.5 + 0.5) * height + cameraTop;
 
-            // Ensure x and y are within screen bounds
-            if (x < 0 || x > width || y < 0 || y > height) return;
-
             // Calculate distance
             const distance = entityPosition.distanceTo(player.getPosition());
 
             if (entity instanceof Missile) {
+                if (!isInFrustum) return;
+
                 // Handle Missile entities
                 const missileIndicator = document.createElement('div');
                 missileIndicator.classList.add('missile-indicator');
@@ -344,62 +367,129 @@ export class HUDManager {
 
             } else if (entity.iFFNumber >= 0) {
                 // Handle other entities with iFFNumber >= 0 (excluding the player himself)
-                // Create indicator container
-                const indicator = document.createElement('div');
-                indicator.classList.add('target-indicator');
-                indicator.style.left = `${x - 25}px`; // Center the indicator
-                indicator.style.top = `${y - 25}px`;
+                const isHighestPriority = (entity === highestPriorityTarget);
 
-                // Determine colors
-                const isAlly = (entity.iFFNumber === player.iFFNumber);
-                const isHighestPriority = (entity === potentialTargets[0]);
-                const isLockedOn = lockedOnTargets.includes(entity);
-                const isInPotentialTargets = potentialTargets.includes(entity);
+                if (isInFrustum) {
+                    if (entity === player) return;
+                    // Ensure x and y are within screen bounds
+                    if (x < 0 || x > width || y < 0 || y > height) return;
 
-                let squareColor = '';
-                let fontColor = isAlly ? 'blue' : 'green';
+                    // Create indicator container
+                    const indicator = document.createElement('div');
+                    indicator.classList.add('target-indicator');
+                    indicator.style.left = `${x - 25}px`; // Center the indicator
+                    indicator.style.top = `${y - 25}px`;
 
-                if (isAlly) {
-                    squareColor = 'lightblue';
+                    // Determine colors
+                    const isAlly = (entity.iFFNumber === player.iFFNumber);
+                    const isLockedOn = lockedOnTargets.includes(entity);
+                    const isInPotentialTargets = potentialTargets.includes(entity);
+
+                    let squareColor = '';
+                    let fontColor = isAlly ? 'blue' : 'green';
+
+                    if (isAlly) {
+                        squareColor = 'lightblue';
+                    } else if (isHighestPriority) {
+                        squareColor = isLockedOn ? 'darkred' : 'darkgreen';
+                    } else if (isLockedOn) {
+                        squareColor = 'lightred';
+                    } else if (isInPotentialTargets) {
+                        squareColor = 'lightgreen';
+                    } else {
+                        // Skip non-potential enemy targets
+                        return;
+                    }
+
+                    // Apply styles
+                    indicator.style.borderColor = squareColor;
+                    indicator.style.color = fontColor;
+
+                    // Add extra smaller square for highest priority target
+                    if (isHighestPriority) {
+                        const extraIndicator = document.createElement('div');
+                        extraIndicator.classList.add('highest-priority-indicator');
+                        extraIndicator.style.borderColor = squareColor;
+                        indicator.appendChild(extraIndicator);
+                    }
+
+                    // Display entity name at the upper right corner
+                    const nameLabel = document.createElement('div');
+                    nameLabel.classList.add('indicator-name');
+                    nameLabel.textContent = entity.assetName;
+                    indicator.appendChild(nameLabel);
+
+                    // Display distance at the lower right corner
+                    const distanceLabel = document.createElement('div');
+                    distanceLabel.classList.add('indicator-distance');
+                    distanceLabel.textContent = `${distance.toFixed(0)}`;
+                    indicator.appendChild(distanceLabel);
+
+                    // Append to HUD overlay
+                    this.hudOverlay.appendChild(indicator);
+
                 } else if (isHighestPriority) {
-                    squareColor = isLockedOn ? 'darkred' : 'darkgreen';
-                } else if (isLockedOn) {
-                    squareColor = 'lightred';
-                } else if (isInPotentialTargets) {
-                    squareColor = 'lightgreen';
-                } else {
-                    // Skip non-potential enemy targets
-                    return;
+                    // Handle off-screen highest priority target
+                    highestPriorityOffScreen = true;
+
+                    // Calculate angle between camera's z-axis and vector to target
+                    const cameraBack = new THREE.Vector3(0, 0, 1).applyQuaternion(camera.quaternion);
+                    const toTarget = entityPosition.clone().sub(camera.position).normalize();
+
+                    const angleBetween = Math.acos(cameraBack.dot(toTarget));
+
+                    // Calculate 2D screen angle (azimuth) for placement around circle
+                    const cameraRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+                    const cameraUp = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+                    let screenAngle = Math.atan2(toTarget.dot(cameraUp), toTarget.dot(cameraRight));
+
+                    // Ensure angle is between 0 and 2π
+                    if (screenAngle < 0) screenAngle += 2 * Math.PI;
+
+                    // Distance from center
+                    const distanceFromCenter = Math.cos(angleBetween) * 150 + 150;
+
+                    const posX = screenCenterX + distanceFromCenter * Math.cos(screenAngle);
+                    const posY = screenCenterY - distanceFromCenter * Math.sin(screenAngle); // Subtract because screen Y increases downward
+
+                    // Create central deep green square
+                    const centerSquare = document.createElement('div');
+                    centerSquare.classList.add('center-square');
+                    centerSquare.style.left = `${screenCenterX - 20}px`; // Center the square
+                    centerSquare.style.top = `${screenCenterY - 20}px`;
+                    this.hudOverlay.appendChild(centerSquare);
+
+                    // Draw lines from square's vertices to the point
+                    const squareSize = 40;
+                    const squareVertices = [
+                        { x: screenCenterX - squareSize / 2, y: screenCenterY - squareSize / 2 }, // Top-left
+                        { x: screenCenterX + squareSize / 2, y: screenCenterY - squareSize / 2 }, // Top-right
+                        { x: screenCenterX + squareSize / 2, y: screenCenterY + squareSize / 2 }, // Bottom-right
+                        { x: screenCenterX - squareSize / 2, y: screenCenterY + squareSize / 2 }, // Bottom-left
+                    ];
+
+                    // Draw lines using SVG
+                    squareVertices.forEach(vertex => {
+                        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                        line.setAttribute('x1', `${vertex.x}`);
+                        line.setAttribute('y1', `${vertex.y}`);
+                        line.setAttribute('x2', `${posX}`);
+                        line.setAttribute('y2', `${posY}`);
+                        line.setAttribute('stroke', 'darkgreen');
+                        line.setAttribute('stroke-width', '2');
+                        this.svgOverlay.appendChild(line);
+                    });
                 }
-
-                // Apply styles
-                indicator.style.borderColor = squareColor;
-                indicator.style.color = fontColor;
-
-                // Add extra smaller square for highest priority target
-                if (isHighestPriority) {
-                    const extraIndicator = document.createElement('div');
-                    extraIndicator.classList.add('highest-priority-indicator');
-                    extraIndicator.style.borderColor = squareColor;
-                    indicator.appendChild(extraIndicator);
-                }
-
-                // Display entity name at the upper right corner
-                const nameLabel = document.createElement('div');
-                nameLabel.classList.add('indicator-name');
-                nameLabel.textContent = entity.assetName;
-                indicator.appendChild(nameLabel);
-
-                // Display distance at the lower right corner
-                const distanceLabel = document.createElement('div');
-                distanceLabel.classList.add('indicator-distance');
-                distanceLabel.textContent = `${distance.toFixed(0)}`;
-                indicator.appendChild(distanceLabel);
-
-                // Append to HUD overlay
-                this.hudOverlay.appendChild(indicator);
             }
         });
+
+        if (!highestPriorityOffScreen) {
+            // Remove any existing center square if highest priority target is on-screen
+            const existingCenterSquare = this.hudOverlay.querySelector('.center-square');
+            if (existingCenterSquare) {
+                existingCenterSquare.remove();
+            }
+        }
     }
 
     /**
@@ -479,6 +569,10 @@ export class HUDManager {
         // Remove hudOverlay
         if (this.hudOverlay.parentNode) {
             this.hudOverlay.parentNode.removeChild(this.hudOverlay);
+        }
+        // Remove svgOverlay
+        if (this.svgOverlay.parentNode) {
+            this.svgOverlay.parentNode.removeChild(this.svgOverlay);
         }
         // Clear the map
         this.domElements.clear();
