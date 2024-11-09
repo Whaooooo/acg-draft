@@ -80,6 +80,7 @@ body, html {
     overflow: hidden;
     width: 700px;
     height: 500px;
+    pointer-events: none; /* Make it non-interactive */
 }
 
 /* 血量条容器 */
@@ -199,6 +200,59 @@ body, html {
 /* 字体引入 */
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
+/* Target Indicator Styles */
+.target-indicator {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    border: 3px solid;
+    box-sizing: border-box;
+    color: white; /* Default font color */
+    font-family: 'Press Start 2P', cursive;
+    font-size: 20px;
+    pointer-events: none; /* Allow clicks to pass through */
+    z-index: 15; /* Ensure it's above other HUD elements */
+}
+
+.target-indicator .indicator-name {
+    position: absolute;
+    top: 0; /* Position above the square */
+    left: 55px;
+    background-color: rgba(0, 0, 0, 0.0); /* Optional: background for better readability */
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.target-indicator .indicator-distance {
+    position: absolute;
+    bottom: 0; /* Position below the square */
+    left: 55px;
+    background-color: rgba(0, 0, 0, 0.0); /* Optional: background for better readability */
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.highest-priority-indicator {
+    position: absolute;
+    top: 3px; /* Centered within the parent square */
+    left: 3px;
+    width: 38px;
+    height: 38px;
+    border: 2px solid;
+    box-sizing: border-box;
+    pointer-events: none;
+}
+
+/* HUD Overlay */
+#hud-overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none; /* Ensure clicks pass through */
+    z-index: 15; /* Ensure it's above other elements */
+}
 
 /* Mission Failed Screen Styles */
 #mission-failed-screen {
