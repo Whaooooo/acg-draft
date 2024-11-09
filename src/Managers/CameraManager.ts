@@ -63,17 +63,17 @@ export class CameraManager {
     constructor(game: Game) {
         this.game = game;
 
-        // Initialize cameras and controls for existing players
+        // Initialize cameras and controls for existing local players
         this.initializeCameras();
 
         window.addEventListener('resize', this.updateCameraAspectRatios.bind(this), false);
     }
 
     /**
-     * Initializes cameras and controls for all players in the game.
+     * Initializes cameras and controls for all local players in the game.
      */
     private initializeCameras(): void {
-        const players = Array.from(this.game.playerMap.values());
+        const players = Array.from(this.game.playerMap.values()).filter(player => player.isLocalPlayer);
 
         players.forEach((player) => {
             this.addPlayerCamera(player);
@@ -85,6 +85,8 @@ export class CameraManager {
      * @param player The player to add.
      */
     public addPlayerCamera(player: Player): void {
+        if (!player.isLocalPlayer) return;
+
         const camera = new THREE.PerspectiveCamera(
             75,
             window.innerWidth / window.innerHeight,
@@ -128,6 +130,8 @@ export class CameraManager {
      * @param player The player whose camera view is being toggled.
      */
     public toggleViewMode(player: Player): void {
+        if (!player.isLocalPlayer) return;
+
         player.viewMode =
             player.viewMode === ViewMode.FirstPerson
                 ? ViewMode.ThirdPerson
@@ -180,6 +184,8 @@ export class CameraManager {
      * @param decayRate The rate at which the shake intensity decays.
      */
     public addShake(player: Player, intensity: number, duration: number, decayRate: number): void {
+        if (!player.isLocalPlayer) return;
+
         if (!this.shakeEffects.has(player)) {
             this.shakeEffects.set(player, []);
         }
@@ -192,6 +198,8 @@ export class CameraManager {
      * @param intensity The intensity of the shake.
      */
     public setShakeIntensity(player: Player, intensity: number): void {
+        if (!player.isLocalPlayer) return;
+
         this.currentShakeIntensity.set(player, intensity);
     }
 
@@ -204,8 +212,8 @@ export class CameraManager {
 
         this.cameras.forEach((camera, player) => {
             const inputState = player.getInputState();
-            const deltaX = inputState.serialize().mouseDeltaX;
-            const deltaY = inputState.serialize().mouseDeltaY;
+            const deltaX = inputState.mouseDeltaX;
+            const deltaY = inputState.mouseDeltaY;
 
             const controls = this.cameraControls.get(player);
             if (!controls) return;
@@ -250,23 +258,23 @@ export class CameraManager {
     }
 
     /**
-     * Synchronizes the cameras and controls with the current players in the game.
+     * Synchronizes the cameras and controls with the current local players in the game.
      * Adds or removes cameras and controls as players join or leave.
      */
     private syncCamerasWithPlayers(): void {
-        const currentPlayers = new Set(this.game.playerMap.values());
+        const currentLocalPlayers = new Set(Array.from(this.game.playerMap.values()).filter(player => player.isLocalPlayer));
         const existingPlayers = new Set(this.cameras.keys());
 
-        // Add cameras for new players
-        for (const player of currentPlayers) {
+        // Add cameras for new local players
+        for (const player of currentLocalPlayers) {
             if (!existingPlayers.has(player)) {
                 this.addPlayerCamera(player);
             }
         }
 
-        // Remove cameras for players who have left
+        // Remove cameras for players who have left or are no longer local
         for (const player of existingPlayers) {
-            if (!currentPlayers.has(player)) {
+            if (!currentLocalPlayers.has(player)) {
                 this.removePlayerCamera(player);
             }
         }
@@ -339,7 +347,6 @@ export class CameraManager {
             }
         }
     }
-
 
     /**
      * Applies the combined shake effect to the camera based on the current intensity and active shake effects.

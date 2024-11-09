@@ -12,16 +12,16 @@ export class HUDManager {
     private cameraManager: CameraManager;
     private domElements: Map<Player, HTMLDivElement>;
 
-    // 定义 HUD 的尺寸
-    private hudWidth: number = 400;  // 根据需要调整
-    private hudHeight: number = 300; // 根据需要调整
+    // HUD dimensions
+    private hudWidth: number = 400;  // Adjust as needed
+    private hudHeight: number = 300; // Adjust as needed
 
     private lastFrameTime: number = 0;
     private frameCount: number = 0;
 
     constructor(game: Game) {
         this.game = game;
-        this.players = Array.from(game.playerMap.values());
+        this.players = Array.from(game.playerMap.values()).filter(player => player.isLocalPlayer);
         this.cameraManager = game.cameraManager;
         this.domElements = new Map();
     }
@@ -30,19 +30,20 @@ export class HUDManager {
      * 更新 HUD，每次重新绘制所有内容。
      */
     public update(deltaTime: number): void {
-        // 清除现有的 HUD 元素
+        // Remove existing HUD elements
         this.dispose();
 
-        // 重新获取当前的玩家列表
-        this.players = Array.from(this.game.playerMap.values());
+        // Get the current list of local players
+        this.players = Array.from(this.game.playerMap.values()).filter(player => player.isLocalPlayer);
 
-        // 重新绘制所有 HUD 元素
+        // Redraw all HUD elements
         this.players.forEach((player) => {
             const hudElement = this.createHUDElementForPlayer(player);
             document.body.appendChild(hudElement);
             this.domElements.set(player, hudElement);
         });
 
+        // Update FPS display
         if (this.lastFrameTime === 0)
             this.lastFrameTime = performance.now();
         this.frameCount++;
@@ -50,7 +51,10 @@ export class HUDManager {
             var fps = this.frameCount / ((performance.now() - this.lastFrameTime) / 1000);
             this.frameCount = 0;
             this.lastFrameTime = performance.now();
-            document.getElementById('fps-display')!.innerText = `FPS: ${Math.round(fps)}`;
+            const fpsDisplay = document.getElementById('fps-display');
+            if (fpsDisplay) {
+                fpsDisplay.innerText = `FPS: ${Math.round(fps)}`;
+            }
         }
 
         this.render();
@@ -187,19 +191,19 @@ export class HUDManager {
     }
 
     public render(): void {
-        // 根据视口调整 HUD 元素的位置
+        // Adjust HUD element positions based on viewport
         this.players.forEach((player) => {
             const hudElement = this.domElements.get(player);
             if (!hudElement) return;
 
-            // 从 CameraManager 获取视口尺寸
+            // Get viewport dimensions from CameraManager
             const viewport = this.cameraManager.getViewportForPlayer(player);
 
-            // 使用 CSS 设置 HUD 元素的位置
-            hudElement.style.left = `${viewport.left + viewport.width - this.hudWidth - 20}px`; // 右侧留出20px边距
-            hudElement.style.top = `${viewport.top + viewport.height - this.hudHeight - 20}px`; // 下方留出20px边距
+            // Set HUD element position using CSS
+            hudElement.style.left = `${viewport.left + viewport.width - this.hudWidth - 20}px`; // 20px right margin
+            hudElement.style.top = `${viewport.top + viewport.height - this.hudHeight - 20}px`; // 20px bottom margin
 
-            // 固定 HUD 容器的宽度和高度
+            // Set HUD container dimensions
             hudElement.style.width = `${this.hudWidth}px`;
             hudElement.style.height = `${this.hudHeight}px`;
         });
@@ -216,13 +220,13 @@ export class HUDManager {
     }
 
     public dispose(): void {
-        // 从 DOM 中移除 HUD 元素
+        // Remove HUD elements from the DOM
         this.domElements.forEach((hudElement) => {
             if (hudElement.parentNode) {
                 hudElement.parentNode.removeChild(hudElement);
             }
         });
-        // 清空映射
+        // Clear the map
         this.domElements.clear();
     }
 }

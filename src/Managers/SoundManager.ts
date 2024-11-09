@@ -5,9 +5,10 @@ import { SoundPaths, SoundEnum } from '../Configs/SoundPaths';
 import { Config } from '../Configs/Config';
 import { Player } from '../Entities/Player';
 import { Entity } from '../Core/Entity';
-import {property} from "three/src/nodes/core/PropertyNode"; // Assuming Entity is a base class/interface for Player and others
+import {Game} from "../Game";
 
 export class SoundManager {
+    public game: Game;
     private soundBuffers: Map<SoundEnum, AudioBuffer>;
     private activeSounds: Map<Player, Set<THREE.Audio | THREE.PositionalAudio>>;
     private namedSounds: Map<string, THREE.Audio | THREE.PositionalAudio>;
@@ -16,26 +17,22 @@ export class SoundManager {
     private scene: THREE.Scene;
     public _ready: Map<SoundEnum, boolean> = new Map<SoundEnum, boolean>();
 
-    /**
-     * Initializes the SoundManager.
-     * @param players - Array of players in the game.
-     * @param cameras - Map of players to their respective cameras.
-     * @param scene - The THREE.Scene instance to add positional sounds to.
-     */
-    constructor(players: Player[], cameras: Map<Player, THREE.Camera>, scene: THREE.Scene) {
+
+    constructor(game: Game) {
+        this.game = game;
         this.soundBuffers = new Map<SoundEnum, AudioBuffer>();
         this.activeSounds = new Map<Player, Set<THREE.Audio | THREE.PositionalAudio>>();
         this.namedSounds = new Map<string, THREE.Audio | THREE.PositionalAudio>();
         this.listeners = new Map<Player, THREE.AudioListener>();
-        this.cameras = cameras;
-        this.scene = scene;
+        this.cameras = game.cameraManager.cameras;
+        this.scene = game.scene;
         Object.keys(SoundPaths).forEach(key => {
             this._ready.set(key as SoundEnum, false);
         });
 
-        // Initialize listeners and attach them to cameras
-        players.forEach((player) => {
-            const camera = cameras.get(player);
+        // Initialize listeners and attach them to cameras for local players
+        Array.from(this.game.playerMap.values()).filter(player => player.isLocalPlayer).forEach((player) => {
+            const camera = this.cameras.get(player);
             if (camera) {
                 const listener = new THREE.AudioListener();
                 camera.add(listener);
@@ -80,7 +77,7 @@ export class SoundManager {
      * @param soundCreator - The Entity that creates the sound (used to initialize position if not provided).
      * @param name - The SoundEnum representing the sound to play.
      * @param options - Additional options for the sound.
-     * @param targetPlayers - The list of players to play the sound for. If undefined, plays for all players.
+     * @param targetPlayers - The list of players to play the sound for. If undefined, plays for all local players.
      * @returns An array of THREE.Audio or THREE.PositionalAudio objects that were created, or null if sound not loaded.
      */
     public playSound(
@@ -104,8 +101,11 @@ export class SoundManager {
             return null;
         }
 
-        // Determine target players
-        const playersToPlay = targetPlayers ? targetPlayers : Array.from(this.cameras.keys());
+        // Determine target players, only local players
+        const allLocalPlayers = Array.from(this.cameras.keys());
+        const playersToPlay = targetPlayers
+            ? targetPlayers.filter(player => player.isLocalPlayer)
+            : allLocalPlayers;
 
         // Determine position
         let soundPosition: THREE.Vector3 | undefined;
@@ -213,6 +213,7 @@ export class SoundManager {
      * Updates all active sounds. Typically called once per frame.
      */
     public updateSounds(): void {
+        // Implement if needed
     }
 
     /**

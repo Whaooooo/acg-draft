@@ -91,7 +91,7 @@ export class Game {
         this.cameraManager = new CameraManager(this);
 
         // Initialize the SoundManagers for each player
-        this.soundManager = new SoundManager(Array.from(this.playerMap.values()), this.cameraManager.cameras, this.scene);
+        this.soundManager = new SoundManager(this);
 
         // Initialize TargetManager with players and NPCs
         this.targetManager = new TargetManager(this);
@@ -109,7 +109,7 @@ export class Game {
         // Create a player
         console.log('Request creating player');
         const player1 = new Player(this, 'f22', new THREE.Vector3(20, 2000, 0), undefined, undefined, 1, 0, true);
-        // const player2 = new Player(this, 'f22', new THREE.Vector3(20, 2000, -100), undefined, undefined, 0, 1, false);
+        const player2 = new Player(this, 'f22', new THREE.Vector3(20, 2000, -100), undefined, undefined, 0, 1, false);
 
         // Optionally, add some NPCs for testing
         console.log('Request creating npc');
@@ -187,7 +187,7 @@ export class Game {
             this.lastFrameTime = performance.now();
         this.frameCount++;
         if (this.frameCount >= 30 || (this.frameCount >= 4 && performance.now() - this.lastFrameTime >= 2000)) {
-            var fps = this.frameCount / ((performance.now() - this.lastFrameTime) / 1000);
+            const fps = this.frameCount / ((performance.now() - this.lastFrameTime) / 1000);
             this.frameCount = 0;
             this.lastFrameTime = performance.now();
             const fpsDisplay = document.getElementById('fps-display');
@@ -196,25 +196,20 @@ export class Game {
             }
         }
 
-        const numPlayers = this.playerMap.size;
-        const width = window.innerWidth;
-        const height = window.innerHeight;
+        // Filter local players
+        const localPlayers = Array.from(this.playerMap.values()).filter(player => player.isLocalPlayer);
         const playerCameras = this.cameraManager.cameras;
 
-        let index = 0;
-        this.playerMap.forEach((player) => {
+        localPlayers.forEach((player, index) => {
             const camera = playerCameras.get(player);
             if (camera) {
-                const left = Math.floor((index / numPlayers) * width);
-                const bottom = 0;
-                const viewportWidth = Math.floor(width / numPlayers);
-                const viewportHeight = height;
+                const viewport = this.cameraManager.getViewportForPlayer(player)
 
-                this.sceneManager.renderCamera(camera, left, bottom, viewportWidth, viewportHeight);
+                this.sceneManager.renderCamera(camera, viewport.left, viewport.top, viewport.width, viewport.height);
             }
-            index++;
         });
     }
+
 
     private update(deltaTime: number): void {
         this.entityMap.forEach(entity => entity.update(deltaTime));
