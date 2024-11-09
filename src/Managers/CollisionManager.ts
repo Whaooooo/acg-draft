@@ -2,7 +2,7 @@ import { Game } from '../Game';
 import * as THREE from 'three';
 import { Missile } from '../Entities/Missile';
 import { MovableEntity } from "../Core/MovableEntity";
-import {Player} from "../Entities/Player";
+import { Player } from "../Entities/Player";
 
 export class CollisionManager {
     public game: Game;
@@ -23,7 +23,7 @@ export class CollisionManager {
     private checkCollision(entity1: MovableEntity, entity2: MovableEntity): void {
         if (entity1.iFFNumber === entity2.iFFNumber) return;
 
-        if (!(entity1._model && entity2._model)) {return;}
+        if (!(entity1._model && entity2._model)) { return; }
 
         const box1 = new THREE.Box3().setFromObject(entity1._model);
         const box2 = new THREE.Box3().setFromObject(entity2._model);
@@ -34,7 +34,6 @@ export class CollisionManager {
 
             [entity1, entity2].forEach(entity => {
                 if (entity instanceof Player) {
-
                     this.game.cameraManager.addShake(entity, this.intensity, this.duration, this.decayRate);
                 }
             });
@@ -62,12 +61,46 @@ export class CollisionManager {
         );
     }
 
+    /**
+     * Checks if any corner of the entity's bounding box is under the terrain.
+     * @param entity MovableEntity entity
+     * @returns boolean indicating if any corner is under terrain
+     */
     private isUnderTerrain(entity: MovableEntity): boolean {
-        const p = entity.getPosition();
-        const x = p.x;
-        const y = p.y;
-        const z = p.z;
-        return (y < Math.max(this.game.sceneManager.mountain?.getHeight(x, z) ?? 0, 0));
+        if (!entity._model) return false;
+
+        // Ensure the model's world matrices are up to date
+        entity._model.updateMatrixWorld(true);
+
+        // Compute the bounding box in world coordinates
+        const bbox = new THREE.Box3().setFromObject(entity._model);
+
+        const min = bbox.min;
+        const max = bbox.max;
+
+        // Get the 8 corners of the bounding box
+        const corners = [
+            new THREE.Vector3(min.x, min.y, min.z),
+            new THREE.Vector3(min.x, min.y, max.z),
+            new THREE.Vector3(min.x, max.y, min.z),
+            new THREE.Vector3(min.x, max.y, max.z),
+            new THREE.Vector3(max.x, min.y, min.z),
+            new THREE.Vector3(max.x, min.y, max.z),
+            new THREE.Vector3(max.x, max.y, min.z),
+            new THREE.Vector3(max.x, max.y, max.z),
+        ];
+
+        // Check if any corner is under the terrain
+        for (const corner of corners) {
+            const x = corner.x;
+            const y = corner.y;
+            const z = corner.z;
+            const terrainHeight = Math.max(this.game.sceneManager.mountain?.getHeight(x, z) ?? 0, 0);
+            if (y < terrainHeight) {
+                return true; // The corner is under the terrain
+            }
+        }
+        return false;
     }
 
     /**
@@ -83,14 +116,14 @@ export class CollisionManager {
             if (!entity.ready || entity.removed) {
                 continue;
             }
-            if (this.isOutOfBounds(entities[i])) {
-                console.log(`Entity ${entities[i].entityId} is out of bounds`);
-                entities[i].dispose();
+            if (this.isOutOfBounds(entity)) {
+                console.log(`Entity ${entity.entityId} is out of bounds`);
+                entity.dispose();
                 continue;
             }
-            if (this.isUnderTerrain(entities[i])) {
-                console.log(`Entity ${entities[i].entityId} is under terrain`);
-                entities[i].dispose();
+            if (this.isUnderTerrain(entity)) {
+                console.log(`Entity ${entity.entityId} is under terrain`);
+                entity.dispose();
                 continue;
             }
             for (let j = i + 1; j < entities.length; j++) {

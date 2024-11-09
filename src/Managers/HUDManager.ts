@@ -4,6 +4,7 @@ import { CameraManager } from './CameraManager';
 import { Weapon } from '../Core/Weapon';
 import { Game } from '../Game';
 import { Entity } from '../Core/Entity';
+import { Missile } from '../Entities/Missile'; // 确保导入 Missile 类
 
 export class HUDManager {
     private game: Game;
@@ -255,7 +256,7 @@ export class HUDManager {
      */
     private updateTargetIndicators(player: Player): void {
         // Remove previous target indicators
-        const existingIndicators = this.hudOverlay.querySelectorAll('.target-indicator');
+        const existingIndicators = this.hudOverlay.querySelectorAll('.target-indicator, .missile-indicator');
         existingIndicators.forEach(indicator => indicator.remove());
 
         const weapon = player.weapons[player.selectedWeaponIndex];
@@ -279,10 +280,9 @@ export class HUDManager {
         projScreenMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
         frustum.setFromProjectionMatrix(projScreenMatrix);
 
-        // Iterate over all entities with iFFNumber >= 0 (excluding the player himself)
+        // Iterate over all entities
         this.game.entityMap.forEach((entity) => {
             if (entity === player) return; // Exclude the player himself
-            if (entity.iFFNumber < 0) return; // Exclude entities with iFFNumber < 0
 
             // Get entity position in world coordinates
             const entityPosition = entity.getPosition();
@@ -293,9 +293,6 @@ export class HUDManager {
             // Project entity position to normalized device coordinates (NDC)
             const ndc = entityPosition.clone().project(camera);
 
-            // Debug: Log NDC
-            console.log(`Entity ${entity.assetName} NDC: (${ndc.x.toFixed(2)}, ${ndc.y.toFixed(2)}, ${ndc.z.toFixed(2)})`);
-
             // Check if NDC is within -1 to 1
             if (ndc.x < -1 || ndc.x > 1 || ndc.y < -1 || ndc.y > 1) return;
 
@@ -303,66 +300,105 @@ export class HUDManager {
             const x = (ndc.x * 0.5 + 0.5) * width + cameraLeft;
             const y = (-ndc.y * 0.5 + 0.5) * height + cameraTop;
 
-            console.log(x, y)
-
             // Ensure x and y are within screen bounds
             if (x < 0 || x > width || y < 0 || y > height) return;
 
-            // Create indicator container
-            const indicator = document.createElement('div');
-            indicator.classList.add('target-indicator');
-            indicator.style.left = `${x - 25}px`; // Center the indicator
-            indicator.style.top = `${y - 25}px`;
+            // Calculate distance
+            const distance = entityPosition.distanceTo(player.getPosition());
 
-            // Determine colors
-            const isAlly = (entity.iFFNumber === player.iFFNumber);
-            const isHighestPriority = (entity === potentialTargets[0]);
-            const isLockedOn = lockedOnTargets.includes(entity);
-            const isInPotentialTargets = potentialTargets.includes(entity);
+            if (entity instanceof Missile) {
+                // Handle Missile entities
+                const missileIndicator = document.createElement('div');
+                missileIndicator.classList.add('missile-indicator');
+                missileIndicator.style.left = `${x}px`;
+                missileIndicator.style.top = `${y}px`;
 
-            let squareColor = '';
-            let fontColor = isAlly ? 'blue' : 'green';
+                // Determine color based on side
+                const isAlly = (entity.iFFNumber === player.iFFNumber);
+                let color = isAlly ? 'darkblue' : 'lightgreen';
 
-            if (isAlly) {
-                squareColor = 'lightblue';
-            } else if (isHighestPriority) {
-                squareColor = isLockedOn ? 'darkred' : 'darkgreen';
-            } else if (isLockedOn) {
-                squareColor = 'lightred';
-            } else if (isInPotentialTargets) {
-                squareColor = 'lightgreen';
-            } else {
-                // Skip non-potential enemy targets
-                return;
+                // Clip distance to range [100, 10000]
+                const minDistance = 100;
+                const maxDistance = 10000;
+                const clippedDistance = Math.max(minDistance, Math.min(maxDistance, distance));
+
+                // Calculate size based on log of distance
+                const minDiameter = 5;
+                const maxDiameter = 20;
+                const logMin = Math.log(minDistance);
+                const logMax = Math.log(maxDistance);
+                const logDistance = Math.log(clippedDistance);
+
+                const sizeRatio = (logDistance - logMin) / (logMax - logMin);
+                const diameter = minDiameter + (maxDiameter - minDiameter) * (1 - sizeRatio); // Invert sizeRatio so closer missiles are bigger
+
+                missileIndicator.style.width = `${diameter}px`;
+                missileIndicator.style.height = `${diameter}px`;
+                missileIndicator.style.marginLeft = `${-diameter / 2}px`; // Center the circle
+                missileIndicator.style.marginTop = `${-diameter / 2}px`;
+
+                missileIndicator.style.borderColor = color;
+
+                // Append to HUD overlay
+                this.hudOverlay.appendChild(missileIndicator);
+
+            } else if (entity.iFFNumber >= 0) {
+                // Handle other entities with iFFNumber >= 0 (excluding the player himself)
+                // Create indicator container
+                const indicator = document.createElement('div');
+                indicator.classList.add('target-indicator');
+                indicator.style.left = `${x - 25}px`; // Center the indicator
+                indicator.style.top = `${y - 25}px`;
+
+                // Determine colors
+                const isAlly = (entity.iFFNumber === player.iFFNumber);
+                const isHighestPriority = (entity === potentialTargets[0]);
+                const isLockedOn = lockedOnTargets.includes(entity);
+                const isInPotentialTargets = potentialTargets.includes(entity);
+
+                let squareColor = '';
+                let fontColor = isAlly ? 'blue' : 'green';
+
+                if (isAlly) {
+                    squareColor = 'lightblue';
+                } else if (isHighestPriority) {
+                    squareColor = isLockedOn ? 'darkred' : 'darkgreen';
+                } else if (isLockedOn) {
+                    squareColor = 'lightred';
+                } else if (isInPotentialTargets) {
+                    squareColor = 'lightgreen';
+                } else {
+                    // Skip non-potential enemy targets
+                    return;
+                }
+
+                // Apply styles
+                indicator.style.borderColor = squareColor;
+                indicator.style.color = fontColor;
+
+                // Add extra smaller square for highest priority target
+                if (isHighestPriority) {
+                    const extraIndicator = document.createElement('div');
+                    extraIndicator.classList.add('highest-priority-indicator');
+                    extraIndicator.style.borderColor = squareColor;
+                    indicator.appendChild(extraIndicator);
+                }
+
+                // Display entity name at the upper right corner
+                const nameLabel = document.createElement('div');
+                nameLabel.classList.add('indicator-name');
+                nameLabel.textContent = entity.assetName;
+                indicator.appendChild(nameLabel);
+
+                // Display distance at the lower right corner
+                const distanceLabel = document.createElement('div');
+                distanceLabel.classList.add('indicator-distance');
+                distanceLabel.textContent = `${distance.toFixed(0)}`;
+                indicator.appendChild(distanceLabel);
+
+                // Append to HUD overlay
+                this.hudOverlay.appendChild(indicator);
             }
-
-            // Apply styles
-            indicator.style.borderColor = squareColor;
-            indicator.style.color = fontColor;
-
-            // Add extra smaller square for highest priority target
-            if (isHighestPriority) {
-                const extraIndicator = document.createElement('div');
-                extraIndicator.classList.add('highest-priority-indicator');
-                extraIndicator.style.borderColor = squareColor;
-                indicator.appendChild(extraIndicator);
-            }
-
-            // Display entity name at the upper right corner
-            const nameLabel = document.createElement('div');
-            nameLabel.classList.add('indicator-name');
-            nameLabel.textContent = entity.assetName;
-            indicator.appendChild(nameLabel);
-
-            // Display distance at the lower right corner
-            const distance = entity.getPosition().distanceTo(player.getPosition());
-            const distanceLabel = document.createElement('div');
-            distanceLabel.classList.add('indicator-distance');
-            distanceLabel.textContent = `${distance.toFixed(0)}`;
-            indicator.appendChild(distanceLabel);
-
-            // Append to HUD overlay
-            this.hudOverlay.appendChild(indicator);
         });
     }
 

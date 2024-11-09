@@ -5,6 +5,7 @@ import { Game } from '../Game';
 import { Weapon } from '../Core/Weapon';
 import * as THREE from 'three';
 import { MovableEntity } from '../Core/MovableEntity';
+import {Missile} from "../Entities/Missile";
 
 export class TargetManager {
     public game: Game;
@@ -45,7 +46,7 @@ export class TargetManager {
             const angle = THREE.MathUtils.radToDeg(entityForward.angleTo(directionToTarget));
 
             // If target has different iFFNumber (enemy)
-            if (target.iFFNumber !== entity.iFFNumber && target.iFFNumber >= 0) {
+            if (target.iFFNumber !== entity.iFFNumber && target.iFFNumber >= 0 && !(target instanceof Missile)) {
                 // Check if it's the closest to orientation
                 if (angle < closestOrientationAngle) {
                     closestOrientationAngle = angle;

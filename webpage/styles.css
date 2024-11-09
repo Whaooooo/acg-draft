@@ -254,6 +254,15 @@ body, html {
     z-index: 15; /* Ensure it's above other elements */
 }
 
+.missile-indicator {
+    position: absolute;
+    border: 2px solid;
+    border-radius: 50%; /* Make it a circle */
+    box-sizing: border-box;
+    pointer-events: none;
+    z-index: 15;
+}
+
 /* Mission Failed Screen Styles */
 #mission-failed-screen {
     position: absolute;
