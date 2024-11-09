@@ -50,11 +50,6 @@ export class SceneManager {
             this.directionalLight.position.copy(light_position);
             this.directionalLight.target.position.copy(position.clone().sub(new THREE.Vector3(100, 100, 100)));
         }
-        if (this.water) {
-            var water_position = position.clone();
-            water_position.y = 0;
-            this.water.position.copy(water_position);
-        }
         if (this.mountain) {
             this.mountain.updatePrecision(position);
         }
