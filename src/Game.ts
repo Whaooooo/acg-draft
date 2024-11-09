@@ -109,14 +109,14 @@ export class Game {
         // Create a player
         console.log('Request creating player');
         const player1 = new Player(this, 'f22', new THREE.Vector3(20, 2000, 0), undefined, undefined, 1, 0, true);
-        const player2 = new Player(this, 'f22', new THREE.Vector3(20, 2000, -100), undefined, undefined, 0, 1, false);
+        const player2 = new Player(this, 'f22', new THREE.Vector3(20, 2000, -100), undefined, undefined, 0, 1, true);
 
         // Optionally, add some NPCs for testing
         console.log('Request creating npc');
-        const npc1 = new NPCPlane(this, 'plane', new THREE.Vector3(20, 2000, -200));
-        const npc2 = new NPCPlane(this, 'plane', new THREE.Vector3(20, 2000, -250));
-        const npc3 = new NPCPlane(this, 'plane', new THREE.Vector3(20, 2000, -300));
-        const npc4 = new NPCPlane(this, 'plane', new THREE.Vector3(20, 2000, -350));
+        // const npc1 = new NPCPlane(this, 'plane', new THREE.Vector3(20, 2000, -200));
+        // const npc2 = new NPCPlane(this, 'plane', new THREE.Vector3(20, 2000, -250));
+        // const npc3 = new NPCPlane(this, 'plane', new THREE.Vector3(20, 2000, -300));
+        // const npc4 = new NPCPlane(this, 'plane', new THREE.Vector3(20, 2000, -350));
     }
 
     public loadGame(): void {
