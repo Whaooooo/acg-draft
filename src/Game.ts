@@ -108,8 +108,8 @@ export class Game {
     private createDebugScene(): void {
         // Create a player
         console.log('Request creating player');
-        const player1 = new Player(this, 'f22', new THREE.Vector3(20, 2000, 0), undefined, undefined, 1, 0);
-        const player2 = new Player(this, 'f22', new THREE.Vector3(20, 2000, -100), undefined, undefined, 0, 1);
+        const player1 = new Player(this, 'f22', new THREE.Vector3(20, 2000, 0), undefined, undefined, 1, 0, true);
+        // const player2 = new Player(this, 'f22', new THREE.Vector3(20, 2000, -100), undefined, undefined, 0, 1, false);
 
         // Optionally, add some NPCs for testing
         console.log('Request creating npc');

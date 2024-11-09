@@ -54,10 +54,6 @@ export class CameraManager {
     // Sensitivity settings
     private readonly sensitivity: number = 0.002;
 
-    // Clamp angles to prevent extreme rotations
-    private readonly maxPitch: number = THREE.MathUtils.degToRad(85);
-    private readonly minPitch: number = THREE.MathUtils.degToRad(-85);
-
     // Map to store shake effects per player
     private shakeEffects: Map<Player, ShakeEffect[]> = new Map();
 
@@ -207,38 +203,39 @@ export class CameraManager {
         this.syncCamerasWithPlayers();
 
         this.cameras.forEach((camera, player) => {
-            const inputManager = player.game.inputManager;
-            const { deltaX, deltaY } = inputManager.getMouseMovement();
+            const inputState = player.getInputState();
+            const deltaX = inputState.serialize().mouseDeltaX;
+            const deltaY = inputState.serialize().mouseDeltaY;
 
             const controls = this.cameraControls.get(player);
             if (!controls) return;
 
             // Handle First-Person View Mouse Rotation
-            if (player.viewMode === ViewMode.FirstPerson && (deltaX !== 0 || deltaY !== 0)) {
+            if (player.viewMode === ViewMode.FirstPerson) {
                 // Accumulate yaw and pitch based on mouse movement
                 controls.firstPersonYaw -= deltaX * this.sensitivity;   // Yaw: left/right
                 controls.firstPersonPitch -= deltaY * this.sensitivity; // Pitch: up/down
 
-                // Clamp the pitch angle to prevent flipping
-                controls.firstPersonPitch = THREE.MathUtils.clamp(
-                    controls.firstPersonPitch,
-                    this.minPitch,
-                    this.maxPitch
-                );
+                // Remove pitch clamping
+                // controls.firstPersonPitch = THREE.MathUtils.clamp(
+                //     controls.firstPersonPitch,
+                //     this.minPitch,
+                //     this.maxPitch
+                // );
             }
 
             // Handle Third-Person View Mouse Rotation
-            if (player.viewMode === ViewMode.ThirdPerson && (deltaX !== 0 || deltaY !== 0)) {
+            if (player.viewMode === ViewMode.ThirdPerson) {
                 // Accumulate yaw and pitch based on mouse movement
                 controls.thirdPersonYaw -= deltaX * this.sensitivity;   // Yaw: left/right
                 controls.thirdPersonPitch -= deltaY * this.sensitivity; // Pitch: up/down
 
-                // Clamp the pitch angle to prevent flipping
-                controls.thirdPersonPitch = THREE.MathUtils.clamp(
-                    controls.thirdPersonPitch,
-                    this.minPitch,
-                    this.maxPitch
-                );
+                // Remove pitch clamping
+                // controls.thirdPersonPitch = THREE.MathUtils.clamp(
+                //     controls.thirdPersonPitch,
+                //     this.minPitch,
+                //     this.maxPitch
+                // );
             }
 
             // Always update camera position and orientation to stick to the player
@@ -246,6 +243,9 @@ export class CameraManager {
 
             // Apply shake effect
             this.applyShakeEffect(player, camera, deltaTime);
+
+            // Reset mouse movement after processing
+            inputState.resetMouseMovement();
         });
     }
 
@@ -326,14 +326,20 @@ export class CameraManager {
                 // Step 5: Compute the camera's world position
                 camera.position.copy(playerPosition).add(relativePosition);
 
-                // Step 6: Compute the camera's orientation to look at the player
-                camera.lookAt(playerPosition);
+                // Step 6: Compute the camera's orientation to include the player's roll
 
-                // Ensure the camera's up vector is consistent
-                camera.up.set(0, 1, 0);
+                // Compute the player's up vector (accounts for roll)
+                const playerUp = new THREE.Vector3(0, 1, 0).applyQuaternion(playerQuaternion);
+
+                // Set the camera's up vector to the player's up vector
+                camera.up.copy(playerUp);
+
+                // Make the camera look at the player
+                camera.lookAt(playerPosition);
             }
         }
     }
+
 
     /**
      * Applies the combined shake effect to the camera based on the current intensity and active shake effects.

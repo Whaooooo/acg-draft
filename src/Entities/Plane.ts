@@ -216,7 +216,7 @@ export class Plane extends MovableEntity {
                     break;
                 case SoundType.Wind:
                     const maxPulsionSpeed = this.property.maxPulsion;
-                    volume = Math.min(1, this.lostSpeedNorm / maxPulsionSpeed) * 0.8 + 0.2;
+                    volume = Math.min(1, this.lostSpeedNorm / maxPulsionSpeed) * 0.7 + 0.3;
                     break;
                 default:
                     console.warn(`Unhandled sound type: ${soundType}`);

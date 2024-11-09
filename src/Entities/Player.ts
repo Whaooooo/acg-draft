@@ -8,13 +8,18 @@ import { PlaneProperty, PlayerProperties } from '../Configs/EntityProperty';
 import { KeyBoundConfig, KeyBoundConfigs } from '../Configs/KeyBound';
 import * as THREE from 'three';
 import { updateControlVariable } from '../Utils/MoveUtils';
+import { InputState } from '../Managers/InputManager';
 
 export class Player extends Plane {
     public viewMode: ViewMode;
     public shakingFactor = 0.4;
+    public isLocalPlayer: boolean; // Indicates if this player is controlled locally
 
     // Key mapping configuration
     private keyConfig: KeyBoundConfig;
+
+    // Input state for this player
+    private inputState: InputState;
 
     constructor(
         game: Game,
@@ -23,21 +28,30 @@ export class Player extends Plane {
         qua?: THREE.Quaternion,
         velocity?: THREE.Vector3,
         iFFNumber?: number,
-        keyConfigIndex: number = 0 // Index of the key mapping configuration
+        keyConfigIndex: number = 0, // Index of the key mapping configuration
+        isLocalPlayer: boolean = false // Indicates if this player is controlled locally
     ) {
         const planeProperty = PlayerProperties[assetName] as PlaneProperty;
         super(game, assetName, planeProperty, pos, qua, velocity, iFFNumber);
         game.playerMap.set(this.entityId, this);
 
         this.viewMode = ViewMode.FirstPerson;
+        this.isLocalPlayer = isLocalPlayer;
 
         // Initialize key mapping configuration
         this.keyConfig = KeyBoundConfigs[keyConfigIndex] || KeyBoundConfigs[0];
+
+        // Initialize input state
+        this.inputState = new InputState();
+
+        if (this.isLocalPlayer) {
+            // If this is a local player, register input listener
+            this.game.inputManager.registerPlayer(this);
+        }
     }
 
-    protected getTargetPlayers(): Player[] {
-        // For player, target themselves for non-global sounds
-        return [this];
+    public getInputState(): InputState {
+        return this.inputState;
     }
 
     public update(deltaTime: number): void {
@@ -52,23 +66,24 @@ export class Player extends Plane {
     }
 
     private handleInput(deltaTime: number): void {
-        const inputManager = this.game.inputManager;
+        // Use the player's input state instead of the global input manager
+        const inputState = this.inputState;
         const keyConfig = this.keyConfig;
 
         // Handle weapon selection using new keys
-        if (inputManager.checkInput(keyConfig.selectWeapon1)) {
+        if (inputState.checkInput(keyConfig.selectWeapon1)) {
             this.selectWeapon(0);
         }
 
-        if (inputManager.checkInput(keyConfig.selectWeapon2)) {
+        if (inputState.checkInput(keyConfig.selectWeapon2)) {
             this.selectWeapon(1);
         }
 
-        if (inputManager.checkInput(keyConfig.selectWeapon3)) {
+        if (inputState.checkInput(keyConfig.selectWeapon3)) {
             this.selectWeapon(2);
         }
 
-        if (inputManager.checkInput(keyConfig.selectWeapon4)) {
+        if (inputState.checkInput(keyConfig.selectWeapon4)) {
             this.selectWeapon(3);
         }
 
@@ -79,14 +94,13 @@ export class Player extends Plane {
             this.property.minPulsion,
             this.property.maxPulsion,
             this.property.pulsionSensitivity,
-            inputManager.checkInput(keyConfig.increaseThrust),
-            inputManager.checkInput(keyConfig.decreaseThrust),
+            inputState.checkInput(keyConfig.increaseThrust),
+            inputState.checkInput(keyConfig.decreaseThrust),
             deltaTime
         );
         this.pulsion = pulsionUpdate.value;
         this.pulsionIncreased = pulsionUpdate.increased;
         this.pulsionDecreased = pulsionUpdate.decreased;
-
 
         this.yawSpeed = updateControlVariable(
             this.yawSpeed,
@@ -94,8 +108,8 @@ export class Player extends Plane {
             this.property.yawMinSpeed,
             this.property.yawMaxSpeed,
             this.property.yawSensitivity,
-            inputManager.checkInput(keyConfig.yawLeft),
-            inputManager.checkInput(keyConfig.yawRight),
+            inputState.checkInput(keyConfig.yawLeft),
+            inputState.checkInput(keyConfig.yawRight),
             deltaTime
         ).value;
 
@@ -105,8 +119,8 @@ export class Player extends Plane {
             this.property.pitchMinSpeed,
             this.property.pitchMaxSpeed,
             this.property.pitchSensitivity,
-            inputManager.checkInput(keyConfig.pitchUp),
-            inputManager.checkInput(keyConfig.pitchDown),
+            inputState.checkInput(keyConfig.pitchUp),
+            inputState.checkInput(keyConfig.pitchDown),
             deltaTime
         ).value;
 
@@ -116,34 +130,34 @@ export class Player extends Plane {
             this.property.rollMinSpeed,
             this.property.rollMaxSpeed,
             this.property.rollSensitivity,
-            inputManager.checkInput(keyConfig.rollLeft),
-            inputManager.checkInput(keyConfig.rollRight),
+            inputState.checkInput(keyConfig.rollLeft),
+            inputState.checkInput(keyConfig.rollRight),
             deltaTime
         ).value;
 
         // Update animation states based on input
-        this.setAnimationState('yawLeft', inputManager.checkInput(keyConfig.yawLeft) && !inputManager.checkInput(keyConfig.yawRight));
-        this.setAnimationState('yawRight', inputManager.checkInput(keyConfig.yawRight) && !inputManager.checkInput(keyConfig.yawLeft));
-        this.setAnimationState('pitchUp', inputManager.checkInput(keyConfig.pitchUp) && !inputManager.checkInput(keyConfig.pitchDown));
-        this.setAnimationState('pitchDown', inputManager.checkInput(keyConfig.pitchDown) && !inputManager.checkInput(keyConfig.pitchUp));
-        this.setAnimationState('rollLeft', inputManager.checkInput(keyConfig.rollLeft) && !inputManager.checkInput(keyConfig.rollRight));
-        this.setAnimationState('rollRight', inputManager.checkInput(keyConfig.rollRight) && !inputManager.checkInput(keyConfig.rollLeft));
-        this.setAnimationState('increaseThrust', inputManager.checkInput(keyConfig.increaseThrust) && !inputManager.checkInput(keyConfig.decreaseThrust));
-        this.setAnimationState('decreaseThrust', inputManager.checkInput(keyConfig.decreaseThrust) && !inputManager.checkInput(keyConfig.increaseThrust));
+        this.setAnimationState('yawLeft', inputState.checkInput(keyConfig.yawLeft) && !inputState.checkInput(keyConfig.yawRight));
+        this.setAnimationState('yawRight', inputState.checkInput(keyConfig.yawRight) && !inputState.checkInput(keyConfig.yawLeft));
+        this.setAnimationState('pitchUp', inputState.checkInput(keyConfig.pitchUp) && !inputState.checkInput(keyConfig.pitchDown));
+        this.setAnimationState('pitchDown', inputState.checkInput(keyConfig.pitchDown) && !inputState.checkInput(keyConfig.pitchUp));
+        this.setAnimationState('rollLeft', inputState.checkInput(keyConfig.rollLeft) && !inputState.checkInput(keyConfig.rollRight));
+        this.setAnimationState('rollRight', inputState.checkInput(keyConfig.rollRight) && !inputState.checkInput(keyConfig.rollLeft));
+        this.setAnimationState('increaseThrust', inputState.checkInput(keyConfig.increaseThrust) && !inputState.checkInput(keyConfig.decreaseThrust));
+        this.setAnimationState('decreaseThrust', inputState.checkInput(keyConfig.decreaseThrust) && !inputState.checkInput(keyConfig.increaseThrust));
 
         // Fire weapon
-        if (inputManager.checkInput(keyConfig.fireWeapon)) {
+        if (inputState.checkInput(keyConfig.fireWeapon)) {
             this.fireWeapon();
         }
 
         // Toggle view mode
-        if (inputManager.checkInput(keyConfig.toggleViewMode)) {
+        if (inputState.checkInput(keyConfig.toggleViewMode)) {
             this.game.cameraManager.toggleViewMode(this);
         }
 
         // Re-target
-        if (inputManager.checkInput(keyConfig.reTarget)) {
-            this.reTarget();
+        if (inputState.checkInput(keyConfig.reTarget)) {
+            this.game.targetManager.reTarget(this);
         }
     }
 
@@ -159,16 +173,10 @@ export class Player extends Plane {
         this.game.cameraManager.setShakeIntensity(this, intensity);
     }
 
-    public getOwnerPlayer(): Player[] {
-        // NPCs may have different logic; for now, return an empty array
-        return [this];
-    }
-
-    public reTarget(): void {
-        // Implement re-targeting logic if needed
-    }
-
     public dispose(): void {
+        if (this.isLocalPlayer) {
+            this.game.inputManager.unregisterPlayer(this);
+        }
         this.game.playerMap.delete(this.entityId);
         super.dispose();
     }
