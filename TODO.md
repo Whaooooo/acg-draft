@@ -1,8 +1,7 @@
 ### TODO
 
-- [ ] Collision (1pt? game fail / reduce HP when entities / map collide with each other)
 
-- [ ] Advanced combat HUD and appealing design (1pt)
+
 - [ ] Settings (1pt)
 - [ ] motion blur (1pt)
 - [ ] difficulty level (1pt? only with increasing enemy numerical ability?)
@@ -17,6 +16,7 @@
 - [ ] Local multi-player bug including sound and HUD (1pt)
 ### Done
 
+- [x] Advanced combat HUD and appealing design (1pt)
 - [x] Water/Volume cloud/Mountain without physical interaction (0pt)
 - [x] F-22 keyframe animation (basic)
 - [x] Camera motion control (basic)
@@ -25,4 +25,5 @@
 - [x] User manual or instructions (basic)
 - [x] Online access (1pt?)
 - [x] camera shake during collision and high speed (1pt?)
+- [x] Collision (1pt? game fail / reduce HP when entities / map collide with each other)
 - [x] 

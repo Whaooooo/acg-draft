@@ -8,9 +8,12 @@ import { Missile } from '../Entities/Missile';
 
 export class HUDManager {
     private game: Game;
-    private players: Player[];
     private cameraManager: CameraManager;
-    private domElements: Map<Player, HTMLDivElement>;
+    private domElements: Map<Player, {
+        hudElement: HTMLDivElement;
+        hudOverlay: HTMLDivElement;
+        svgOverlay: SVGSVGElement;
+    }>;
 
     // HUD dimensions
     private hudWidth: number = 400;  // Adjust as needed
@@ -19,31 +22,10 @@ export class HUDManager {
     private lastFrameTime: number = 0;
     private frameCount: number = 0;
 
-    private hudOverlay: HTMLDivElement;
-    private svgOverlay: SVGSVGElement; // New SVG overlay for drawing lines
-
     constructor(game: Game) {
         this.game = game;
-        this.players = Array.from(game.playerMap.values()).filter(player => player.isLocalPlayer);
         this.cameraManager = game.cameraManager;
         this.domElements = new Map();
-
-        // Create HUD Overlay
-        this.hudOverlay = document.createElement('div');
-        this.hudOverlay.id = 'hud-overlay';
-        document.body.appendChild(this.hudOverlay);
-
-        // Create SVG Overlay
-        this.svgOverlay = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        this.svgOverlay.setAttribute('id', 'svg-overlay');
-        this.svgOverlay.setAttribute('width', '100%');
-        this.svgOverlay.setAttribute('height', '100%');
-        this.svgOverlay.style.position = 'absolute';
-        this.svgOverlay.style.top = '0';
-        this.svgOverlay.style.left = '0';
-        this.svgOverlay.style.pointerEvents = 'none';
-        this.svgOverlay.style.zIndex = '16'; // Above HUD overlay
-        document.body.appendChild(this.svgOverlay);
     }
 
     /**
@@ -59,18 +41,29 @@ export class HUDManager {
 
         // Dispose HUD elements of removed players
         playersRemoved.forEach(player => {
-            const hudElement = this.domElements.get(player);
-            if (hudElement && hudElement.parentNode) {
-                hudElement.parentNode.removeChild(hudElement);
+            const elements = this.domElements.get(player);
+            if (elements) {
+                const { hudElement, hudOverlay, svgOverlay } = elements;
+                if (hudElement && hudElement.parentNode) {
+                    hudElement.parentNode.removeChild(hudElement);
+                }
+                if (hudOverlay && hudOverlay.parentNode) {
+                    hudOverlay.parentNode.removeChild(hudOverlay);
+                }
+                if (svgOverlay && svgOverlay.parentNode) {
+                    svgOverlay.parentNode.removeChild(svgOverlay);
+                }
+                this.domElements.delete(player);
             }
-            this.domElements.delete(player);
         });
 
         // Create HUD elements for newly added players
         playersAdded.forEach(player => {
-            const hudElement = this.createHUDElementForPlayer(player);
-            document.body.appendChild(hudElement);
-            this.domElements.set(player, hudElement);
+            const elements = this.createHUDElementForPlayer(player);
+            document.body.appendChild(elements.hudElement);
+            document.body.appendChild(elements.hudOverlay);
+            document.body.appendChild(elements.svgOverlay);
+            this.domElements.set(player, elements);
         });
 
         // Update HUD elements for all current players
@@ -88,7 +81,11 @@ export class HUDManager {
     /**
      * Creates HUD element for a player.
      */
-    private createHUDElementForPlayer(player: Player): HTMLDivElement {
+    private createHUDElementForPlayer(player: Player): {
+        hudElement: HTMLDivElement;
+        hudOverlay: HTMLDivElement;
+        svgOverlay: SVGSVGElement;
+    } {
         const hudContainer = document.createElement('div');
         hudContainer.classList.add('hud-container');
 
@@ -136,15 +133,39 @@ export class HUDManager {
         (hudContainer as any).reloadContainer = reloadContainer;
         (hudContainer as any).weaponListContainer = weaponListContainer;
 
-        return hudContainer;
+        // Create per-player HUD Overlay
+        const hudOverlay = document.createElement('div');
+        hudOverlay.classList.add('hud-overlay');
+        hudOverlay.style.position = 'absolute';
+        hudOverlay.style.top = '0';
+        hudOverlay.style.left = '0';
+        hudOverlay.style.width = '100%';
+        hudOverlay.style.height = '100%';
+        hudOverlay.style.pointerEvents = 'none';
+        hudOverlay.style.zIndex = '15'; // Adjust as needed
+
+        // Create per-player SVG Overlay
+        const svgOverlay = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svgOverlay.setAttribute('class', 'svg-overlay');
+        svgOverlay.setAttribute('width', '100%');
+        svgOverlay.setAttribute('height', '100%');
+        svgOverlay.style.position = 'absolute';
+        svgOverlay.style.top = '0';
+        svgOverlay.style.left = '0';
+        svgOverlay.style.pointerEvents = 'none';
+        svgOverlay.style.zIndex = '16'; // Above HUD overlay
+
+        return { hudElement: hudContainer, hudOverlay, svgOverlay };
     }
 
     /**
      * Updates the HUD element for a player.
      */
     private updateHUDElementForPlayer(player: Player): void {
-        const hudElement = this.domElements.get(player);
-        if (!hudElement) return;
+        const elements = this.domElements.get(player);
+        if (!elements) return;
+
+        const { hudElement, hudOverlay, svgOverlay } = elements;
 
         const hpBar = (hudElement as any).hpBar as HTMLDivElement;
         const hpText = (hudElement as any).hpText as HTMLDivElement;
@@ -165,7 +186,7 @@ export class HUDManager {
         this.updateWeaponListContainer(weaponListContainer, player);
 
         // Update target indicators
-        this.updateTargetIndicators(player);
+        this.updateTargetIndicators(player, hudOverlay, svgOverlay);
     }
 
     /**
@@ -266,18 +287,21 @@ export class HUDManager {
     /**
      * Updates the target indicators for the player.
      */
-    private updateTargetIndicators(player: Player): void {
-        // Remove previous target indicators
-        const existingIndicators = this.hudOverlay.querySelectorAll('.target-indicator, .missile-indicator');
+    private updateTargetIndicators(
+        player: Player,
+        hudOverlay: HTMLDivElement,
+        svgOverlay: SVGSVGElement
+    ): void {
+        // Remove previous target and missile indicators
+        const existingIndicators = hudOverlay.querySelectorAll('.target-indicator, .missile-indicator');
         existingIndicators.forEach(indicator => indicator.remove());
 
-        // Clear previous SVG elements
-        while (this.svgOverlay.firstChild) {
-            this.svgOverlay.removeChild(this.svgOverlay.firstChild);
+        // Clear previous SVG elements (lines)
+        while (svgOverlay.firstChild) {
+            svgOverlay.removeChild(svgOverlay.firstChild);
         }
 
         const weapon = player.weapons[player.selectedWeaponIndex];
-
         const potentialTargets = weapon.potentialTargets;
         const lockedOnTargets = weapon.lockedOnTargets;
 
@@ -285,21 +309,12 @@ export class HUDManager {
         if (!camera) return;
 
         const viewport = this.cameraManager.getViewportForPlayer(player);
-
         const width = viewport.width;
         const height = viewport.height;
 
-        const cameraLeft = viewport.left;
-        const cameraTop = viewport.top;
-
-        const frustum = new THREE.Frustum();
-        const projScreenMatrix = new THREE.Matrix4();
-        projScreenMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
-        frustum.setFromProjectionMatrix(projScreenMatrix);
-
-        // Screen center
-        const screenCenterX = width / 2 + cameraLeft;
-        const screenCenterY = height / 2 + cameraTop;
+        // Screen center relative to hudOverlay (no need to add cameraLeft and cameraTop)
+        const screenCenterX = width / 2;
+        const screenCenterY = height / 2;
 
         // Highest priority target
         const highestPriorityTarget = potentialTargets[0];
@@ -307,45 +322,45 @@ export class HUDManager {
         // Flag to check if highest priority target is off-screen
         let highestPriorityOffScreen = false;
 
-        // Iterate over all entities
+        // Iterate over all entities in the game
         this.game.entityMap.forEach((entity) => {
             if (entity === player) return; // Exclude the player himself
 
             // Get entity position in world coordinates
             const entityPosition = entity.getPosition();
 
-            // Check if the entity is in the camera's frustum
-            const isInFrustum = frustum.containsPoint(entityPosition);
-
-            // Project entity position to normalized device coordinates (NDC)
+            // Project entity position to Normalized Device Coordinates (NDC)
             const ndc = entityPosition.clone().project(camera);
 
-            // Convert NDC to screen coordinates
-            const x = (ndc.x * 0.5 + 0.5) * width + cameraLeft;
-            const y = (-ndc.y * 0.5 + 0.5) * height + cameraTop;
+            // Check if the entity is within the camera's frustum (NDC range)
+            const isInFrustum = ndc.x >= -1 && ndc.x <= 1 && ndc.y >= -1 && ndc.y <= 1 && ndc.z >= -1 && ndc.z <= 1;
 
-            // Calculate distance
+            // Convert NDC to screen coordinates relative to hudOverlay
+            const x = (ndc.x * 0.5 + 0.5) * width;
+            const y = (-ndc.y * 0.5 + 0.5) * height;
+
+            // Calculate distance between player and entity
             const distance = entityPosition.distanceTo(player.getPosition());
 
             if (entity instanceof Missile) {
-                if (!isInFrustum) return;
+                if (!isInFrustum) return; // Only show missile indicators for missiles in view
 
-                // Handle Missile entities
+                // Create Missile Indicator
                 const missileIndicator = document.createElement('div');
                 missileIndicator.classList.add('missile-indicator');
                 missileIndicator.style.left = `${x}px`;
                 missileIndicator.style.top = `${y}px`;
 
-                // Determine color based on side
+                // Determine color based on alliance
                 const isAlly = (entity.iFFNumber === player.iFFNumber);
-                let color = isAlly ? 'darkblue' : 'lightgreen';
+                const color = isAlly ? 'darkblue' : 'lightgreen';
 
-                // Clip distance to range [100, 10000]
+                // Clip distance to range [100, 10000] for size calculation
                 const minDistance = 100;
                 const maxDistance = 10000;
                 const clippedDistance = Math.max(minDistance, Math.min(maxDistance, distance));
 
-                // Calculate size based on log of distance
+                // Calculate size based on logarithmic distance scaling
                 const minDiameter = 5;
                 const maxDiameter = 20;
                 const logMin = Math.log(minDistance);
@@ -353,34 +368,33 @@ export class HUDManager {
                 const logDistance = Math.log(clippedDistance);
 
                 const sizeRatio = (logDistance - logMin) / (logMax - logMin);
-                const diameter = minDiameter + (maxDiameter - minDiameter) * (1 - sizeRatio); // Invert sizeRatio so closer missiles are bigger
+                const diameter = minDiameter + (maxDiameter - minDiameter) * (1 - sizeRatio); // Closer missiles are larger
 
+                // Apply styles to Missile Indicator
                 missileIndicator.style.width = `${diameter}px`;
                 missileIndicator.style.height = `${diameter}px`;
                 missileIndicator.style.marginLeft = `${-diameter / 2}px`; // Center the circle
                 missileIndicator.style.marginTop = `${-diameter / 2}px`;
-
                 missileIndicator.style.borderColor = color;
 
-                // Append to HUD overlay
-                this.hudOverlay.appendChild(missileIndicator);
+                // Append Missile Indicator to hudOverlay
+                hudOverlay.appendChild(missileIndicator);
 
             } else if (entity.iFFNumber >= 0) {
                 // Handle other entities with iFFNumber >= 0 (excluding the player himself)
                 const isHighestPriority = (entity === highestPriorityTarget);
 
                 if (isInFrustum) {
-                    if (entity === player) return;
                     // Ensure x and y are within screen bounds
                     if (x < 0 || x > width || y < 0 || y > height) return;
 
-                    // Create indicator container
+                    // Create Target Indicator
                     const indicator = document.createElement('div');
                     indicator.classList.add('target-indicator');
                     indicator.style.left = `${x - 25}px`; // Center the indicator
                     indicator.style.top = `${y - 25}px`;
 
-                    // Determine colors
+                    // Determine colors based on alliance and lock status
                     const isAlly = (entity.iFFNumber === player.iFFNumber);
                     const isLockedOn = lockedOnTargets.includes(entity);
                     const isInPotentialTargets = potentialTargets.includes(entity);
@@ -401,7 +415,7 @@ export class HUDManager {
                         return;
                     }
 
-                    // Apply styles
+                    // Apply styles to Target Indicator
                     indicator.style.borderColor = squareColor;
                     indicator.style.color = fontColor;
 
@@ -425,8 +439,8 @@ export class HUDManager {
                     distanceLabel.textContent = `${distance.toFixed(0)}`;
                     indicator.appendChild(distanceLabel);
 
-                    // Append to HUD overlay
-                    this.hudOverlay.appendChild(indicator);
+                    // Append Target Indicator to hudOverlay
+                    hudOverlay.appendChild(indicator);
 
                 } else if (isHighestPriority) {
                     // Handle off-screen highest priority target
@@ -457,9 +471,9 @@ export class HUDManager {
                     centerSquare.classList.add('center-square');
                     centerSquare.style.left = `${screenCenterX - 20}px`; // Center the square
                     centerSquare.style.top = `${screenCenterY - 20}px`;
-                    this.hudOverlay.appendChild(centerSquare);
+                    hudOverlay.appendChild(centerSquare);
 
-                    // Draw lines from square's vertices to the point
+                    // Draw lines from square's vertices to the indicator point
                     const squareSize = 40;
                     const squareVertices = [
                         { x: screenCenterX - squareSize / 2, y: screenCenterY - squareSize / 2 }, // Top-left
@@ -468,7 +482,7 @@ export class HUDManager {
                         { x: screenCenterX - squareSize / 2, y: screenCenterY + squareSize / 2 }, // Bottom-left
                     ];
 
-                    // Draw lines using SVG
+                    // Draw lines using SVG in per-player svgOverlay
                     squareVertices.forEach(vertex => {
                         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
                         line.setAttribute('x1', `${vertex.x}`);
@@ -477,22 +491,22 @@ export class HUDManager {
                         line.setAttribute('y2', `${posY}`);
                         line.setAttribute('stroke', 'darkgreen');
                         line.setAttribute('stroke-width', '2');
-                        this.svgOverlay.appendChild(line);
+                        svgOverlay.appendChild(line);
                     });
                 }
             }
-        });
 
-        if (!highestPriorityOffScreen) {
-            // Remove any existing center square if highest priority target is on-screen
-            const existingCenterSquare = this.hudOverlay.querySelector('.center-square');
-            if (existingCenterSquare) {
-                existingCenterSquare.remove();
+            if (!highestPriorityOffScreen) {
+                // Remove any existing center square if highest priority target is on-screen
+                const existingCenterSquare = hudOverlay.querySelector('.center-square');
+                if (existingCenterSquare) {
+                    existingCenterSquare.remove();
+                }
             }
-        }
+        })
     }
 
-    /**
+        /**
      * Updates the FPS display.
      */
     private updateFPSDisplay(): void {
@@ -523,20 +537,28 @@ export class HUDManager {
      */
     public render(): void {
         // Adjust HUD element positions based on viewport
-        this.players.forEach((player) => {
-            const hudElement = this.domElements.get(player);
-            if (!hudElement) return;
+        this.domElements.forEach((elements, player) => {
+            const { hudElement, hudOverlay, svgOverlay } = elements;
 
             // Get viewport dimensions from CameraManager
             const viewport = this.cameraManager.getViewportForPlayer(player);
 
-            // Set HUD element position using CSS
+            // Position and size the hudElement (for health bar and weapon status)
             hudElement.style.left = `${viewport.left + viewport.width - this.hudWidth - 20}px`; // Adjust margins as needed
             hudElement.style.top = `${viewport.top + viewport.height - this.hudHeight - 20}px`;
-
-            // Set HUD container dimensions
             hudElement.style.width = `${this.hudWidth}px`;
             hudElement.style.height = `${this.hudHeight}px`;
+
+            // Position and size the hudOverlay and svgOverlay to cover the player's viewport
+            hudOverlay.style.left = `${viewport.left}px`;
+            hudOverlay.style.top = `${viewport.top}px`;
+            hudOverlay.style.width = `${viewport.width}px`;
+            hudOverlay.style.height = `${viewport.height}px`;
+
+            svgOverlay.style.left = `${viewport.left}px`;
+            svgOverlay.style.top = `${viewport.top}px`;
+            svgOverlay.style.width = `${viewport.width}px`;
+            svgOverlay.style.height = `${viewport.height}px`;
         });
     }
 
@@ -561,19 +583,17 @@ export class HUDManager {
      */
     public dispose(): void {
         // Remove HUD elements from the DOM
-        this.domElements.forEach((hudElement) => {
+        this.domElements.forEach(({ hudElement, hudOverlay, svgOverlay }) => {
             if (hudElement.parentNode) {
                 hudElement.parentNode.removeChild(hudElement);
             }
+            if (hudOverlay.parentNode) {
+                hudOverlay.parentNode.removeChild(hudOverlay);
+            }
+            if (svgOverlay.parentNode) {
+                svgOverlay.parentNode.removeChild(svgOverlay);
+            }
         });
-        // Remove hudOverlay
-        if (this.hudOverlay.parentNode) {
-            this.hudOverlay.parentNode.removeChild(this.hudOverlay);
-        }
-        // Remove svgOverlay
-        if (this.svgOverlay.parentNode) {
-            this.svgOverlay.parentNode.removeChild(this.svgOverlay);
-        }
         // Clear the map
         this.domElements.clear();
     }
