@@ -5,7 +5,7 @@ import { Game } from '../Game';
 import { EntityName } from '../Configs/EntityPaths';
 import { ViewMode } from '../Enums/ViewMode';
 import { PlaneProperty, PlayerProperties } from '../Configs/EntityProperty';
-import { KeyBoundConfig, KeyBoundConfigs } from '../Configs/KeyBound';
+import { KeyBoundConfig, KeyBoundConfigs, OnlineInputState, KeyNames } from '../Configs/KeyBound';
 import * as THREE from 'three';
 import { updateControlVariable } from '../Utils/MoveUtils';
 import { InputState } from '../Managers/InputManager';
@@ -54,9 +54,17 @@ export class Player extends Plane {
         return this.inputState;
     }
 
-    public update(deltaTime: number): void {
+    public getOnlineInputState(): OnlineInputState {
+        const state: OnlineInputState = {} as OnlineInputState;
+        KeyNames.forEach((keyName) => {
+            state[keyName] = this.inputState.checkInput(this.keyConfig[keyName]);
+        });
+        return state;
+    }
+
+    public update(deltaTime: number, input?: OnlineInputState): void {
         // Handle input
-        this.handleInput(deltaTime);
+        this.handleInput(deltaTime, input || this.getOnlineInputState());
 
         // Update camera shake based on lostSpeedNorm
         this.updateCameraShake();
@@ -65,25 +73,25 @@ export class Player extends Plane {
         super.update(deltaTime);
     }
 
-    private handleInput(deltaTime: number): void {
+    private handleInput(deltaTime: number, input: OnlineInputState): void {
         // Use the player's input state instead of the global input manager
         const inputState = this.inputState;
         const keyConfig = this.keyConfig;
 
         // Handle weapon selection using new keys
-        if (inputState.checkInput(keyConfig.selectWeapon1)) {
+        if (input.selectWeapon1) {
             this.selectWeapon(0);
         }
 
-        if (inputState.checkInput(keyConfig.selectWeapon2)) {
+        if (input.selectWeapon2) {
             this.selectWeapon(1);
         }
 
-        if (inputState.checkInput(keyConfig.selectWeapon3)) {
+        if (input.selectWeapon3) {
             this.selectWeapon(2);
         }
 
-        if (inputState.checkInput(keyConfig.selectWeapon4)) {
+        if (input.selectWeapon4) {
             this.selectWeapon(3);
         }
 
@@ -94,8 +102,8 @@ export class Player extends Plane {
             this.property.minPulsion,
             this.property.maxPulsion,
             this.property.pulsionSensitivity,
-            inputState.checkInput(keyConfig.increaseThrust),
-            inputState.checkInput(keyConfig.decreaseThrust),
+            input.increaseThrust,
+            input.decreaseThrust,
             deltaTime
         );
         this.pulsion = pulsionUpdate.value;
@@ -108,8 +116,8 @@ export class Player extends Plane {
             this.property.yawMinSpeed,
             this.property.yawMaxSpeed,
             this.property.yawSensitivity,
-            inputState.checkInput(keyConfig.yawLeft),
-            inputState.checkInput(keyConfig.yawRight),
+            input.yawLeft,
+            input.yawRight,
             deltaTime
         ).value;
 
@@ -119,8 +127,8 @@ export class Player extends Plane {
             this.property.pitchMinSpeed,
             this.property.pitchMaxSpeed,
             this.property.pitchSensitivity,
-            inputState.checkInput(keyConfig.pitchUp),
-            inputState.checkInput(keyConfig.pitchDown),
+            input.pitchUp,
+            input.pitchDown,
             deltaTime
         ).value;
 
@@ -130,33 +138,33 @@ export class Player extends Plane {
             this.property.rollMinSpeed,
             this.property.rollMaxSpeed,
             this.property.rollSensitivity,
-            inputState.checkInput(keyConfig.rollLeft),
-            inputState.checkInput(keyConfig.rollRight),
+            input.rollLeft,
+            input.rollRight,
             deltaTime
         ).value;
 
         // Update animation states based on input
-        this.setAnimationState('yawLeft', inputState.checkInput(keyConfig.yawLeft) && !inputState.checkInput(keyConfig.yawRight));
-        this.setAnimationState('yawRight', inputState.checkInput(keyConfig.yawRight) && !inputState.checkInput(keyConfig.yawLeft));
-        this.setAnimationState('pitchUp', inputState.checkInput(keyConfig.pitchUp) && !inputState.checkInput(keyConfig.pitchDown));
-        this.setAnimationState('pitchDown', inputState.checkInput(keyConfig.pitchDown) && !inputState.checkInput(keyConfig.pitchUp));
-        this.setAnimationState('rollLeft', inputState.checkInput(keyConfig.rollLeft) && !inputState.checkInput(keyConfig.rollRight));
-        this.setAnimationState('rollRight', inputState.checkInput(keyConfig.rollRight) && !inputState.checkInput(keyConfig.rollLeft));
-        this.setAnimationState('increaseThrust', inputState.checkInput(keyConfig.increaseThrust) && !inputState.checkInput(keyConfig.decreaseThrust));
-        this.setAnimationState('decreaseThrust', inputState.checkInput(keyConfig.decreaseThrust) && !inputState.checkInput(keyConfig.increaseThrust));
+        this.setAnimationState('yawLeft', input.yawLeft && !input.yawRight);
+        this.setAnimationState('yawRight', input.yawRight && !input.yawLeft);
+        this.setAnimationState('pitchUp', input.pitchUp && !input.pitchDown);
+        this.setAnimationState('pitchDown', input.pitchDown && !input.pitchUp);
+        this.setAnimationState('rollLeft', input.rollLeft && !input.rollRight);
+        this.setAnimationState('rollRight', input.rollRight && !input.rollLeft);
+        this.setAnimationState('increaseThrust', input.increaseThrust && !input.decreaseThrust);
+        this.setAnimationState('decreaseThrust', input.decreaseThrust && !input.increaseThrust);
 
         // Fire weapon
-        if (inputState.checkInput(keyConfig.fireWeapon)) {
+        if (input.fireWeapon) {
             this.fireWeapon();
         }
 
         // Toggle view mode
-        if (inputState.checkInput(keyConfig.toggleViewMode)) {
+        if (input.toggleViewMode) {
             this.game.cameraManager.toggleViewMode(this);
         }
 
         // Re-target
-        if (inputState.checkInput(keyConfig.reTarget)) {
+        if (input.reTarget) {
             this.game.targetManager.reTarget(this, this.weapons[this.selectedWeaponIndex]);
         }
     }

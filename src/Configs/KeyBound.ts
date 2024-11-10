@@ -1,5 +1,4 @@
 // src/Configs/KeyBound.ts
-// src/Configs/KeyBound.ts
 
 export interface InputAction {
     keyType: 'keyboard' | 'mouse' | 'wheel' | 'gamepad';
@@ -7,28 +6,31 @@ export interface InputAction {
     triggerType: 'pressed' | 'down' | 'up' | 'scrolled';
 }
 
-// src/Configs/KeyBound.ts
+export const KeyNames = [
+    "increaseThrust",
+    "decreaseThrust",
+    "yawLeft",
+    "yawRight",
+    "pitchUp",
+    "pitchDown",
+    "rollLeft",
+    "rollRight",
+    "fireWeapon",
+    "toggleViewMode",
+    "reTarget",
+    "selectWeapon1",
+    "selectWeapon2",
+    "selectWeapon3",
+    "selectWeapon4",
+] as const;
 
-export interface KeyBoundConfig {
-    increaseThrust: InputAction;
-    decreaseThrust: InputAction;
-    yawLeft: InputAction;
-    yawRight: InputAction;
-    pitchUp: InputAction;
-    pitchDown: InputAction;
-    rollLeft: InputAction;
-    rollRight: InputAction;
-    fireWeapon: InputAction;
-    toggleViewMode: InputAction;
-    reTarget: InputAction;
-    // Removed useNumpadForWeaponSelection
-    // Added new keys for weapon selection
-    selectWeapon1: InputAction;
-    selectWeapon2: InputAction;
-    selectWeapon3: InputAction;
-    selectWeapon4: InputAction;
-}
+export type KeyBoundConfig = {
+    [key in typeof KeyNames[number]]: InputAction;
+};
 
+export type OnlineInputState = {
+    [key in typeof KeyNames[number]]: boolean;
+};
 
 
 export const KeyBoundConfigs: KeyBoundConfig[] = [
