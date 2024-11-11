@@ -230,6 +230,16 @@ class Mountain extends THREE.Group {
         }
     }
 
+    dispose() {
+        for (let i = 0; i < this.slice; i++) {
+            for (let j = 0; j < this.slice; j++) {
+                for (let k = 0; k < 3; k++) {
+                    this.chunkList[i][j][k].geometry.dispose();
+                    (this.chunkList[i][j][k].material as THREE.MeshPhongMaterial).map?.dispose();
+                }
+            }
+        }
+    }
 }
 
 export { Mountain };

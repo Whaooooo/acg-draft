@@ -4,13 +4,17 @@ import { Game } from './Game';
 
 let gameInstance: Game | null = null; // Keep a reference to the game instance
 
-function initGame(loadPath?: string): void {
+async function getGameInstance(loadPath?: string) {
     // Create a new Game instance
     console.log("Request creating new game...");
     gameInstance = new Game(loadPath);
+
+    await gameInstance.ready();
+
+    return gameInstance;
 }
 
-function onStartButtonClick(): void {
+async function onStartButtonClick() {
     // Hide the main menu
     const mainMenu = document.getElementById('main-menu');
     if (mainMenu) {
@@ -21,7 +25,9 @@ function onStartButtonClick(): void {
     document.body.style.cursor = 'none';
 
     // Initialize the game
-    initGame();
+    const game = await getGameInstance();
+
+    game.start();
 
     // Stop background music if needed
     stopBackgroundMusic();

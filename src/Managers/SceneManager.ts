@@ -176,4 +176,11 @@ export class SceneManager {
             this.cloud.update(deltaTime);
         }
     }
+
+    public dispose(): void {
+        if (this.renderer.domElement.parentNode)
+            this.renderer.domElement.parentNode.removeChild(this.renderer.domElement);
+        if (this.mountain)
+            this.mountain.dispose();
+    }
 }

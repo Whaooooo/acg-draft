@@ -13,7 +13,8 @@ import { CameraManager } from './Managers/CameraManager';
 import { SceneManager } from './Managers/SceneManager';
 import { TargetManager } from './Managers/TargetManager';
 import { HUDManager } from "./Managers/HUDManager";
-import {MovableEntity} from "./Core/MovableEntity";
+import { MovableEntity } from "./Core/MovableEntity";
+import { nextFrame } from './Utils/Sleep';
 
 export class Game {
     //###################################################
@@ -45,6 +46,7 @@ export class Game {
     private lastFrameTime: number = 0;
     private frameCount: number = 0;
 
+    private isOnline: boolean = true;
     private isRunning: boolean = true; // Add this flag
 
     //###################################################
@@ -144,41 +146,56 @@ export class Game {
         this.loop();
     }
 
-    private waitForEntitiesToBeReady(): void {
-        const checkReady = () => {
-            const allEntitiesReady = Array.from(this.entityMap.values()).every(entity => entity.ready);
-
-            if (allEntitiesReady) {
-                console.log('All entities ready. Proceeding.');
-            } else {
-                // Continue checking
-                requestAnimationFrame(checkReady);
-            }
-        };
-
-        checkReady();
+    public async ready() {
+        await this.waitForEntitiesToBeReady();
+        await this.waitForSoundToBeReady();
     }
 
-    private waitForSoundToBeReady(): void {
-        const checkReady = () => {
-            const soundReady = this.soundManager.ready;
+    private async waitForEntitiesToBeReady(): Promise<void> {
+        return new Promise((resolve) => {
+            const checkReady = () => {
+                const allEntitiesReady = Array.from(this.entityMap.values()).every(entity => entity.ready);
 
-            if (soundReady) {
-                console.log('Sound ready. Starting game.');
-                this.start();
-            } else {
-                // Continue checking
-                requestAnimationFrame(checkReady);
-            }
-        };
+                if (allEntitiesReady) {
+                    console.log('All entities ready. Proceeding.');
+                    resolve();
+                } else {
+                    // Continue checking
+                    requestAnimationFrame(checkReady);
+                }
+            };
 
-        checkReady();
+            checkReady();
+        });
     }
 
-    private loop(): void {
+    private async waitForSoundToBeReady(): Promise<void> {
+        return new Promise((resolve) => {
+            const checkReady = () => {
+                const soundReady = this.soundManager.ready;
+
+                if (soundReady) {
+                    console.log('Sound ready. Starting game.');
+                    resolve();
+                } else {
+                    // Continue checking
+                    requestAnimationFrame(checkReady);
+                }
+            };
+
+            checkReady();
+        });
+    }
+
+    private async loop(): Promise<void> {
+        while (this.isRunning) {
+            this.loopOnce();
+            await nextFrame();
+        }
+    }
+
+    private loopOnce(): void {
         if (!this.isRunning) return; // Stop the loop if the game is over
-
-        requestAnimationFrame(() => this.loop());
 
         const deltaTime = this.clock.getDelta();
         this.update(deltaTime);
@@ -291,8 +308,8 @@ export class Game {
         }
 
         // Remove renderer from DOM
-        if (this.sceneManager.renderer.domElement.parentNode) {
-            this.sceneManager.renderer.domElement.parentNode.removeChild(this.sceneManager.renderer.domElement);
+        if (this.sceneManager) {
+            this.sceneManager.dispose();
         }
 
         if (this.soundManager) {

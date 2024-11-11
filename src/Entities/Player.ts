@@ -74,11 +74,6 @@ export class Player extends Plane {
     }
 
     private handleInput(deltaTime: number, input: OnlineInputState): void {
-        // Use the player's input state instead of the global input manager
-        const inputState = this.inputState;
-        const keyConfig = this.keyConfig;
-
-        // Handle weapon selection using new keys
         if (input.selectWeapon1) {
             this.selectWeapon(0);
         }
