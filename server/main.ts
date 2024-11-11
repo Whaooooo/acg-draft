@@ -31,10 +31,9 @@ async function startGame() {
     console.log('Game started');
 
     let tick = 0;
-    setInterval(() => {
+    const oneTick = () => {
         tick++;
-        console.log('Tick:', tick);
-        const data = JSON.stringify({ type: 'input', tick: tick, input: userInputs.map((input) => InputSerializer.serialize(input)) })
+        const data = JSON.stringify({ type: 'input', tick: tick, input: userInputs.map((input) => InputSerializer.serialize(input)) });
         for (let user_id of roomUsers.keys()) {
             const connection = userConnections.get(user_id);
             if (connection === undefined) {
@@ -42,8 +41,12 @@ async function startGame() {
             }
             connection.send(data);
         }
-    }, 1000 / 45)
-
+        for (let key of KeyNames) {
+            userInputs[0][key] = false;
+            userInputs[1][key] = false;
+        }
+    };
+    setInterval(oneTick, 15);
 }
 
 function handleMessages(user_id: string, data: ws.RawData) {
@@ -55,7 +58,10 @@ function handleMessages(user_id: string, data: ws.RawData) {
             if (playerId === undefined) {
                 return;
             }
-            userInputs[playerId] = InputSerializer.deserialize(message.input);
+            const input = InputSerializer.deserialize(message.input);
+            for (let key of KeyNames) {
+                userInputs[playerId][key] ||= input[key];
+            }
             break;
     }
 }
