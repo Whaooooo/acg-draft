@@ -14,6 +14,7 @@ export class Player extends Plane {
     public viewMode: ViewMode;
     public shakingFactor = 0.4;
     public isLocalPlayer: boolean; // Indicates if this player is controlled locally
+    public playerId: number = -1; // Player ID in the game
 
     // Key mapping configuration
     private keyConfig: KeyBoundConfig;

@@ -38,6 +38,30 @@ async function onStartButtonClick() {
     document.removeEventListener('touchstart', unmuteAudio);
 }
 
+async function onStartOnlineButtonClick() {
+    // Hide the main menu
+    const mainMenu = document.getElementById('main-menu');
+    if (mainMenu) {
+        mainMenu.style.display = 'none';
+    }
+
+    // Hide the cursor
+    document.body.style.cursor = 'none';
+
+    // Initialize the game
+    const game = await getGameInstance();
+
+    game.startOnline();
+
+    // Stop background music if needed
+    stopBackgroundMusic();
+
+    // Remove global event listeners to prevent further unmuting
+    document.removeEventListener('click', unmuteAudio);
+    document.removeEventListener('keydown', unmuteAudio);
+    document.removeEventListener('touchstart', unmuteAudio);
+}
+
 function onMainMenuButtonClick(): void {
     // Hide the mission failed screen
     const missionFailedScreen = document.getElementById('mission-failed-screen');
@@ -95,6 +119,13 @@ function init(): void {
     if (startButton) {
         startButton.addEventListener('click', () => {
             onStartButtonClick();
+        });
+    }
+
+    const onlineButton = document.getElementById('start-online-button');
+    if (onlineButton) {
+        onlineButton.addEventListener('click', () => {
+            onStartOnlineButtonClick();
         });
     }
 

@@ -14,7 +14,8 @@ import { SceneManager } from './Managers/SceneManager';
 import { TargetManager } from './Managers/TargetManager';
 import { HUDManager } from "./Managers/HUDManager";
 import { MovableEntity } from "./Core/MovableEntity";
-import { nextFrame } from './Utils/Sleep';
+import { nextFrame, receiveFirstMessage } from './Utils/Wait';
+import { InputSerializer } from './Utils/InputSerializer';
 
 export class Game {
     //###################################################
@@ -46,8 +47,13 @@ export class Game {
     private lastFrameTime: number = 0;
     private frameCount: number = 0;
 
-    private isOnline: boolean = true;
+    private isOnline: boolean = false;
     private isRunning: boolean = true; // Add this flag
+
+    private curTick: number = 0;
+    private localPlayer?: Player;
+    private socket?: WebSocket;
+    private InputBuffer: any[] = [];
 
     //###################################################
     //################### INIT ##########################
@@ -138,12 +144,76 @@ export class Game {
     //###################################################
 
     public async start(): Promise<void> {
+        this.isOnline = false;
+
         // Initialize sounds for players and NPCs
         this.playerMap.forEach(player => player.initializeSound());
         this.npcPlaneMap.forEach(npc => npc.initializeSound());
 
         console.log('Start game loop');
         this.loop();
+    }
+
+    private handleMessages(data: any): void {
+        const message = JSON.parse(data);
+        switch (message.type) {
+            case "input":
+                this.InputBuffer.push(message.input);
+                this.loopOnce();
+                break;
+        }
+    }
+
+    public async collectInput(): Promise<void> {
+        if (this.localPlayer) {
+            const input = this.localPlayer.getOnlineInputState();
+            const message = {
+                type: "input",
+                input: InputSerializer.serialize(input)
+            }
+            this.socket?.send(JSON.stringify(message));
+        }
+    }
+
+    public async startOnline(): Promise<void> {
+        this.isOnline = true;
+
+        const socket = new WebSocket('ws://localhost:17129');
+        this.socket = socket;
+
+        await new Promise((resolve: (value: void) => void) => {
+            socket.onopen = () => {
+                resolve();
+            }
+        });
+        socket.onmessage = (event) => {
+            this.handleMessages(event.data);
+        }
+        console.log("waiting for start...");
+        const message = JSON.parse((await receiveFirstMessage(socket)).data);
+        if (message.type !== 'start') {
+            console.log(message);
+            throw new Error('Invalid message received');
+        }
+        const playerId = message.playerId;
+        const playerList = Array.from(this.playerMap.values());
+        for (let i = 0; i < playerList.length; i++) {
+            playerList[i].isLocalPlayer = false;
+            playerList[i].playerId = i;
+        }
+        playerList[playerId].isLocalPlayer = true;
+        this.localPlayer = playerList[playerId];
+        console.log(`Player ${playerId} connected`);
+
+
+
+        // Initialize sounds for players and NPCs
+        this.playerMap.forEach(player => player.initializeSound());
+        this.npcPlaneMap.forEach(npc => npc.initializeSound());
+
+        console.log('Start online game loop');
+
+        setInterval(this.collectInput.bind(this), 1000 / 60);
     }
 
     public async ready() {
@@ -194,12 +264,7 @@ export class Game {
         }
     }
 
-    private loopOnce(): void {
-        if (!this.isRunning) return; // Stop the loop if the game is over
-
-        const deltaTime = this.clock.getDelta();
-        this.update(deltaTime);
-
+    private updateFPS(): void {
         if (this.lastFrameTime === 0)
             this.lastFrameTime = performance.now();
         this.frameCount++;
@@ -212,7 +277,9 @@ export class Game {
                 fpsDisplay.innerText = `FPS: ${Math.round(fps)}`;
             }
         }
+    }
 
+    private renderToScreen(): void {
         // Filter local players
         const localPlayers = Array.from(this.playerMap.values()).filter(player => player.isLocalPlayer);
         const playerCameras = this.cameraManager.cameras;
@@ -227,9 +294,35 @@ export class Game {
         });
     }
 
+    private loopOnce(): void {
+        if (!this.isRunning) return; // Stop the loop if the game is over
 
-    private update(deltaTime: number): void {
-        this.entityMap.forEach(entity => entity.update(deltaTime));
+        if (this.isOnline) {
+            if (this.InputBuffer.length == 0) return;
+            const input = this.InputBuffer.shift();
+            const deltaTime = 1 / 60;
+            this.update(deltaTime, input)
+        } else {
+            const deltaTime = this.clock.getDelta();
+            this.update(deltaTime);
+        }
+
+        this.renderToScreen();
+    }
+
+
+    private update(deltaTime: number, input?: any[]): void {
+        if (input) {
+            this.entityMap.forEach((entity) => {
+                if (entity instanceof Player) {
+                    entity.update(deltaTime, InputSerializer.deserialize(input[entity.playerId]));
+                } else {
+                    entity.update(deltaTime);
+                }
+            })
+        } else {
+            this.entityMap.forEach(entity => entity.update(deltaTime));
+        }
 
         // Update camera positions and orientations based on player inputs
         this.cameraManager.update(deltaTime);
@@ -246,6 +339,8 @@ export class Game {
 
         // After rendering all cameras, update and render HUD
         this.hudManager.update(deltaTime);
+
+        this.updateFPS();
     }
 
     public getTime(): number {
@@ -335,5 +430,10 @@ export class Game {
         this.playerMap.clear();
         this.npcPlaneMap.clear();
         this.projectileMap.clear();
+
+        this.localPlayer = undefined;
+        this.socket?.close();
+        this.socket = undefined;
+        this.InputBuffer = [];
     }
 }
