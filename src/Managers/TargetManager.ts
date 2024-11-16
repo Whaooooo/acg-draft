@@ -22,7 +22,7 @@ export class TargetManager {
      */
     public reTarget(entity: MovableEntity, weapon: Weapon): Entity[] {
         const entityPosition = entity.getPosition();
-        const entityForward = entity.getForwardDirection();
+        const entityForward = entity.getForwardDirection(true);
 
         const lockRange = weapon.property.lockRange;
         const lockAngle = weapon.property.lockAngle; // degrees

@@ -157,8 +157,8 @@ export class Entity {
         this.ready = false;
     }
 
-    public getForwardDirection(): THREE.Vector3 {
-        if (this instanceof Player && this.game.cameraManager) {
+    public getForwardDirection(from_camera: boolean = false): THREE.Vector3 {
+        if (this instanceof Player && this.game.cameraManager && from_camera) {
             const camera = this.game.cameraManager.cameras.get(this as Player);
             if (camera) {
                 return new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();

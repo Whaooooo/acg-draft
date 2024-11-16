@@ -122,8 +122,8 @@ export class Game {
         // Optionally, add some NPCs for testing
         console.log('Request creating npc');
         const npc1 = new NPCPlane(this, 'plane', new THREE.Vector3(1000, 3000, -1000));
-        const npc2 = new NPCPlane(this, 'plane', new THREE.Vector3(1000, 1000, 1000));
-        const npc3 = new NPCPlane(this, 'plane', new THREE.Vector3(-1000, 1000, -1000));
+        const npc2 = new NPCPlane(this, 'plane', new THREE.Vector3(1000, 3000, 1000));
+        const npc3 = new NPCPlane(this, 'plane', new THREE.Vector3(-1000, 3000, -1000));
         const npc4 = new NPCPlane(this, 'plane', new THREE.Vector3(-1000, 3000, 1000));
     }
 
