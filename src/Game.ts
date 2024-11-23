@@ -299,6 +299,11 @@ export class Game {
 
         if (this.isOnline) {
             if (this.InputBuffer.length == 0) return;
+            while (this.InputBuffer.length > 3) {
+                const input = this.InputBuffer.shift();
+                const deltaTime = 1 / 60;
+                this.update(deltaTime, input)
+            }
             const input = this.InputBuffer.shift();
             const deltaTime = 1 / 60;
             this.update(deltaTime, input)

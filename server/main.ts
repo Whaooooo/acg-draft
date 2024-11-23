@@ -31,13 +31,15 @@ async function startGame() {
     console.log('Game started');
 
     let tick = 0;
+    let startTime = Date.now();
     const oneTick = () => {
         tick++;
         const data = JSON.stringify({ type: 'input', tick: tick, input: userInputs.map((input) => InputSerializer.serialize(input)) });
         for (let user_id of roomUsers.keys()) {
             const connection = userConnections.get(user_id);
             if (connection === undefined) {
-                throw new Error('Connection not found');
+                console.log('Connection not found');
+                return;
             }
             connection.send(data);
         }
@@ -45,8 +47,16 @@ async function startGame() {
             userInputs[0][key] = false;
             userInputs[1][key] = false;
         }
+
+        const nextTickTime = tick * 1000 / 60 - (Date.now() - startTime);
+        if (nextTickTime < 1) {
+            setTimeout(oneTick, 1);
+        } else {
+            setTimeout(oneTick, nextTickTime);
+        }
     };
-    setInterval(oneTick, 15);
+
+    setImmediate(oneTick);
 }
 
 function handleMessages(user_id: string, data: ws.RawData) {
