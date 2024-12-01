@@ -1,8 +1,8 @@
-# Game Project README
+# ACG Game Project
 
 Welcome to the **3D Flying Combat Game** project! This guide will help you set up, build, and launch the game on your local machine.
-By default, **main.ts** file use empty path to initialize a new game, which will create a debug scene.
-You can play the game [online](https://Whaooooo.github.io/acg-draft/).
+
+[**Online Access (Single Player Mode)**](https://Whaooooo.github.io/acg-draft/)
 
 ## Table of Contents
 
@@ -69,13 +69,11 @@ This command starts `webpack-dev-server` and serves the game at `http://localhos
 
 ### Accessing the Game
 
-Open your web browser and navigate to:
+Open your web browser and navigate to `http://localhost:3000/`. The game should now load and run in your browser.
 
-```
-http://localhost:3000/
-```
+### Online Multiplayer Server Setup (Currently Unavailable)
 
-The game should now load and run in your browser.
+Run `npm server`.
 
 ## Code References
 
