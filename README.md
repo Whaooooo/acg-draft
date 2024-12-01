@@ -2,6 +2,7 @@
 
 Welcome to the **3D Flying Combat Game** project! This guide will help you set up, build, and launch the game on your local machine.
 By default, **main.ts** file use empty path to initialize a new game, which will create a debug scene.
+You can play the game [online](https://Whaooooo.github.io/acg-draft/).
 
 ## Table of Contents
 
