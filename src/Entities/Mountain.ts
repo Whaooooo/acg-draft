@@ -36,6 +36,9 @@ class Mountain extends THREE.Group {
                 ret = -2;
             }
         }
+        if (ret > 2500) {
+            ret = 2500 + (ret - 2500) * 0.6;
+        }
         return ret;
     }
 
@@ -96,7 +99,7 @@ class Mountain extends THREE.Group {
                 texture.wrapS = THREE.RepeatWrapping;
                 texture.wrapT = THREE.RepeatWrapping;
 
-                const meterial = new THREE.MeshPhongMaterial({ map: texture, side: THREE.DoubleSide });
+                const meterial = new THREE.MeshStandardMaterial({ map: texture, side: THREE.DoubleSide });
 
                 for (let k = 1; k <= 4; k *= 2) {
                     const geometry = new THREE.PlaneGeometry(chunkWidth, chunkHeight, Math.floor(dx / k), Math.floor(dz / k));

@@ -232,6 +232,9 @@ float getCloudShadowMask(float offset) {
 
 }
 
+#define CLOUD_FAR 3500.0
+#define CLOUD_NEAR 3000.0
+
 void main() {
 
     #include <logdepthbuf_fragment>
@@ -251,7 +254,7 @@ void main() {
     vec4 shadowColor = texture2D( shadowTexture, p.xz + 0.5 );
     float height_dist = bounds.x * abs(rayDir.y) * boxBound.y;
 
-    if ( height_dist > 3500.0 ) {
+    if ( height_dist > CLOUD_FAR ) {
         gl_FragColor = shadowColor;
     } else {
 
@@ -292,8 +295,8 @@ void main() {
 
     gl_FragColor = linearToSRGB( ac );
 
-    if (height_dist > 1500.0) {
-        float fac = smoothstep(1500.0, 3500.0, height_dist);
+    if (height_dist > CLOUD_NEAR) {
+        float fac = smoothstep(CLOUD_NEAR, CLOUD_FAR, height_dist);
         gl_FragColor = mix(gl_FragColor, shadowColor, fac);
     }
 
@@ -312,7 +315,7 @@ class Cloud extends THREE.Group {
         super();
 
         const boxBound = options.boxBound !== undefined ? options.boxBound : new THREE.Vector3(1.0, 1.0, 1.0);
-        const geometry = new THREE.BoxGeometry(boxBound.x, boxBound.y * 0.9, boxBound.z);
+        const geometry = new THREE.BoxGeometry(boxBound.x * 0.9, boxBound.y * 0.9, boxBound.z * 0.9);
         const height = 4000;
 
         const scope = this;
