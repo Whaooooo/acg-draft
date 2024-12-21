@@ -123,7 +123,7 @@ export const PlayerProperties: {
     },
     f22_laam: {
         damage: 1000,
-        pulsion: 600.0,
+        pulsion: 1000.0,
         xSpeedDecrease: 0.2,
         ySpeedDecrease: 0.2,
         zSpeedDecrease: 0.8,
