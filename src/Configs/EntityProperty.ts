@@ -141,6 +141,26 @@ export const PlayerProperties: {
             'fire' : MissileShotSound
         },
     },
+    f22_qaam: {
+        damage: 600.0,
+        pulsion: 600.0,
+        xSpeedDecrease: 0.05,
+        ySpeedDecrease: 0.05,
+        zSpeedDecrease: 0.9,
+        rotationSpeed: 90,
+        lockRange: 1500,
+        lockAngle: 170,
+        lockNumber: 1,
+        loadTime: 20,
+        loadNumber: 2,
+        totalNumber: 12,
+        firePosition: [[2.5, -2.5, 7], [-2.5, -2.5, 7]],
+        sound: {
+            'speech' : Fox2Sound,
+            'explosion' : ExplosionSound,
+            'fire' : MissileShotSound
+        },
+    },
     // Add other entities as needed
 } as const;
 

@@ -74,7 +74,10 @@ function getBaseTargetDirection(npcPlane: NPCPlane): THREE.Vector3 {
     const currentForward = new THREE.Vector3(0, 0, -1).applyQuaternion(npcPlane.getQuaternion());
 
     if (npcPlane.npcMode === NPCMode.MainChaseTarget || npcPlane.npcMode === NPCMode.ViceChaseTarget) {
-        const bestTarget = npcPlane.game.targetManager.getClosedTarget(npcPlane);
+        if (npcPlane.npcMode === NPCMode.MainChaseTarget) {
+            npcPlane.setTarget(npcPlane.game.targetManager.getClosedTarget(npcPlane));
+        }
+        const bestTarget = npcPlane.getTarget() ? npcPlane.getTarget() : npcPlane.game.targetManager.getClosedTarget(npcPlane);
         if (bestTarget) {
             const myPos = npcPlane.getPosition();
             const targetPos = bestTarget.getPosition();
@@ -130,7 +133,7 @@ function buildMissileMatrix(missiles: Missile[], npcPlane: NPCPlane): THREE.Matr
         const m_i = new THREE.Vector3().subVectors(missilePos, npcPos).normalize();
 
         const distance = missilePos.distanceTo(npcPos);
-        const beta_i = 10 / (distance + 1); // 距离越近，权重越大
+        const beta_i = 1000 / (distance + 1); // 距离越近，权重越大
 
         // 计算 m_i * m_i^T
         const miOuter = new THREE.Matrix3().set(
@@ -311,4 +314,5 @@ export function updateNPCMode(npcPlane: NPCPlane): void {
 
     // 如果没有满足条件的模式，则设置为 Cruise
     npcPlane.npcMode = NPCMode.Cruise;
+    npcPlane.setTarget(null)
 }

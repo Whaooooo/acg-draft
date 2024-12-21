@@ -104,7 +104,7 @@ export function updatePlaneState(
     const angleRad = planeForward.angleTo(worldY);
     const angleDeg = THREE.MathUtils.radToDeg(angleRad);
 
-    const angularVelocityDeg = - state.property.pitchMinSpeed * (0.25 - angleDeg / 720);
+    const angularVelocityDeg = - state.property.pitchMinSpeed * (0.25 - angleDeg / 720 - 0.125 * state.pulsion / state.property.defaultPulsion);
     const angularVelocityRad = THREE.MathUtils.degToRad(angularVelocityDeg); // 转换为弧度
 
     // 创建一个绕世界 Y 轴的旋转四元数
@@ -130,12 +130,8 @@ export function updatePlaneState(
     // 5. 应用脉冲加速度（沿本地 -Z 方向）
     localVelocity.z += -state.pulsion * deltaTime;
 
-    // 6. 计算并应用基于速度变化的正 Y 轴加速度
-    const S0 = state.property.defaultPulsion / (1 - state.property.zSpeedDecrease); // 参考速度
-    const speed = -localVelocity.z;
 
-    // 计算加速度 a_y = 9.8 * min(speed / S0, 2)
-    const a_y = 9.8 * Math.max(0, Math.min(speed / S0, 2));
+    const a_y = 9.8 * Math.max(0, Math.min(state.pulsion / state.property.defaultPulsion, 2));
     localVelocity.y += a_y * deltaTime;
 
     // 7. 将本地速度转换回世界坐标系

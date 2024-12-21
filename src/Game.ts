@@ -299,7 +299,7 @@ export class Game {
         if (!this.isRunning) return; // Stop the loop if the game is over
 
         if (this.isOnline) {
-            if (this.InputBuffer.length == 0) return;
+            if (this.InputBuffer.length === 0) return;
             while (this.InputBuffer.length > 3) {
                 const input = this.InputBuffer.shift();
                 const deltaTime = 1 / 60;
