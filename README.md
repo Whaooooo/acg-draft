@@ -1,7 +1,8 @@
-# Game Project README
+# ACG Game Project
 
-Welcome to the **ACG-Draft Game** project! This guide will help you set up, build, and launch the game on your local machine.
-By default, **main.ts** file use empty path to initialize a new game, which will create a debug scene.
+Welcome to the **3D Flying Combat Game** project! This guide will help you set up, build, and launch the game on your local machine.
+
+[**Online Access (Single Player Mode)**](https://Whaooooo.github.io/acg-draft/)
 
 ## Table of Contents
 
@@ -9,7 +10,7 @@ By default, **main.ts** file use empty path to initialize a new game, which will
 - [Installation](#installation)
 - [Building the Project](#building-the-project)
 - [Running the Game](#running-the-game)
-- [Changing the Port Number](#changing-the-port-number)
+- [Code References](#code-references)
 - [Troubleshooting](#troubleshooting)
 - [License](#license)
 
@@ -18,9 +19,9 @@ By default, **main.ts** file use empty path to initialize a new game, which will
 Before you begin, ensure you have the following software installed:
 
 - **Node.js** (version 12 or higher)
-    - Download and install from [nodejs.org](https://nodejs.org/)
+  - Download and install from [nodejs.org](https://nodejs.org/)
 - **npm** (Node Package Manager)
-    - Comes bundled with Node.js
+  - Comes bundled with Node.js
 
 ## Installation
 
@@ -56,7 +57,7 @@ npm run build
 
 This will compile the TypeScript code and bundle the project using Webpack. The output will be placed in the `dist` directory.
 
-## Building and Running the Game
+### Building and Running the Game
 
 You can build and run the game using the development server provided by Webpack. Execute the following command:
 
@@ -68,67 +69,50 @@ This command starts `webpack-dev-server` and serves the game at `http://localhos
 
 ### Accessing the Game
 
-Open your web browser and navigate to:
+Open your web browser and navigate to `http://localhost:3000/`. The game should now load and run in your browser.
 
-```
-http://localhost:3000/
-```
+### Online Multiplayer Server Setup (Currently Unavailable)
 
-The game should now load and run in your browser.
+Run `npm server`.
 
-## Changing the Port Number
+## Code References
 
-If port `3000` is already in use on your machine, you can change the port number by modifying the `webpack.config.js` file.
+The `Cloud.ts` and `Water.ts` in `Entities` are modified from the Three.js example [Cloud](https://threejs.org/examples/webgl_volume_cloud.html) and [Ocean](https://threejs.org/examples/webgl_shaders_ocean.html) and have been adapted to meet sence requirements. Shadow effects have been added, and optimizations have been made.
 
-1. **Open `webpack.config.js`**
+The `Mountain.ts` in `Entities` are modified from the Three.js example [Terrain](https://threejs.org/examples/webgl_geometry_terrain_raycast.html), but now only the noise generation is still in use.
 
-   Located in the project root directory.
+The `Explosion.ts` is referenced from [threejs-games-course](https://github.com/NikLever/threejs-games-course/blob/master/complete/lecture5_6/Explosion.js).
 
-2. **Find the `devServer` Configuration**
+The `NoiseShader.ts` is referenced from [CloudNoiseGen](https://github.com/Fewes/CloudNoiseGen) but it is unused.
 
-   ```javascript
-   // webpack.config.js
-
-   module.exports = {
-     // ... existing configuration ...
-     devServer: {
-       static: {
-         directory: path.join(__dirname, 'dist'),
-       },
-       compress: true,
-       port: 3000, // Change this port number
-     },
-     // ... rest of your configuration ...
-   };
-   ```
-
-3. **Change the `port` Value**
-
-   Replace `3000` with an available port number of your choice. For example, to use port `8080`:
-
-   ```javascript
-   port: 8080,
-   ```
-
-4. **Save the File**
-
-5. **Restart the Development Server**
-
-   After changing the port, restart the server:
-
-   ```bash
-   npm start
-   ```
-
-6. **Access the Game on the New Port**
-
-   Navigate to:
-
-   ```
-   http://localhost:3000/
-   ```
+Files in `assets/dcs` and `assets/LandTexturesSummer` is from the Digital Combat Simulator.
+The plane model is from [threejs-games-course](https://github.com/NikLever/threejs-games-course).
+The F22 model is from [Sketchfab](https://sketchfab.com/3d-models/lockheed-martin-f-22-raptor-204d1c74d6c44c049e167887943f1eb2).
+The references of sounds is noted in `src/Configs/SoundPaths.ts`.
 
 ## Troubleshooting
+
+- **Changing the Port Number**
+
+  Find the `devServer` Configuration in `webpack.config.js` and edit the `port` value.
+
+  ```javascript
+  // webpack.config.js
+
+  module.exports = {
+    // ... existing configuration ...
+    devServer: {
+      static: {
+        directory: path.join(__dirname, 'dist'),
+      },
+      compress: true,
+      port: 3000, // Change this port number
+    },
+    // ... rest of your configuration ...
+  }
+  ```
+
+  The port will change after restarting the deployment server.
 
 - **Refused to Execute Script Due to MIME Type Error**
 
@@ -140,9 +124,9 @@ If port `3000` is already in use on your machine, you can change the port number
 
   Ensure that:
 
-    - The `bundle.js` file exists in the `dist` directory.
-    - The server is running and serving files from the correct directory.
-    - The paths in `index.html` and `webpack.config.js` are correctly configured.
+  - The `bundle.js` file exists in the `dist` directory.
+  - The server is running and serving files from the correct directory.
+  - The paths in `index.html` and `webpack.config.js` are correctly configured.
 
 - **Cannot Use Import Statement Outside a Module**
 
@@ -150,11 +134,11 @@ If port `3000` is already in use on your machine, you can change the port number
 
 - **Port Already in Use**
 
-  If you receive an error stating that the port is already in use, follow the steps in the [Changing the Port Number](#changing-the-port-number) section.
+  If you receive an error stating that the port is already in use, follow the steps in the `Changing the Port Number` section.
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the MIT License.
 
 ---
 
