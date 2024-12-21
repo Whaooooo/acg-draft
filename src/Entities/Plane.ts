@@ -157,9 +157,7 @@ export class Plane extends MovableEntity {
             pitchSpeed: this.pitchSpeed,
             rollSpeed: this.rollSpeed,
             pulsion: this.pulsion,
-            xSpeedDecrease: this.property.xSpeedDecrease,
-            ySpeedDecrease: this.property.ySpeedDecrease,
-            zSpeedDecrease: this.property.zSpeedDecrease,
+            property: this.property,
         };
 
         // Update plane state

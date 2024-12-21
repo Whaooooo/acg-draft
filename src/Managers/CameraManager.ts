@@ -50,6 +50,8 @@ export class CameraManager {
     public cameras: Map<Player, THREE.PerspectiveCamera> = new Map();
     public game: Game;
     public cameraControls: Map<Player, CameraControl> = new Map();
+    public minPitch: number = -Math.PI / 2 + 0.01;
+    public maxPitch: number = Math.PI / 2 - 0.01;
 
     // Sensitivity settings
     private readonly sensitivity: number = 0.002;
@@ -225,11 +227,11 @@ export class CameraManager {
                 controls.firstPersonPitch -= deltaY * this.sensitivity; // Pitch: up/down
 
                 // Remove pitch clamping
-                // controls.firstPersonPitch = THREE.MathUtils.clamp(
-                //     controls.firstPersonPitch,
-                //     this.minPitch,
-                //     this.maxPitch
-                // );
+                controls.firstPersonPitch = THREE.MathUtils.clamp(
+                    controls.firstPersonPitch,
+                    this.minPitch,
+                    this.maxPitch
+                );
             }
 
             // Handle Third-Person View Mouse Rotation
@@ -239,11 +241,11 @@ export class CameraManager {
                 controls.thirdPersonPitch -= deltaY * this.sensitivity; // Pitch: up/down
 
                 // Remove pitch clamping
-                // controls.thirdPersonPitch = THREE.MathUtils.clamp(
-                //     controls.thirdPersonPitch,
-                //     this.minPitch,
-                //     this.maxPitch
-                // );
+                controls.thirdPersonPitch = THREE.MathUtils.clamp(
+                    controls.thirdPersonPitch,
+                    this.minPitch,
+                    this.maxPitch
+                );
             }
 
             // Always update camera position and orientation to stick to the player

@@ -167,7 +167,7 @@ export class Player extends Plane {
 
     private updateCameraShake(): void {
         // Use lostSpeedNorm to calculate shake intensity
-        const maxLostSpeedForShake = this.property.maxPulsion; // Or adjust as appropriate
+        const maxLostSpeedForShake = this.property.maxPulsion / (1 - this.property.zSpeedDecrease); // Or adjust as appropriate
         let intensity = Math.min(1, this.lostSpeedNorm / maxLostSpeedForShake);
 
         // Scale the intensity to control the shake effect
@@ -183,5 +183,9 @@ export class Player extends Plane {
         }
         this.game.playerMap.delete(this.entityId);
         super.dispose();
+    }
+
+    public getTargetPlayers(): Player[] {
+        return [this];
     }
 }

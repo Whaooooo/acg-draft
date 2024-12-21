@@ -14,7 +14,7 @@ import { SceneManager } from './Managers/SceneManager';
 import { TargetManager } from './Managers/TargetManager';
 import { HUDManager } from "./Managers/HUDManager";
 import { MovableEntity } from "./Core/MovableEntity";
-import { nextFrame, receiveFirstMessage } from './Utils/Wait';
+import {nextFrame, receiveFirstMessage, sleep} from './Utils/Wait';
 import { InputSerializer } from './Utils/InputSerializer';
 
 export class Game {
