@@ -60,9 +60,6 @@ export class TargetManager {
                     // If not within lock range, add to other targets
                     otherTargets.push({ target, distance });
                 }
-            } else {
-                // For other entities (non-enemies), add to other targets
-                otherTargets.push({ target, distance });
             }
         }
 

@@ -187,6 +187,9 @@ export class HUDManager {
 
         // Update target indicators
         this.updateTargetIndicators(player, hudOverlay, svgOverlay);
+
+        // Update locked missile indicators
+        this.updateLockedMissileIndicatorsForPlayer(player, hudOverlay, svgOverlay);
     }
 
     /**
@@ -476,10 +479,10 @@ export class HUDManager {
                     // Draw lines from square's vertices to the indicator point
                     const squareSize = 40;
                     const squareVertices = [
-                        { x: screenCenterX - squareSize / 2, y: screenCenterY - squareSize / 2 }, // Top-left
-                        { x: screenCenterX + squareSize / 2, y: screenCenterY - squareSize / 2 }, // Top-right
-                        { x: screenCenterX + squareSize / 2, y: screenCenterY + squareSize / 2 }, // Bottom-right
-                        { x: screenCenterX - squareSize / 2, y: screenCenterY + squareSize / 2 }, // Bottom-left
+                        {x: screenCenterX - squareSize / 2, y: screenCenterY - squareSize / 2}, // Top-left
+                        {x: screenCenterX + squareSize / 2, y: screenCenterY - squareSize / 2}, // Top-right
+                        {x: screenCenterX + squareSize / 2, y: screenCenterY + squareSize / 2}, // Bottom-right
+                        {x: screenCenterX - squareSize / 2, y: screenCenterY + squareSize / 2}, // Bottom-left
                     ];
 
                     // Draw lines using SVG in per-player svgOverlay
@@ -503,12 +506,148 @@ export class HUDManager {
                     existingCenterSquare.remove();
                 }
             }
-        })
+        });
     }
 
+
         /**
-     * Updates the FPS display.
+         * Updates the locked missile indicators for a specific player.
+         * @param player The player for whom to update the locked missile indicators.
+         * @param hudOverlay The HUD overlay element for the player.
+         * @param svgOverlay The SVG overlay element for the player.
+         */
+    private updateLockedMissileIndicatorsForPlayer(player: Player, hudOverlay: HTMLDivElement, svgOverlay: SVGSVGElement): void {
+        // Clear previous locked missile indicators
+        const existingLockedIndicators = hudOverlay.querySelectorAll('.locked-missile-indicator');
+        existingLockedIndicators.forEach(indicator => indicator.remove());
+
+        // Get the list of locked missiles for the player
+        const lockedMissiles: Missile[] = this.game.targetManager.getLockedMissileList(player);
+
+        const camera = this.cameraManager.cameras.get(player);
+        if (!camera) return;
+
+        const viewport = this.cameraManager.getViewportForPlayer(player);
+        const width = viewport.width;
+        const height = viewport.height;
+
+        lockedMissiles.forEach(missile => {
+            const missilePosition = missile.getPosition();
+
+            // Project missile position to Normalized Device Coordinates (NDC)
+            const ndc = missilePosition.clone().project(camera);
+
+            // Determine if the missile is within the camera's frustum
+            const isInFrustum = ndc.x >= -1 && ndc.x <= 1 && ndc.y >= -1 && ndc.y <= 1 && ndc.z >= -1 && ndc.z <= 1;
+
+            // Convert NDC to screen coordinates
+            const x = (ndc.x * 0.5 + 0.5) * width;
+            const y = (-ndc.y * 0.5 + 0.5) * height;
+
+            // Calculate distance from player to missile
+            const distance = missilePosition.distanceTo(player.getPosition());
+
+            // Determine triangle size based on distance (closer = larger)
+            const minDiameter = 10;
+            const maxDiameter = 30;
+            const minDistance = 100;
+            const maxDistance = 10000;
+            const clippedDistance = Math.max(minDistance, Math.min(maxDistance, distance));
+            const sizeRatio = (Math.log(clippedDistance) - Math.log(minDistance)) / (Math.log(maxDistance) - Math.log(minDistance));
+            const triangleSize = maxDiameter - (maxDiameter - minDiameter) * sizeRatio;
+
+            if (isInFrustum) {
+                // On-screen: Draw triangle at missile's screen position
+                const triangle = document.createElement('div');
+                triangle.classList.add('locked-missile-indicator');
+                triangle.style.left = `${x}px`;
+                triangle.style.top = `${y}px`;
+
+                // Adjust triangle size
+                triangle.style.borderLeftWidth = `${triangleSize / 2}px`;
+                triangle.style.borderRightWidth = `${triangleSize / 2}px`;
+                triangle.style.borderBottomWidth = `${triangleSize}px`;
+
+                hudOverlay.appendChild(triangle);
+            } else {
+                // Off-screen: Draw triangle at screen edge pointing towards missile
+
+                // Calculate the angle from the center to the missile
+                const centerX = width / 2;
+                const centerY = height / 2;
+                const deltaX = x - centerX;
+                const deltaY = y - centerY;
+                const angle = Math.atan2(deltaY, deltaX);
+
+                // Determine the point on the screen edge
+                const edgeX = centerX + (width / 2) * Math.cos(angle);
+                const edgeY = centerY + (height / 2) * Math.sin(angle);
+
+                // Clamp the position to the screen boundaries
+                const clampedPosition = this.clampToScreenEdge(edgeX, edgeY, width, height);
+
+                const clampedX = clampedPosition.x;
+                const clampedY = clampedPosition.y;
+
+                const triangle = document.createElement('div');
+                triangle.classList.add('locked-missile-indicator');
+                triangle.style.left = `${clampedX}px`;
+                triangle.style.top = `${clampedY}px`;
+
+                // Adjust triangle size
+                triangle.style.borderLeftWidth = `${triangleSize / 2}px`;
+                triangle.style.borderRightWidth = `${triangleSize / 2}px`;
+                triangle.style.borderBottomWidth = `${triangleSize}px`;
+
+                // Rotate the triangle to point towards the missile direction
+                const degrees = (angle * 180) / Math.PI + 90; // Adjust rotation to point correctly
+                triangle.style.transform = `translate(-50%, -100%) rotate(${degrees}deg)`;
+
+                hudOverlay.appendChild(triangle);
+            }
+        });
+    }
+
+    /**
+     * Clamps a point to the edges of the screen rectangle.
+     * @param x The x-coordinate.
+     * @param y The y-coordinate.
+     * @param width The viewport width.
+     * @param height The viewport height.
+     * @returns An object with clamped x and y coordinates.
      */
+    private clampToScreenEdge(x: number, y: number, width: number, height: number): { x: number, y: number } {
+        const halfWidth = width / 2;
+        const halfHeight = height / 2;
+
+        const deltaX = x - halfWidth;
+        const deltaY = y - halfHeight;
+
+        const angle = Math.atan2(deltaY, deltaX);
+
+        // Calculate intersections with the viewport boundaries
+        const tan = Math.tan(angle);
+
+        let clampedX = x;
+        let clampedY = y;
+
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+            // Clamp to left or right edge
+            clampedX = deltaX > 0 ? width : 0;
+            clampedY = halfHeight + halfWidth * tan;
+        } else {
+            // Clamp to top or bottom edge
+            clampedY = deltaY > 0 ? height : 0;
+            clampedX = halfWidth + halfHeight / tan;
+        }
+
+        // Ensure the clamped coordinates are within the viewport
+        clampedX = Math.max(0, Math.min(width, clampedX));
+        clampedY = Math.max(0, Math.min(height, clampedY));
+
+        return { x: clampedX, y: clampedY };
+    }
+
     private updateFPSDisplay(): void {
         if (this.lastFrameTime === 0) {
             this.lastFrameTime = performance.now();
@@ -526,15 +665,24 @@ export class HUDManager {
             if (!fpsDisplay) {
                 fpsDisplay = document.createElement('div');
                 fpsDisplay.id = 'fps-display';
+                fpsDisplay.style.position = 'absolute';
+                fpsDisplay.style.top = '10px';
+                fpsDisplay.style.left = '10px';
+                fpsDisplay.style.color = '#fff';
+                fpsDisplay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+                fpsDisplay.style.padding = '5px 10px';
+                fpsDisplay.style.borderRadius = '5px';
+                fpsDisplay.style.fontFamily = 'Arial, sans-serif';
+                fpsDisplay.style.fontSize = '14px';
                 document.body.appendChild(fpsDisplay);
             }
             fpsDisplay.innerText = `FPS: ${Math.round(fps)}`;
         }
     }
 
-    /**
-     * Renders the HUD by adjusting positions based on viewport.
-     */
+        /**
+         * Renders the HUD by adjusting positions based on viewport.
+         */
     public render(): void {
         // Adjust HUD element positions based on viewport
         this.domElements.forEach((elements, player) => {
@@ -562,25 +710,25 @@ export class HUDManager {
         });
     }
 
-    /**
-     * Extracts the weapon name from the full name.
-     */
+        /**
+         * Extracts the weapon name from the full name.
+         */
     private extractWeaponName(fullName: string): string {
         const parts = fullName.split('_');
         const name = parts[parts.length - 1];
         return name.toUpperCase();
     }
 
-    /**
-     * Calculates the remaining count of a weapon.
-     */
+        /**
+         * Calculates the remaining count of a weapon.
+         */
     private getWeaponRemainingCount(weapon: Weapon): number {
         return weapon.property.totalNumber - weapon.totalMissilesFired;
     }
 
-    /**
-     * Disposes of the HUD elements.
-     */
+        /**
+         * Disposes of the HUD elements.
+         */
     public dispose(): void {
         // Remove HUD elements from the DOM
         this.domElements.forEach(({ hudElement, hudOverlay, svgOverlay }) => {
@@ -596,5 +744,11 @@ export class HUDManager {
         });
         // Clear the map
         this.domElements.clear();
+
+        // Remove FPS display if exists
+        const fpsDisplay = document.getElementById('fps-display');
+        if (fpsDisplay && fpsDisplay.parentNode) {
+            fpsDisplay.parentNode.removeChild(fpsDisplay);
+        }
     }
 }
