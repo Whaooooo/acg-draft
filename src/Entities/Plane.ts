@@ -24,8 +24,6 @@ export class Plane extends MovableEntity {
     public currentHP: number = 0;
     public property: PlaneProperty;
 
-    public weapons: Weapon[];
-    public selectedWeaponIndex: number = 0;
 
     // Real-time control variables
     public pulsion: number;
@@ -239,12 +237,7 @@ export class Plane extends MovableEntity {
     }
 
     public fireWeapon(): void {
-        const weapon = this.weapons[this.selectedWeaponIndex];
-        if (!weapon) {
-            console.warn(`No weapon selected or weapon not found for entity ${this.entityId}.`);
-            return;
-        }
-        weapon.fire();
+        this.weapon.fire();
     }
 
     public dispose(): void {

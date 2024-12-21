@@ -34,7 +34,7 @@ export const EntityConfigs = {
         children: ['stdm',],
     },
     plane_stdm: {
-        path: 'plane/microplane.glb',
+        path: 'fighter/lockheed-martin-f-22-raptor/test/stdm.glb',
         loaderType: 'gltf',
         children: [],
     },

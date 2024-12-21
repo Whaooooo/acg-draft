@@ -117,28 +117,6 @@ export class Missile extends MovableEntity {
         }
     }
 
-    private applyThrust(deltaTime: number): void {
-        const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.getQuaternion()).normalize();
-        const thrust = forward.multiplyScalar(this.property.pulsion * deltaTime);
-        this.velocity.add(thrust);
-    }
-
-    private applyVelocityDecay(deltaTime: number): void {
-
-        const inverseQuaternion = this.getQuaternion().invert();
-        const localVelocity = this.velocity.clone().applyQuaternion(inverseQuaternion);
-        // Apply velocity decay in the x, y, and z axes
-        const xDecayFactor = Math.pow(this.property.xSpeedDecrease, deltaTime);
-        const yDecayFactor = Math.pow(this.property.ySpeedDecrease, deltaTime);
-        const zDecayFactor = Math.pow(this.property.zSpeedDecrease, deltaTime);
-
-        localVelocity.x *= xDecayFactor;
-        localVelocity.y *= yDecayFactor;
-        localVelocity.z *= zDecayFactor;
-
-        this.velocity = localVelocity.clone().applyQuaternion(this.getQuaternion());
-    }
-
     public initializeSound(): void {
         const soundManager = this.game.soundManager;
         if (soundManager && this.property.sound && this.property.sound.fire) {
