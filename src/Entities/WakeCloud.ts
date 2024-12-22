@@ -21,7 +21,6 @@ export class WakeCloud extends ShaderEntity {
         startPoint: THREE.Vector3,
         endPoint: THREE.Vector3,
         lifeTime: number = 2.0,
-        initialHeight: number = 1.0,
         initialRadius: number = 0.5,
         heightIncreaseSpeed: number = 0.5,
         radiusIncreaseSpeed: number = 0.3,
@@ -29,10 +28,12 @@ export class WakeCloud extends ShaderEntity {
         opacityDecreaseSpeed: number = 0.4
     ) {
         // 调用父类构造函数，使用'minimal'加载器
-        super(game, 'wakecloud', startPoint, new THREE.Quaternion(), -1);
+        super(game, 'wakecloud', startPoint.clone().add(endPoint).multiplyScalar(0.5), new THREE.Quaternion(), -1);
+        // 计算起点和终点之间的距离作为初始高度
+        this.initialHeight = startPoint.distanceTo(endPoint);
+
 
         this.lifeTime = lifeTime;
-        this.initialHeight = initialHeight;
         this.initialRadius = initialRadius;
         this.heightIncreaseSpeed = heightIncreaseSpeed;
         this.radiusIncreaseSpeed = radiusIncreaseSpeed;
@@ -59,7 +60,7 @@ void main() {
     float displacement = noise(position * 10.0 + u_time) * 0.5;
     vNoise = displacement;
 
-    // Scale the geometry based on time
+    // Scale the geometry based on uniforms
     vec3 scaledPosition = position;
     scaledPosition.y *= u_height;
     scaledPosition.x *= u_radius;
@@ -115,23 +116,23 @@ void main() {
 
         this.mesh = new THREE.Mesh(geometry, material);
 
-        // 初始缩放
-        this.mesh.scale.set(this.initialRadius, this.initialHeight, this.initialRadius);
+        // 移除初始缩放，大小由着色器控制
+        // this.mesh.scale.set(this.initialRadius, this.initialHeight, this.initialRadius);
+        this.mesh.scale.set(1, 1, 1); // 保持默认缩放
 
         const group = new THREE.Group();
         group.add(this.mesh);
 
         this._model = group;
 
-        // 设置位置，从startPoint到endPoint的中点
-        const midpoint = new THREE.Vector3().addVectors(startPoint, endPoint).multiplyScalar(0.5);
-        this.setPosition(midpoint);
-
         // 设置朝向，从startPoint指向endPoint
         const direction = new THREE.Vector3().subVectors(endPoint, startPoint).normalize();
         const axis = new THREE.Vector3(0, 1, 0);
         const quaternion = new THREE.Quaternion().setFromUnitVectors(axis, direction);
         this.setQuaternion(quaternion);
+
+        // 设置位置为起点
+        this.setPosition(startPoint.clone());
 
         // 添加到场景
         this.game.scene.add(this._model);

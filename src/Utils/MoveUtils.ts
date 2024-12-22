@@ -95,6 +95,8 @@ export function updatePlaneState(
         newQuaternion.multiply(deltaQuat);
     }
 
+    newQuaternion.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), THREE.MathUtils.degToRad(- state.property.pitchMinSpeed * 0.125 * state.pulsion * deltaTime / state.property.defaultPulsion)));
+
     // 1. 计算飞机的角速度
     // 计算飞机的前方方向（-Z 轴）在世界坐标系中的方向
     const planeForward = new THREE.Vector3(0, 0, -1).applyQuaternion(state.quaternion).normalize();
@@ -104,7 +106,7 @@ export function updatePlaneState(
     const angleRad = planeForward.angleTo(worldY);
     const angleDeg = THREE.MathUtils.radToDeg(angleRad);
 
-    const angularVelocityDeg = - state.property.pitchMinSpeed * (0.25 - angleDeg / 720 - 0.125 * state.pulsion / state.property.defaultPulsion);
+    const angularVelocityDeg = - state.property.pitchMinSpeed * (0.25 - angleDeg / 720);
     const angularVelocityRad = THREE.MathUtils.degToRad(angularVelocityDeg); // 转换为弧度
 
     // 创建一个绕世界 Y 轴的旋转四元数
