@@ -1,100 +1,169 @@
 import ws from 'ws';
 import crypto from 'crypto';
+import express from 'express';
 
 import { OnlineInputState, KeyNames } from '../src/Configs/KeyBound';
 import { InputSerializer } from '../src/Utils/InputSerializer';
+import { Room, GameStatus } from './room';
+import { receiveNextMessage } from './utils';
+
+const rooms: Map<string, Room> = new Map();
+const userRooms: Map<string, Room> = new Map();
+
+const app = express();
+
+app.use(express.json());
+
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    next();
+});
+
+app.get("/room_info", (req, res) => {
+    let room_info: any[] = [];
+    for (let [room_id, room] of rooms) {
+        room_info.push(room.getRoomInfo());
+    }
+    res.send(JSON.stringify(room_info));
+});
+
+app.post("/create_room", (req, res) => {
+    if (req.body.user_id === undefined) {
+        res.status(400).send('User ID not provided');
+        return;
+    }
+    const user_id = req.body.user_id;
+    if (userRooms.has(user_id)) {
+        res.status(400).send('User already in a room');
+        return;
+    }
+    let room_id = crypto.randomInt(10000000, 99999999).toString();
+    while (rooms.has(room_id)) {
+        room_id = crypto.randomInt(10000000, 99999999).toString();
+    }
+    const new_room = new Room(room_id);
+    new_room.addUser(user_id);
+    rooms.set(room_id, new_room);
+    userRooms.set(user_id, new_room);
+    res.send(JSON.stringify({ room_id: room_id }));
+});
+
+app.post("/join_room", (req, res) => {
+    if (req.body.user_id === undefined || req.body.room_id === undefined) {
+        res.status(400).send('User ID or Room ID not provided');
+        return;
+    }
+    const user_id = req.body.user_id;
+    const room_id = req.body.room_id;
+    if (userRooms.has(user_id)) {
+        res.status(400).send('User already in a room');
+        return;
+    }
+    if (!rooms.has(room_id)) {
+        res.status(400).send('Room not found');
+        return;
+    }
+    const room = rooms.get(room_id);
+    if (room === undefined) {
+        res.status(500).send('Internal server error');
+        return;
+    }
+    const ret = room.addUser(user_id);
+    if (!ret) {
+        res.status(400).send('Room is full');
+        return;
+    }
+    userRooms.set(user_id, room);
+    res.send(JSON.stringify({ room_id: room_id }));
+});
+
+app.post("/leave_room", (req, res) => {
+    if (req.body.user_id === undefined) {
+        res.status(400).send('User ID not provided');
+        return;
+    }
+    const user_id = req.body.user_id;
+    if (!userRooms.has(user_id)) {
+        res.status(400).send('User not in a room');
+        return;
+    }
+    const room = userRooms.get(user_id);
+    if (room === undefined) {
+        res.status(500).send('Internal server error');
+        return;
+    }
+    const ret = room.removeUser(user_id);
+    if (!ret) {
+        res.status(500).send('Internal server error');
+        return;
+    }
+    userRooms.delete(user_id);
+    if (room.userReady.size === 0) {
+        rooms.delete(room.room_id);
+    }
+    res.send('OK');
+});
+
+app.post("/room_status", (req, res) => {
+    if (req.body.user_id === undefined) {
+        res.status(400).send('User ID not provided');
+        return;
+    }
+    const user_id = req.body.user_id;
+    const room = userRooms.get(user_id);
+    if (room === undefined) {
+        res.status(400).send('User not in a room');
+        return;
+    }
+    res.send(JSON.stringify(room.getRoomInfoDetail()));
+});
+
+app.listen(17130, () => {
+    console.log('HTTP Server started on port 17130...');
+});
+
 
 const server = new ws.Server({ port: 17129 });
 
-console.log('Server started on port 17129...');
+console.log('Websocket Server started on port 17129...');
 
-const userConnections: Map<string, ws> = new Map();
-
-let gameStarted = false;
-
-const userInputs = Array(2);
-for (let i = 0; i < 2; i++) {
-    userInputs[i] = InputSerializer.createEmptyInputState();
-}
-
-const roomUsers = new Map();
-
-async function startGame() {
-    let cnt = 0;
-    for (let [user_id, connection] of userConnections) {
-        connection.send(JSON.stringify({ type: 'start', playerId: cnt }));
-        roomUsers.set(user_id, cnt);
-        cnt++;
-    }
-    gameStarted = true;
-
-    console.log('Game started');
-
-    let tick = 0;
-    let startTime = Date.now();
-    const oneTick = () => {
-        tick++;
-        const data = JSON.stringify({ type: 'input', tick: tick, input: userInputs.map((input) => InputSerializer.serialize(input)) });
-        for (let user_id of roomUsers.keys()) {
-            const connection = userConnections.get(user_id);
-            if (connection === undefined) {
-                console.log('Connection not found');
-                return;
-            }
-            connection.send(data);
-        }
-        for (let key of KeyNames) {
-            userInputs[0][key] = false;
-            userInputs[1][key] = false;
-        }
-
-        const nextTickTime = tick * 1000 / 60 - (Date.now() - startTime);
-        if (nextTickTime < 1) {
-            setTimeout(oneTick, 1);
-        } else {
-            setTimeout(oneTick, nextTickTime);
-        }
-    };
-
-    setImmediate(oneTick);
-}
-
-function handleMessages(user_id: string, data: ws.RawData) {
+function handleMessages(user_id: string, room: Room, data: ws.RawData) {
     let message = JSON.parse(data.toString());
 
-    switch (message.type) {
-        case 'input':
-            let playerId = roomUsers.get(user_id);
-            if (playerId === undefined) {
-                return;
-            }
-            const input = InputSerializer.deserialize(message.input);
-            for (let key of KeyNames) {
-                userInputs[playerId][key] ||= input[key];
-            }
-            break;
-    }
+    room.handleMessages(user_id, message);
 }
 
 server.on('connection', (socket) => {
     console.log('Client connected');
 
-    let user_id = crypto.randomUUID();
-    userConnections.set(user_id, socket);
+    receiveNextMessage(socket).then((data) => {
+        let first_message = JSON.parse(data.toString());
 
-    // socket.send(JSON.stringify({ type: 'uuid', data: user_id }));
+        let user_id = first_message.user_id;
+        if (user_id === undefined) {
+            socket.close();
+            return;
+        }
 
-    let ping_task = setInterval(() => { socket.ping(); }, 10000);
 
-    socket.on('message', (data) => handleMessages(user_id, data));
+        let room = userRooms.get(user_id);
+        if (room === undefined) {
+            socket.close();
+            return;
+        }
 
-    socket.on('close', () => {
-        clearInterval(ping_task);
-        userConnections.delete(user_id);
+        room.addConnection(user_id, socket);
+
+        // socket.send(JSON.stringify({ type: 'uuid', data: user_id }));
+        let ping_task = setInterval(() => { socket.ping(); }, 10000);
+
+        socket.on('message', (data) => handleMessages(user_id, room, data));
+
+        socket.on('close', () => {
+            clearInterval(ping_task);
+            room.removeConnection(user_id);
+        });
     });
-
-    if (!gameStarted && userConnections.size >= 2) {
-        startGame();
-    }
 });
-

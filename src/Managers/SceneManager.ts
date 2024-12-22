@@ -91,8 +91,8 @@ export class SceneManager {
         directionalLight.shadow.camera.updateProjectionMatrix();
 
         // Optional: Visualize the shadow camera frustum (useful for debugging)
-        const helper = new THREE.CameraHelper(directionalLight.shadow.camera);
-        this.scene.add(helper);
+        // const helper = new THREE.CameraHelper(directionalLight.shadow.camera);
+        // this.scene.add(helper);
 
         // Adjust shadow bias to prevent shadow artifacts
         directionalLight.shadow.bias = -0.00005;  // Typically a small negative value

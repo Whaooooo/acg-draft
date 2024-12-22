@@ -54,6 +54,7 @@ export class Game {
     private localPlayer?: Player;
     private socket?: WebSocket;
     private InputBuffer: any[] = [];
+    private userId: string = '';
 
     //###################################################
     //################### INIT ##########################
@@ -111,6 +112,8 @@ export class Game {
 
         // Wait for sound to be ready before starting the game
         this.waitForSoundToBeReady();
+
+        this.userId = crypto.randomUUID();
     }
 
     private createDebugScene(): void {
@@ -161,6 +164,11 @@ export class Game {
                 this.InputBuffer.push(message.input);
                 this.loopOnce();
                 break;
+            case "ready":
+                break;
+            case "start":
+                this.startOnlineGame(message);
+                break;
         }
     }
 
@@ -175,9 +183,23 @@ export class Game {
         }
     }
 
-    public async startOnline(): Promise<void> {
-        this.isOnline = true;
+    public async joinRoom(room_id: string): Promise<void> {
+        fetch(`http://localhost:17130/join_room`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                user_id: this.userId,
+                room_id: room_id
+            })
+        }).then(response => response.json()).then(data => {
+            console.log(data);
+            this.connectToRoom(room_id);
+        });
+    }
 
+    public async connectToRoom(room_id: string): Promise<void> {
         const socket = new WebSocket('ws://localhost:17129');
         this.socket = socket;
 
@@ -189,12 +211,11 @@ export class Game {
         socket.onmessage = (event) => {
             this.handleMessages(event.data);
         }
-        console.log("waiting for start...");
-        const message = JSON.parse((await receiveFirstMessage(socket)).data);
-        if (message.type !== 'start') {
-            console.log(message);
-            throw new Error('Invalid message received');
-        }
+        socket.send(JSON.stringify({ user_id: this.userId, room_id: room_id }));
+        socket.send(JSON.stringify({ type: 'ready', ready: true }));
+    }
+
+    public async startOnlineGame(message: any): Promise<void> {
         const playerId = message.playerId;
         const playerList = Array.from(this.playerMap.values());
         for (let i = 0; i < playerList.length; i++) {
@@ -214,6 +235,34 @@ export class Game {
         console.log('Start online game loop');
 
         setInterval(this.collectInput.bind(this), 1000 / 60);
+    }
+
+    public async startOnline(): Promise<void> {
+        this.isOnline = true;
+
+
+
+        fetch('http://localhost:17130/room_info', {
+            method: 'GET',
+        }).then(response => response.json()).then(data => {
+            console.log(data);
+            if (data.length > 0) {
+                this.joinRoom(data[0].room_id);
+            } else {
+                fetch('http://localhost:17130/create_room', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_id: this.userId
+                    })
+                }).then(response => response.json()).then(data => {
+                    console.log(data)
+                    this.connectToRoom(data.room_id);
+                });
+            }
+        });
     }
 
     public async ready() {
@@ -302,11 +351,14 @@ export class Game {
             while (this.InputBuffer.length > 3) {
                 const input = this.InputBuffer.shift();
                 const deltaTime = 1 / 60;
-                this.update(deltaTime, input)
+                this.update(deltaTime, input);
             }
+            const delta = performance.now() - this.lastFrameTime;
+            if (delta < 100) return;
+            if (delta < 150 && this.InputBuffer.length < 2) return;
             const input = this.InputBuffer.shift();
             const deltaTime = 1 / 60;
-            this.update(deltaTime, input)
+            this.update(deltaTime, input);
         } else {
             const deltaTime = this.clock.getDelta();
             this.update(deltaTime);
@@ -346,6 +398,8 @@ export class Game {
         this.hudManager.update(deltaTime);
 
         this.updateFPS();
+
+        this.curTick++;
     }
 
     public getTime(): number {

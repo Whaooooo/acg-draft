@@ -9,7 +9,6 @@ Welcome to the **3D Flying Combat Game** project! This guide will help you set u
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Building the Project](#building-the-project)
-- [Running the Game](#running-the-game)
 - [Code References](#code-references)
 - [Troubleshooting](#troubleshooting)
 - [License](#license)

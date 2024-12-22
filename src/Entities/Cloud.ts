@@ -371,7 +371,7 @@ class Cloud extends THREE.Group {
         const cloudShadow = new THREE.Mesh(cloudShadowGeometry, shadowMaterial);
         cloudShadow.position.set(0, height - boxBound.y * 0.45 - 1, 0);
         cloudShadow.castShadow = true;
-        this.add(cloudShadow);
+        // this.add(cloudShadow);
 
 
 
