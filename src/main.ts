@@ -38,28 +38,66 @@ async function onStartButtonClick() {
     document.removeEventListener('touchstart', unmuteAudio);
 }
 
+async function createRoom() {
+    const game = await getGameInstance();
+    let data = await fetch('http://localhost:17130/create_room', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            user_id: game.userId
+        })
+    }).then(response => response.json());
+    let room_id = data.room_id;
+    game.connectToRoom(room_id);
+}
+
+async function joinRoom(roomId: string) {
+    const game = await getGameInstance();
+    let data = await fetch(`http://localhost:17130/join_room`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            user_id: game.userId,
+            room_id: roomId
+        })
+    }).then(response => response.json())
+    let room_id = data.room_id;
+    game.connectToRoom(room_id);
+}
+
+async function backToMainMenu() {
+    const mainMenu = document.getElementById('main-menu');
+    if (mainMenu) {
+        mainMenu.style.display = 'flex';
+    }
+    const roomList = document.getElementById('room-selection');
+    if (roomList) {
+        roomList.style.display = 'none';
+    }
+}
+
 async function onStartOnlineButtonClick() {
     // Hide the main menu
     const mainMenu = document.getElementById('main-menu');
     if (mainMenu) {
         mainMenu.style.display = 'none';
     }
+    const roomList = document.getElementById('room-selection');
+    if (roomList) {
+        roomList.style.display = 'flex';
+    }
 
-    // Hide the cursor
-    document.body.style.cursor = 'none';
+    // // Stop background music if needed
+    // stopBackgroundMusic();
 
-    // Initialize the game
-    const game = await getGameInstance();
-
-    game.startOnline();
-
-    // Stop background music if needed
-    stopBackgroundMusic();
-
-    // Remove global event listeners to prevent further unmuting
-    document.removeEventListener('click', unmuteAudio);
-    document.removeEventListener('keydown', unmuteAudio);
-    document.removeEventListener('touchstart', unmuteAudio);
+    // // Remove global event listeners to prevent further unmuting
+    // document.removeEventListener('click', unmuteAudio);
+    // document.removeEventListener('keydown', unmuteAudio);
+    // document.removeEventListener('touchstart', unmuteAudio);
 }
 
 function onMainMenuButtonClick(): void {
@@ -84,13 +122,13 @@ function onMainMenuButtonClick(): void {
     // Ensure cursor is visible
     document.body.style.cursor = 'default';
 
-    // Play background music again
-    playBackgroundMusic();
+    // // Play background music again
+    // playBackgroundMusic();
 
-    // Re-add global event listeners to unmute audio
-    document.addEventListener('click', unmuteAudio, { once: true });
-    document.addEventListener('keydown', unmuteAudio, { once: true });
-    document.addEventListener('touchstart', unmuteAudio, { once: true });
+    // // Re-add global event listeners to unmute audio
+    // document.addEventListener('click', unmuteAudio, { once: true });
+    // document.addEventListener('keydown', unmuteAudio, { once: true });
+    // document.addEventListener('touchstart', unmuteAudio, { once: true });
 }
 
 let backgroundMusic: HTMLAudioElement | null = null;
@@ -129,6 +167,26 @@ function init(): void {
         });
     }
 
+    const createRoomButton = document.getElementById('create-room-button');
+    const joinRoomButton = document.getElementById('join-room-button');
+    const backToMainMenuButton = document.getElementById('back-to-main-menu-button');
+    if (createRoomButton) {
+        createRoomButton.addEventListener('click', () => {
+            createRoom();
+        });
+    }
+    if (joinRoomButton) {
+        joinRoomButton.addEventListener('click', () => {
+            let roomId = (document.getElementById('room-id-input') as HTMLInputElement).value;
+            joinRoom(roomId);
+        });
+    }
+    if (backToMainMenuButton) {
+        backToMainMenuButton.addEventListener('click', () => {
+            backToMainMenu();
+        });
+    }
+
     // Play background music in muted state
     playBackgroundMusic();
 
@@ -141,7 +199,8 @@ function init(): void {
     const mainMenuButton = document.getElementById('main-menu-button');
     if (mainMenuButton) {
         mainMenuButton.addEventListener('click', () => {
-            onMainMenuButtonClick();
+            // onMainMenuButtonClick();
+            window.location.href = "index.html";
         });
     }
 }

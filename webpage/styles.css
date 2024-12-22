@@ -1,10 +1,12 @@
 /* webpage/styles.css */
 
 /* Global Styles */
-body, html {
+body,
+html {
     margin: 0;
     padding: 0;
-    overflow: hidden; /* Prevent scrolling */
+    overflow: hidden;
+    /* Prevent scrolling */
     font-family: Arial, sans-serif;
 }
 
@@ -74,13 +76,211 @@ body, html {
     left: 0;
 }
 
+#room-selection {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: url('../assets/webpage/base-menu-window.png') no-repeat center center fixed;
+    background-size: cover;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 16;
+}
+
+#room-selection h1 {
+    color: #fff;
+    font-size: 48px;
+    margin-bottom: 30px;
+    text-shadow: 2px 2px 5px black;
+}
+
+/* Style for Room ID Input */
+#room-selection input {
+    padding: 10px;
+    font-size: 18px;
+    margin: 10px;
+    width: 300px;
+    border: 2px solid #007BFF;
+    border-radius: 5px;
+    color: #333;
+}
+
+/* Label for Input */
+#room-selection label {
+    font-size: 20px;
+    color: #fff;
+    margin-right: 10px;
+}
+
+/* Container for buttons */
+#room-selection-buttons {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Style for Buttons */
+#room-selection-buttons button {
+    padding: 15px 30px;
+    font-size: 20px;
+    margin: 10px;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    background-color: #007BFF;
+    color: white;
+    width: 250px;
+    /* Adjust button width */
+}
+
+/* Button Hover Effect */
+#room-selection-buttons button:hover {
+    background-color: #0056b3;
+}
+
+/* Back Button */
+#back-to-main-menu-button {
+    background-color: #dc3545;
+    /* Red color for the back button */
+}
+
+#back-to-main-menu-button:hover {
+    background-color: #c82333;
+    /* Darker red */
+}
+
+#room-lobby {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: url('../assets/webpage/base-menu-window.png') no-repeat center center fixed;
+    background-size: cover;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 20;
+}
+
+#room-lobby h1 {
+    color: #fff;
+    font-size: 48px;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 5px black;
+}
+
+#room-lobby h2 {
+    color: #fff;
+    font-size: 32px;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 5px black;
+}
+
+/* Player Status Styles */
+.players-status {
+    background-color: rgba(0, 0, 0, 0.5);
+    /* Semi-transparent background */
+    display: grid;
+    row-gap: 10px;
+    color: #fff;
+    padding: 15px;
+    border-radius: 10px;
+    margin: 10px 0;
+    width: 80%;
+    max-width: 320px;
+    text-align: center;
+}
+
+.players-status p {
+    font-size: 20px;
+    margin: 5px 0;
+}
+
+.player-status {
+    display: flex;
+    justify-content: space-around;
+}
+
+#player-1-name,
+#player-2-name {
+    width: 50%;
+}
+
+/* Ready Status Color */
+#player-1-ready,
+#player-2-ready {
+    font-weight: bold;
+    color: #FF6347;
+    /* Default color for 'Not Ready' */
+    width: 50%;
+}
+
+#player-1-ready.ready,
+#player-2-ready.ready {
+    color: #32CD32;
+    /* Green color for 'Ready' */
+}
+
+/* Room Actions Styles */
+#room-actions {
+    margin-top: 30px;
+}
+
+/* Leave Button Styles */
+#leave-room-button {
+    padding: 15px 30px;
+    font-size: 24px;
+    background-color: #dc3545;
+    /* Red background for 'Leave' */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#leave-room-button:hover {
+    background-color: #c82333;
+}
+
+#ready-toggle-button {
+    padding: 15px 30px;
+    font-size: 24px;
+    background-color: #28a745;
+    /* Green background for Ready */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+/* Button Hover Effect */
+#ready-toggle-button:hover {
+    background-color: #218838;
+    /* Darker green when hovered */
+}
+
+/* Change Ready Button Text Based on State */
+#ready-toggle-button.ready {
+    background-color: #FF6347;
+    /* Red color when not ready */
+}
+
+#ready-toggle-button.ready:hover {
+    background-color: #c23e2a;
+    /* Darker red when hovered */
+}
+
 /* HUD 容器 */
 .hud-container {
     position: absolute;
     overflow: hidden;
     width: 700px;
     height: 500px;
-    pointer-events: none; /* Make it non-interactive */
+    pointer-events: none;
+    /* Make it non-interactive */
 }
 
 /* 血量条容器 */
@@ -89,8 +289,10 @@ body, html {
     bottom: 0;
     left: 0;
     width: 100%;
-    height: 40px; /* 根据需要调整高度 */
-    background-color: #f00; /* 红色背景 */
+    height: 40px;
+    /* 根据需要调整高度 */
+    background-color: #f00;
+    /* 红色背景 */
     border: 2px solid #000;
     display: flex;
     align-items: center;
@@ -103,7 +305,8 @@ body, html {
     left: 0;
     bottom: 0;
     height: 100%;
-    background-color: #0f0; /* 绿色 */
+    background-color: #0f0;
+    /* 绿色 */
 }
 
 /* 血量文本 */
@@ -120,16 +323,19 @@ body, html {
     top: 0;
     left: 0;
     width: 100%;
-    bottom: 40px; /* 留出给血量条的空间 */
+    bottom: 40px;
+    /* 留出给血量条的空间 */
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 10px; /* 向上调整，与血量条拉开距离 */
+    padding-bottom: 10px;
+    /* 向上调整，与血量条拉开距离 */
 }
 
 /* 左侧装填状态容器 */
 .reload-container {
-    width: 40%; /* 左右等分 */
+    width: 40%;
+    /* 左右等分 */
     height: 100%;
     display: flex;
     justify-content: space-around;
@@ -138,14 +344,17 @@ body, html {
 
 /* 装填状态竖条 */
 .reload-bar {
-    width: 3%; /* 变窄 */
+    width: 3%;
+    /* 变窄 */
     background-color: gray;
-    height: 90%; /* 略小于容器高度 */
+    height: 90%;
+    /* 略小于容器高度 */
 }
 
 /* 右侧武器列表容器 */
 .weapon-list-container {
-    width: 55%; /* 左右等分 */
+    width: 55%;
+    /* 左右等分 */
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -155,7 +364,8 @@ body, html {
 /* 武器条目 */
 .weapon-entry {
     width: 100%;
-    height: 22%; /* 高度等分为 4 份，留出间距 */
+    height: 22%;
+    /* 高度等分为 4 份，留出间距 */
     display: flex;
     align-items: center;
     position: relative;
@@ -166,16 +376,19 @@ body, html {
     position: absolute;
     left: 5px;
     font-family: 'Press Start 2P', cursive;
-    font-size: 20px; /* 放大字体 */
+    font-size: 20px;
+    /* 放大字体 */
     color: #00ff00;
 }
 
 /* 剩余数量 */
 .weapon-count {
     position: absolute;
-    left: 110px; /* 根据需要调整位置 */
+    left: 110px;
+    /* 根据需要调整位置 */
     font-family: 'Press Start 2P', cursive;
-    font-size: 20px; /* 放大字体 */
+    font-size: 20px;
+    /* 放大字体 */
     color: #00ff00;
 }
 
@@ -185,13 +398,16 @@ body, html {
     right: 5px;
     display: flex;
     align-items: flex-end;
-    height: 80%; /* 略小于条目高度 */
-    width: 20%; /* 根据需要调整宽度 */
+    height: 80%;
+    /* 略小于条目高度 */
+    width: 20%;
+    /* 根据需要调整宽度 */
 }
 
 /* 迷你装填竖条 */
 .mini-reload-bar {
-    width: 20%; /* 占容器宽度的 20% */
+    width: 20%;
+    /* 占容器宽度的 20% */
     background-color: gray;
     height: 100%;
     margin-right: 2px;
@@ -207,34 +423,42 @@ body, html {
     height: 50px;
     border: 3px solid;
     box-sizing: border-box;
-    color: white; /* Default font color */
+    color: white;
+    /* Default font color */
     font-family: 'Press Start 2P', cursive;
     font-size: 20px;
-    pointer-events: none; /* Allow clicks to pass through */
-    z-index: 15; /* Ensure it's above other HUD elements */
+    pointer-events: none;
+    /* Allow clicks to pass through */
+    z-index: 15;
+    /* Ensure it's above other HUD elements */
 }
 
 .target-indicator .indicator-name {
     position: absolute;
-    top: 0; /* Position above the square */
+    top: 0;
+    /* Position above the square */
     left: 55px;
-    background-color: rgba(0, 0, 0, 0.0); /* Optional: background for better readability */
+    background-color: rgba(0, 0, 0, 0.0);
+    /* Optional: background for better readability */
     padding: 2px 4px;
     border-radius: 3px;
 }
 
 .target-indicator .indicator-distance {
     position: absolute;
-    bottom: 0; /* Position below the square */
+    bottom: 0;
+    /* Position below the square */
     left: 55px;
-    background-color: rgba(0, 0, 0, 0.0); /* Optional: background for better readability */
+    background-color: rgba(0, 0, 0, 0.0);
+    /* Optional: background for better readability */
     padding: 2px 4px;
     border-radius: 3px;
 }
 
 .highest-priority-indicator {
     position: absolute;
-    top: 3px; /* Centered within the parent square */
+    top: 3px;
+    /* Centered within the parent square */
     left: 3px;
     width: 38px;
     height: 38px;
@@ -250,8 +474,10 @@ body, html {
     height: 100%;
     top: 0;
     left: 0;
-    pointer-events: none; /* Ensure clicks pass through */
-    z-index: 15; /* Adjust as needed */
+    pointer-events: none;
+    /* Ensure clicks pass through */
+    z-index: 15;
+    /* Adjust as needed */
 }
 
 /* Adjusted SVG Overlay Styles */
@@ -262,13 +488,15 @@ body, html {
     top: 0;
     left: 0;
     pointer-events: none;
-    z-index: 16; /* Above HUD overlay */
+    z-index: 16;
+    /* Above HUD overlay */
 }
 
 .missile-indicator {
     position: absolute;
     border: 2px solid;
-    border-radius: 50%; /* Make it a circle */
+    border-radius: 50%;
+    /* Make it a circle */
     box-sizing: border-box;
     pointer-events: none;
     z-index: 15;
@@ -281,7 +509,8 @@ body, html {
     height: 100%;
     background: url('../assets/webpage/mission_fail.png') no-repeat center center fixed;
     background-size: cover;
-    display: none; /* Initially hidden */
+    display: none;
+    /* Initially hidden */
     flex-direction: column;
     justify-content: center;
     align-items: center;
@@ -317,9 +546,12 @@ body, html {
     height: 0;
     border-left: 20px solid transparent;
     border-right: 20px solid transparent;
-    border-bottom: 40px solid red; /* Red color for the triangle */
-    transform: translate(-50%, -100%) rotate(0deg); /* Center horizontally and position above the point */
-    pointer-events: none; /* Allow clicks to pass through */
-    z-index: 17; /* Above other indicators */
+    border-bottom: 40px solid red;
+    /* Red color for the triangle */
+    transform: translate(-50%, -100%) rotate(0deg);
+    /* Center horizontally and position above the point */
+    pointer-events: none;
+    /* Allow clicks to pass through */
+    z-index: 17;
+    /* Above other indicators */
 }
-

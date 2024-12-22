@@ -54,7 +54,8 @@ export class Game {
     private localPlayer?: Player;
     private socket?: WebSocket;
     private InputBuffer: any[] = [];
-    private userId: string = '';
+    private userStatus = false;
+    public userId: string = '';
 
     //###################################################
     //################### INIT ##########################
@@ -113,7 +114,36 @@ export class Game {
         // Wait for sound to be ready before starting the game
         this.waitForSoundToBeReady();
 
+        // this.userId = localStorage.getItem('user_id') || crypto.randomUUID();
+        // localStorage.setItem('user_id', this.userId);
         this.userId = crypto.randomUUID();
+        this.initRoomButtons();
+    }
+
+    private initRoomButtons() {
+        const readyButton = document.getElementById('ready-toggle-button');
+        const leaveButton = document.getElementById('leave-room-button');
+
+        if (readyButton) {
+            readyButton.onclick = () => {
+                this.userStatus = !this.userStatus;
+                this.socket?.send(JSON.stringify({ type: 'ready', ready: this.userStatus }));
+            }
+        }
+        if (leaveButton) {
+            leaveButton.onclick = () => {
+                this.socket?.send(JSON.stringify({ type: 'leave' }));
+                this.socket?.close();
+                const roomList = document.getElementById('room-selection');
+                if (roomList) {
+                    roomList.style.display = 'flex';
+                }
+                const roomLobby = document.getElementById('room-lobby');
+                if (roomLobby) {
+                    roomLobby.style.display = 'none';
+                }
+            }
+        }
     }
 
     private createDebugScene(): void {
@@ -153,6 +183,8 @@ export class Game {
     public async start(): Promise<void> {
         this.isOnline = false;
 
+        this.inputManager.gameStarted = true;
+
         // Initialize sounds for players and NPCs
         this.playerMap.forEach(player => player.initializeSound());
         this.npcPlaneMap.forEach(npc => npc.initializeSound());
@@ -168,10 +200,39 @@ export class Game {
                 this.InputBuffer.push(message.input);
                 break;
             case "ready":
+                this.handleReadyMessage(message.ready_status);
                 break;
             case "start":
                 this.startOnlineGame(message);
                 break;
+            case 'end':
+                this.end();
+                console.log(message.reason);
+                break;
+        }
+    }
+
+    private handleReadyMessage(ready_status: any[]) {
+        for (let i = 0; i < 2; i++) {
+            const player_status = document.getElementById(`player-${i + 1}-status`);
+            if (!player_status) continue;
+            (player_status.children[1] as HTMLSpanElement).classList.remove('ready');
+            if (i < ready_status.length) {
+                const user_id = ready_status[i][0];
+                const is_ready = ready_status[i][1];
+                if (user_id === this.userId) {
+                    (player_status.children[0] as HTMLSpanElement).innerText = "Player " + (i + 1) + " (You)";
+                } else {
+                    (player_status.children[0] as HTMLSpanElement).innerText = "Player " + (i + 1);
+                }
+                (player_status.children[1] as HTMLSpanElement).innerText = is_ready ? 'Ready' : 'Not Ready';
+                if (is_ready) {
+                    (player_status.children[1] as HTMLSpanElement).classList.add('ready');
+                }
+            } else {
+                (player_status.children[0] as HTMLSpanElement).innerText = "Player " + (i + 1);
+                (player_status.children[1] as HTMLSpanElement).innerText = 'Waiting...';
+            }
         }
     }
 
@@ -184,22 +245,6 @@ export class Game {
             }
             this.socket?.send(JSON.stringify(message));
         }
-    }
-
-    public async joinRoom(room_id: string): Promise<void> {
-        fetch(`http://localhost:17130/join_room`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                user_id: this.userId,
-                room_id: room_id
-            })
-        }).then(response => response.json()).then(data => {
-            console.log(data);
-            this.connectToRoom(room_id);
-        });
     }
 
     public async connectToRoom(room_id: string): Promise<void> {
@@ -215,10 +260,31 @@ export class Game {
             this.handleMessages(event.data);
         }
         socket.send(JSON.stringify({ user_id: this.userId, room_id: room_id }));
-        socket.send(JSON.stringify({ type: 'ready', ready: true }));
+        socket.send(JSON.stringify({ type: 'ready', ready: false }));
+
+        console.log('Connected to room', room_id);
+        const roomIdSpan = document.getElementById('room-id');
+        if (roomIdSpan) {
+            roomIdSpan.innerText = room_id;
+        }
+
+        const roomList = document.getElementById('room-selection');
+        if (roomList) {
+            roomList.style.display = 'none';
+        }
+        const roomLobby = document.getElementById('room-lobby');
+        if (roomLobby) {
+            roomLobby.style.display = 'flex';
+        }
     }
 
     public async startOnlineGame(message: any): Promise<void> {
+        const roomLobby = document.getElementById('room-lobby');
+        if (roomLobby) {
+            roomLobby.style.display = 'none';
+        }
+        document.body.style.cursor = 'none';
+
         const playerId = message.playerId;
         const playerList = Array.from(this.playerMap.values());
         for (let i = 0; i < playerList.length; i++) {
@@ -242,11 +308,27 @@ export class Game {
         this.loop();
     }
 
+    public async joinRoom(room_id: string): Promise<void> {
+        // deprecated!!!
+        fetch(`http://localhost:17130/join_room`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                user_id: this.userId,
+                room_id: room_id
+            })
+        }).then(response => response.json()).then(data => {
+            console.log(data);
+            this.connectToRoom(room_id);
+        });
+    }
+
     public async startOnline(): Promise<void> {
+        // only for debug purpose
+        // deprecated!!!
         this.isOnline = true;
-
-
-
         fetch('http://localhost:17130/room_info', {
             method: 'GET',
         }).then(response => response.json()).then(data => {
