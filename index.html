@@ -26,6 +26,42 @@
     </div>
 </div>
 
+<div id="room-selection" style="display: none;">
+    
+    <h1>Room Selection</h1>
+    
+    <input type="text" id="room-id-input" placeholder="Enter Room ID">
+    <div id="room-selection-buttons">
+        <button id="join-room-button">Join Room</button>
+        <button id="create-room-button">Create Room</button>
+        <button id="back-to-main-menu-button">Back</button>
+    </div>
+    
+</div>
+
+<div id="room-lobby" style="display: none;">
+    <h1>Room Lobby</h1>
+
+    <div class="players-status">
+        <!-- Player 1 Status -->
+        <div class="player-status" id="player-1-status">
+            <span id="player-1-name">Player 1 (You)</span>
+            <span id="player-1-ready">Not Ready</span>
+        </div>
+
+        <!-- Player 2 Status -->
+        <div class="player-status" id="player-2-status">
+            <span id="player-2-name">Player 2</span>
+            <span id="player-2-ready">Not Ready</span>
+        </div>
+    </div>
+
+    <div id="room-actions">
+        <button id="ready-toggle-button">Mark as Ready</button>
+        <button id="leave-room-button">Leave Room</button>
+    </div>
+</div>
+
 <div id="game-container">
     <!-- The game will be injected here by your scripts -->
 </div>

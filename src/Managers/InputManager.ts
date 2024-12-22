@@ -139,6 +139,8 @@ export class InputManager {
     private boundOnPointerLockChange: (event: Event) => void;
     private boundContextMenuHandler: (event: MouseEvent) => void;
 
+    public gameStarted: boolean = false;
+
     constructor() {
         // Bind event handlers
         this.boundPreventBrowserShortcuts = this.preventBrowserShortcuts.bind(this);
@@ -233,7 +235,7 @@ export class InputManager {
 
         // Request pointer lock
         const element = document.body;
-        if (!this.pointerLocked) {
+        if (!this.pointerLocked && this.gameStarted) {
             element.requestPointerLock();
         }
     }

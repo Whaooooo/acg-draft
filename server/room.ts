@@ -100,6 +100,7 @@ class Room {
             room_id: this.room_id,
             user_count: this.userConnections.size,
             user_num: this.UserNum,
+            status: this.gameStatus,
         };
     }
 

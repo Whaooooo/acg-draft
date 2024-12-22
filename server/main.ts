@@ -164,6 +164,8 @@ server.on('connection', (socket) => {
         socket.on('close', () => {
             clearInterval(ping_task);
             room.removeConnection(user_id);
+            userRooms.delete(user_id);
+            console.log('Client disconnected');
         });
     });
 });
