@@ -14,7 +14,7 @@ import { SceneManager } from './Managers/SceneManager';
 import { TargetManager } from './Managers/TargetManager';
 import { HUDManager } from "./Managers/HUDManager";
 import { MovableEntity } from "./Core/MovableEntity";
-import { nextFrame, receiveFirstMessage } from './Utils/Wait';
+import {nextFrame, receiveFirstMessage, sleep} from './Utils/Wait';
 import { InputSerializer } from './Utils/InputSerializer';
 
 export class Game {
@@ -119,15 +119,16 @@ export class Game {
     private createDebugScene(): void {
         // Create a player
         console.log('Request creating player');
-        const player1 = new Player(this, 'f22', new THREE.Vector3(0, 2000, 0), undefined, undefined, 1, 0, true);
-        const player2 = new Player(this, 'f22', new THREE.Vector3(0, 1800, -100), undefined, undefined, 0, 1, false);
+        const player1 = new Player(this, 'f22', new THREE.Vector3(0, 4000, 0), undefined, undefined, 1, 0, true);
+        // const player2 = new Player(this, 'f22', new THREE.Vector3(200, 3000, 0), undefined, undefined, 1, 0, true);
 
         // Optionally, add some NPCs for testing
         console.log('Request creating npc');
-        const npc1 = new NPCPlane(this, 'plane', new THREE.Vector3(1000, 3000, -1000));
-        const npc2 = new NPCPlane(this, 'plane', new THREE.Vector3(1000, 3000, 1000));
-        const npc3 = new NPCPlane(this, 'plane', new THREE.Vector3(-1000, 3000, -1000));
-        const npc4 = new NPCPlane(this, 'plane', new THREE.Vector3(-1000, 3000, 1000));
+        const npc1 = new NPCPlane(this, 'f22', new THREE.Vector3(0, 4000, -3000));
+        // const npc1 = new NPCPlane(this, 'plane', new THREE.Vector3(1000, 3000, -1000));
+        // const npc2 = new NPCPlane(this, 'plane', new THREE.Vector3(1000, 3000, 1000));
+        // const npc3 = new NPCPlane(this, 'plane', new THREE.Vector3(-1000, 3000, -1000));
+        // const npc4 = new NPCPlane(this, 'plane', new THREE.Vector3(-1000, 3000, 1000));
     }
 
     public loadGame(): void {
@@ -347,7 +348,7 @@ export class Game {
         if (!this.isRunning) return; // Stop the loop if the game is over
 
         if (this.isOnline) {
-            if (this.InputBuffer.length == 0) return;
+            if (this.InputBuffer.length === 0) return;
             while (this.InputBuffer.length > 3) {
                 const input = this.InputBuffer.shift();
                 const deltaTime = 1 / 60;

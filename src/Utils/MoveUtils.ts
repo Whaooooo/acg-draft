@@ -2,6 +2,7 @@
 
 import * as THREE from 'three';
 import { MovableEntity } from "../Core/MovableEntity";
+import {PlaneProperty} from "../Configs/EntityProperty";
 
 /**
  * Helper function to update control variables like pulsion and rotational speeds.
@@ -60,9 +61,7 @@ export interface PlaneState {
     pitchSpeed: number; // Degrees per second
     rollSpeed: number;  // Degrees per second
     pulsion: number;    // Acceleration in m/s²
-    xSpeedDecrease: number;
-    ySpeedDecrease: number;
-    zSpeedDecrease: number;
+    property: PlaneProperty;
 }
 
 /**
@@ -84,7 +83,7 @@ export function updatePlaneState(
     const omega = new THREE.Vector3(pitchRate, yawRate, rollRate);
 
     // Total rotation over deltaTime
-    const deltaOmega = omega.clone().multiplyScalar(deltaTime);
+    const deltaOmega = omega.clone().multiplyScalar(deltaTime / (1 + state.velocity.length() / (state.property.maxPulsion / (1 - state.property.zSpeedDecrease))));
 
     const angle = deltaOmega.length();
 
@@ -96,42 +95,56 @@ export function updatePlaneState(
         newQuaternion.multiply(deltaQuat);
     }
 
-    // Decompose velocity into the plane's local coordinate system
-    const inverseQuaternion = state.quaternion.clone().invert();
-    const localVelocity = state.velocity.clone().applyQuaternion(inverseQuaternion);
+    // 1. 计算飞机的角速度
+    // 计算飞机的前方方向（-Z 轴）在世界坐标系中的方向
+    const planeForward = new THREE.Vector3(0, 0, -1).applyQuaternion(state.quaternion).normalize();
+    const worldY = new THREE.Vector3(0, 1, 0).normalize();
 
-    // Compute speed decrease factors over deltaTime
-    const xDecreaseFactor = Math.pow(state.xSpeedDecrease, deltaTime);
-    const yDecreaseFactor = Math.pow(state.ySpeedDecrease, deltaTime);
-    const zDecreaseFactor = Math.pow(state.zSpeedDecrease, deltaTime);
+    // 计算飞机前方与世界 Y 轴的夹角（以度为单位）
+    const angleRad = planeForward.angleTo(worldY);
+    const angleDeg = THREE.MathUtils.radToDeg(angleRad);
 
-    // Store local velocity before speed decrease
-    const localVelocityBefore = localVelocity.clone();
+    const angularVelocityDeg = - state.property.pitchMinSpeed * (0.25 - angleDeg / 720 - 0.125 * state.pulsion / state.property.defaultPulsion);
+    const angularVelocityRad = THREE.MathUtils.degToRad(angularVelocityDeg); // 转换为弧度
 
-    // Apply speed decrease
-    localVelocity.x *= xDecreaseFactor;
-    localVelocity.y *= yDecreaseFactor;
-    localVelocity.z *= zDecreaseFactor;
+    // 创建一个绕世界 Y 轴的旋转四元数
+    const deltaQuat = new THREE.Quaternion();
+    deltaQuat.setFromAxisAngle(planeForward.clone().cross(new THREE.Vector3(0, -1, 0)), angularVelocityRad * deltaTime);
 
-    // Compute lost speed in local coordinates
-    const lostLocalSpeed = localVelocityBefore.clone().sub(localVelocity);
+    // 更新四元数
+    newQuaternion = deltaQuat.multiply(newQuaternion);
 
-    // Apply acceleration due to pulsion along the forward axis (-Z)
-    // Assuming pulsion is acceleration in m/s²
-    const deltaV = -state.pulsion * deltaTime; // Negative because forward is -Z
-    localVelocity.z += deltaV;
+    // 2. 应用重力加速度（朝下，世界坐标系 Y 轴负方向）
+    const gravity = new THREE.Vector3(0, -9.8 * deltaTime, 0);
+    let newVelocity = state.velocity.clone().add(gravity);
 
-    // Convert local velocity back to world coordinates using the new quaternion
-    const newVelocity = localVelocity.applyQuaternion(state.quaternion.clone());
+    // 3. 将速度转换到飞机的本地坐标系
+    const inverseQuaternion = newQuaternion.clone().invert();
+    let localVelocity = newVelocity.clone().applyQuaternion(inverseQuaternion);
 
-    // Convert lostLocalSpeed to world coordinates
-    const lostSpeed = lostLocalSpeed.applyQuaternion(state.quaternion.clone());
+    // 4. 应用速度衰减
+    localVelocity.x *= Math.pow(state.property.xSpeedDecrease, deltaTime);
+    localVelocity.y *= Math.pow(state.property.ySpeedDecrease, deltaTime);
+    localVelocity.z *= Math.pow(state.property.zSpeedDecrease, deltaTime);
 
-    // Return the updated quaternion, velocity, and lost speed
+    // 5. 应用脉冲加速度（沿本地 -Z 方向）
+    localVelocity.z += -state.pulsion * deltaTime;
+
+
+    const a_y = 9.8 * Math.max(0, Math.min(state.pulsion / state.property.defaultPulsion, 2));
+    localVelocity.y += a_y * deltaTime;
+
+    // 7. 将本地速度转换回世界坐标系
+    newVelocity = localVelocity.applyQuaternion(newQuaternion);
+
+    // 8. 计算因速度衰减而损失的速度
+    const lostSpeed = state.velocity.clone().sub(newVelocity);
+
+    // 9. 返回更新后的状态
     return {
         quaternion: newQuaternion,
         velocity: newVelocity,
-        lostSpeed: lostSpeed,
+        lostSpeed: lostSpeed
     };
 }
 

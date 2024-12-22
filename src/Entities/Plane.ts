@@ -24,8 +24,6 @@ export class Plane extends MovableEntity {
     public currentHP: number = 0;
     public property: PlaneProperty;
 
-    public weapons: Weapon[];
-    public selectedWeaponIndex: number = 0;
 
     // Real-time control variables
     public pulsion: number;
@@ -159,9 +157,7 @@ export class Plane extends MovableEntity {
             pitchSpeed: this.pitchSpeed,
             rollSpeed: this.rollSpeed,
             pulsion: this.pulsion,
-            xSpeedDecrease: this.property.xSpeedDecrease,
-            ySpeedDecrease: this.property.ySpeedDecrease,
-            zSpeedDecrease: this.property.zSpeedDecrease,
+            property: this.property,
         };
 
         // Update plane state
@@ -239,12 +235,7 @@ export class Plane extends MovableEntity {
     }
 
     public fireWeapon(): void {
-        const weapon = this.weapons[this.selectedWeaponIndex];
-        if (!weapon) {
-            console.warn(`No weapon selected or weapon not found for entity ${this.entityId}.`);
-            return;
-        }
-        weapon.fire();
+        this.weapon.fire();
     }
 
     public dispose(): void {

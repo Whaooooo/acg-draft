@@ -74,7 +74,7 @@ export function createSoundProperty(props: _SoundProperty): SoundProperty {
         volume: 1,
         loop: false,
         displacement: new THREE.Vector3(0, 0, 0),
-        refDistance: 1,
+        refDistance: 20,
         maxDistance: 20,
         rolloffFactor: 1,
         autoplay: true,
@@ -88,8 +88,8 @@ export function createSoundProperty(props: _SoundProperty): SoundProperty {
 export const F14EngineSound: SoundProperty = createSoundProperty({
     name: 'f14engine',
     loop: true,
-    refDistance: 2,
-    maxDistance: 70,
+    refDistance: 40,
+    maxDistance: 300,
     displacement: new THREE.Vector3(0, 0, 4),
 });
 
@@ -97,21 +97,23 @@ export const F14AfterburnerSound: SoundProperty = createSoundProperty({
     name: 'f14afterburner',
     loop: true,
     volume: 0,
-    refDistance: 3,
-    maxDistance: 100,
+    refDistance: 60,
+    maxDistance: 500,
     displacement: new THREE.Vector3(0, 0, 4),
 });
 
 export const WindSound: SoundProperty = createSoundProperty({
     name: 'wind',
     loop: true,
+    refDistance: 40,
+    maxDistance: 40,
     targetAll: false,
 });
 
 export const ExplosionSound: SoundProperty = createSoundProperty({
     name: 'explosion',
-    refDistance: 100,
-    maxDistance: 500,
+    refDistance: 200,
+    maxDistance: 4000,
 });
 
 export const Fox2Sound: SoundProperty = createSoundProperty({
@@ -136,13 +138,14 @@ export const MissileShotSound: SoundProperty = createSoundProperty({
     name: 'missileshot',
     loop: true,
     refDistance: 5,
-    maxDistance: 50,
+    maxDistance: 100,
     targetAll: true,
 });
 
 export const PropellerSound: SoundProperty = createSoundProperty({
     name: 'propeller',
     loop: true,
+    maxDistance: 100,
     targetAll: true,
     displacement: new THREE.Vector3(0, 0, -1),
 });
@@ -150,8 +153,7 @@ export const PropellerSound: SoundProperty = createSoundProperty({
 export const Exs2EngineSound: SoundProperty = createSoundProperty({
     name: 'exs2engine',
     volume: 0,
-    refDistance: 1,
-    maxDistance: 50,
+    maxDistance: 200,
     loop: true,
     targetAll: true,
     displacement: new THREE.Vector3(0, 0, -1),

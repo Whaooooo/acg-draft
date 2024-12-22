@@ -9,6 +9,7 @@ import { Weapon } from "./Weapon";
 export class MovableEntity extends Entity {
     public velocity: THREE.Vector3;
     public weapons: Weapon[];
+    public selectedWeaponIndex: number = 0;
 
     public currentHP: number = 1;
     public collisionDamage: number = 2000;
@@ -44,6 +45,11 @@ export class MovableEntity extends Entity {
         this.game.movableEntityMap.delete(this.entityId);
         this.weapons = [];
         super.dispose();
+    }
+
+    get weapon(): Weapon{
+        if (this.weapons.length <= this.selectedWeaponIndex) { throw Error(`Weapon with Index ${this.selectedWeaponIndex} does not exists on asset ${this.assetName}`); }
+        return this.weapons[this.selectedWeaponIndex]
     }
 }
 
