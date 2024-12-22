@@ -18,6 +18,7 @@ import {
 import { updatePlaneAnimations } from '../Utils/AnimationUtils';
 import {SoundEnum} from "../Configs/SoundPaths";
 import {Explosion} from "./Explosion";
+import {WakeCloud} from "./WakeCloud";
 
 export class Plane extends MovableEntity {
     public name: EntityName;
@@ -177,7 +178,10 @@ export class Plane extends MovableEntity {
         this.updateAnimation(deltaTime);
 
         // Call the parent update to move the entity and update animations
+        const old_position = this.getPosition();
         super.update(deltaTime);
+        const new_position = this.getPosition();
+        new WakeCloud(this.game, old_position, new_position);
     }
 
     public updateAnimation(deltaTime: number): void {

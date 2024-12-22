@@ -11,6 +11,7 @@ import {Player} from "./Player";
 import { applyVelocityDecay, applyThrust } from "../Utils/MoveUtils";
 import {soundPropertyToOption} from "../Configs/SoundProperty";
 import {Explosion} from "./Explosion";
+import {WakeCloud} from "./WakeCloud";
 
 export class Missile extends MovableEntity {
     public target: Entity | null;
@@ -65,7 +66,10 @@ export class Missile extends MovableEntity {
         }
 
         // Update the position using parent update method
+        const old_position = this.getPosition();
         super.update(deltaTime);
+        const new_position = this.getPosition();
+        new WakeCloud(this.game, old_position, new_position);
     }
 
     private shouldContinueHoming(): boolean {
