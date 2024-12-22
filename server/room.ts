@@ -84,6 +84,14 @@ class Room {
         this.userConnections.get(user_id)?.close();
         this.userConnections.delete(user_id);
         this.userReady.delete(user_id);
+        switch (this.gameStatus) {
+            case GameStatus.Waiting:
+                this.sendRoomStatus();
+                break;
+            case GameStatus.Started:
+                this.stopGame('User left');
+                break;
+        }
         return true;
     }
 
@@ -113,6 +121,13 @@ class Room {
         };
     }
 
+    stopGame(reason = '') {
+        this.gameStatus = GameStatus.Ended;
+        for (let [user_id, connection] of this.userConnections) {
+            connection.send(JSON.stringify({ type: 'end', reason: reason }));
+        }
+    }
+
     checkAllReady(): boolean {
         if (this.userReady.size < this.UserNum) {
             return false;
@@ -123,6 +138,12 @@ class Room {
             }
         }
         return true;
+    }
+
+    sendRoomStatus() {
+        for (let [id, connection] of this.userConnections) {
+            connection.send(JSON.stringify({ type: 'ready', ready_status: Array.from(this.userReady) }));
+        }
     }
 
     handleMessages(user_id: string, message: any) {
@@ -144,12 +165,8 @@ class Room {
                     return;
                 }
                 this.userReady.set(user_id, ready);
-                if (ori_ready !== ready) {
-                    // broadcast ready status
-                    for (let [id, connection] of this.userConnections) {
-                        connection.send(JSON.stringify({ type: 'ready', ready_status: Array.from(this.userReady) }));
-                    }
-                }
+                // broadcast ready status
+                this.sendRoomStatus();
                 if (this.checkAllReady()) {
                     this.startGame();
                 }

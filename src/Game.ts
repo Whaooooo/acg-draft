@@ -197,10 +197,39 @@ export class Game {
                 this.InputBuffer.push(message.input);
                 break;
             case "ready":
+                this.handleReadyMessage(message.ready_status);
                 break;
             case "start":
                 this.startOnlineGame(message);
                 break;
+            case 'end':
+                this.end();
+                console.log(message.reason);
+                break;
+        }
+    }
+
+    private handleReadyMessage(ready_status: any[]) {
+        for (let i = 0; i < 2; i++) {
+            const player_status = document.getElementById(`player-${i + 1}-status`);
+            if (!player_status) continue;
+            (player_status.children[1] as HTMLSpanElement).classList.remove('ready');
+            if (i < ready_status.length) {
+                const user_id = ready_status[i][0];
+                const is_ready = ready_status[i][1];
+                if (user_id === this.userId) {
+                    (player_status.children[0] as HTMLSpanElement).innerText = "Player " + (i + 1) + " (You)";
+                } else {
+                    (player_status.children[0] as HTMLSpanElement).innerText = "Player " + (i + 1);
+                }
+                (player_status.children[1] as HTMLSpanElement).innerText = is_ready ? 'Ready' : 'Not Ready';
+                if (is_ready) {
+                    (player_status.children[1] as HTMLSpanElement).classList.add('ready');
+                }
+            } else {
+                (player_status.children[0] as HTMLSpanElement).innerText = "Player " + (i + 1);
+                (player_status.children[1] as HTMLSpanElement).innerText = 'Waiting...';
+            }
         }
     }
 
@@ -213,23 +242,6 @@ export class Game {
             }
             this.socket?.send(JSON.stringify(message));
         }
-    }
-
-    public async joinRoom(room_id: string): Promise<void> {
-        // deprecated
-        fetch(`http://localhost:17130/join_room`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                user_id: this.userId,
-                room_id: room_id
-            })
-        }).then(response => response.json()).then(data => {
-            console.log(data);
-            this.connectToRoom(room_id);
-        });
     }
 
     public async connectToRoom(room_id: string): Promise<void> {
@@ -245,9 +257,13 @@ export class Game {
             this.handleMessages(event.data);
         }
         socket.send(JSON.stringify({ user_id: this.userId, room_id: room_id }));
-        socket.send(JSON.stringify({ type: 'ready', ready: true }));
+        socket.send(JSON.stringify({ type: 'ready', ready: false }));
 
         console.log('Connected to room', room_id);
+        const roomIdSpan = document.getElementById('room-id');
+        if (roomIdSpan) {
+            roomIdSpan.innerText = room_id;
+        }
 
         const roomList = document.getElementById('room-selection');
         if (roomList) {
@@ -287,6 +303,23 @@ export class Game {
         setInterval(this.collectInput.bind(this), 1000 / 60);
 
         this.loop();
+    }
+
+    public async joinRoom(room_id: string): Promise<void> {
+        // deprecated!!!
+        fetch(`http://localhost:17130/join_room`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                user_id: this.userId,
+                room_id: room_id
+            })
+        }).then(response => response.json()).then(data => {
+            console.log(data);
+            this.connectToRoom(room_id);
+        });
     }
 
     public async startOnline(): Promise<void> {
