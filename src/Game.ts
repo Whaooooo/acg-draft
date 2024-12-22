@@ -14,7 +14,7 @@ import { SceneManager } from './Managers/SceneManager';
 import { TargetManager } from './Managers/TargetManager';
 import { HUDManager } from "./Managers/HUDManager";
 import { MovableEntity } from "./Core/MovableEntity";
-import {nextFrame, receiveFirstMessage, sleep} from './Utils/Wait';
+import { nextFrame, receiveFirstMessage, sleep } from './Utils/Wait';
 import { InputSerializer } from './Utils/InputSerializer';
 
 export class Game {
@@ -163,7 +163,6 @@ export class Game {
         switch (message.type) {
             case "input":
                 this.InputBuffer.push(message.input);
-                this.loopOnce();
                 break;
             case "ready":
                 break;
@@ -236,6 +235,8 @@ export class Game {
         console.log('Start online game loop');
 
         setInterval(this.collectInput.bind(this), 1000 / 60);
+
+        this.loop();
     }
 
     public async startOnline(): Promise<void> {
@@ -348,24 +349,29 @@ export class Game {
         if (!this.isRunning) return; // Stop the loop if the game is over
 
         if (this.isOnline) {
-            if (this.InputBuffer.length === 0) return;
-            while (this.InputBuffer.length > 3) {
-                const input = this.InputBuffer.shift();
-                const deltaTime = 1 / 60;
-                this.update(deltaTime, input);
-            }
-            const delta = performance.now() - this.lastFrameTime;
-            if (delta < 100) return;
-            if (delta < 150 && this.InputBuffer.length < 2) return;
-            const input = this.InputBuffer.shift();
-            const deltaTime = 1 / 60;
-            this.update(deltaTime, input);
+            this.onlineUpdate();
+            this.cameraManager.update(0); // Update the local player's camera
         } else {
             const deltaTime = this.clock.getDelta();
             this.update(deltaTime);
         }
 
         this.renderToScreen();
+    }
+
+    private onlineUpdate() {
+        if (this.InputBuffer.length === 0) return;
+        while (this.InputBuffer.length > 3) {
+            const input = this.InputBuffer.shift();
+            const deltaTime = 1 / 60;
+            this.update(deltaTime, input);
+        }
+        const delta = performance.now() - this.lastFrameTime;
+        if (delta < 120) return;
+        if (delta < 150 && this.InputBuffer.length < 2) return;
+        const input = this.InputBuffer.shift();
+        const deltaTime = 1 / 60;
+        this.update(deltaTime, input);
     }
 
 
