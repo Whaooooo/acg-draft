@@ -168,7 +168,14 @@ html {
 #room-lobby h1 {
     color: #fff;
     font-size: 48px;
-    margin-bottom: 30px;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 5px black;
+}
+
+#room-lobby h2 {
+    color: #fff;
+    font-size: 32px;
+    margin-bottom: 20px;
     text-shadow: 2px 2px 5px black;
 }
 
