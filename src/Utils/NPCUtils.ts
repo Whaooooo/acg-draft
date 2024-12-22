@@ -11,7 +11,7 @@ import {Player} from "../Entities/Player";
  */
 const ALPHA = 1.0;           // 基础方向对齐权重
 const GAMMA = 2.0;           // 地面惩罚权重
-const SAFE_ALTITUDE = 100;   // 安全高度阈值
+const SAFE_ALTITUDE = 1000;   // 安全高度阈值
 const MAIN_CHASE_DISTANCE = 2000; // 主追踪模式检测距离
 const VICE_CHASE_DISTANCE = 2000; // 副追踪模式检测距离
 
@@ -90,6 +90,7 @@ function getBaseTargetDirection(npcPlane: NPCPlane): THREE.Vector3 {
     }
 
     // 巡航模式下，或者找不到目标时：使用自身机头方向
+    currentForward.y = 0;
     return currentForward.clone();
 }
 
@@ -133,7 +134,7 @@ function buildMissileMatrix(missiles: Missile[], npcPlane: NPCPlane): THREE.Matr
         const m_i = new THREE.Vector3().subVectors(missilePos, npcPos).normalize();
 
         const distance = missilePos.distanceTo(npcPos);
-        const beta_i = 1000 / (distance + 1); // 距离越近，权重越大
+        const beta_i = 1000 / ((distance + 1) * missiles.length); // 距离越近，权重越大
 
         // 计算 m_i * m_i^T
         const miOuter = new THREE.Matrix3().set(
@@ -255,10 +256,12 @@ export function alignToDirection(npcPlane: NPCPlane, targetDir: THREE.Vector3, d
         npcPlane.rollSpeed = npcPlane.property.rollMaxSpeed;
     }
 
-    if (desiredDir.y >= 0) {
+    if (desiredDir.y > 0) {
         npcPlane.pitchSpeed = npcPlane.property.pitchMaxSpeed;
     } else if (desiredDir.y < 0) {
         npcPlane.pitchSpeed = npcPlane.property.pitchMinSpeed;
+    } else if (desiredDir.z > 0) {
+        npcPlane.pitchSpeed = npcPlane.property.pitchMaxSpeed;
     }
 }
 

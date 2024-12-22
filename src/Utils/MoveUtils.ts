@@ -95,7 +95,7 @@ export function updatePlaneState(
         newQuaternion.multiply(deltaQuat);
     }
 
-    newQuaternion.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), THREE.MathUtils.degToRad(- state.property.pitchMinSpeed * 0.125 * state.pulsion * deltaTime / state.property.defaultPulsion)));
+    newQuaternion.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), THREE.MathUtils.degToRad(- state.property.pitchMinSpeed * 0.125 * Math.min(1, state.pulsion * deltaTime / state.property.defaultPulsion))));
 
     // 1. 计算飞机的角速度
     // 计算飞机的前方方向（-Z 轴）在世界坐标系中的方向

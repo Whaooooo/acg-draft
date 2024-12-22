@@ -11,6 +11,13 @@ import {
     SoundProperty,
     WindSound
 } from './SoundProperty';
+import {
+    f22EngineWakeCloudProperties,
+    f22WingWakeCloudProperties,
+    missileWakeCloudProperty,
+    WakeCloudProperty
+} from "./WakeCloudProperty";
+import {WakeCloud} from "../Entities/WakeCloud";
 
 
 export type SoundPropertyName = keyof SoundProperty;
@@ -34,6 +41,7 @@ export interface PlaneProperty {
     rollSensitivity: number;
     pitchSensitivity: number;
     sound: { [key in SoundType]? : SoundProperty};
+    wakeCloud: WakeCloudProperty[];
 }
 
 export interface MissileProperty {
@@ -51,6 +59,7 @@ export interface MissileProperty {
     totalNumber: number;
     firePosition: [number, number, number][];
     sound: { [key in SoundType]? : SoundProperty};
+    wakeCloud: WakeCloudProperty[];
 }
 
 export const PlayerProperties: {
@@ -80,6 +89,7 @@ export const PlayerProperties: {
             'wind': WindSound,
             'explosion' : ExplosionSound,
         },
+        wakeCloud: [...f22EngineWakeCloudProperties, ...f22WingWakeCloudProperties],
     },
     f22_stdm: {
         damage: 300,
@@ -100,6 +110,7 @@ export const PlayerProperties: {
             'explosion' : ExplosionSound,
             'fire' : MissileShotSound
         },
+        wakeCloud: [missileWakeCloudProperty],
     },
     f22_6aam: {
         damage: 600,
@@ -120,6 +131,7 @@ export const PlayerProperties: {
             'explosion' : ExplosionSound,
             'fire' : MissileShotSound
         },
+        wakeCloud: [missileWakeCloudProperty],
     },
     f22_laam: {
         damage: 1000,
@@ -140,6 +152,7 @@ export const PlayerProperties: {
             'explosion' : ExplosionSound,
             'fire' : MissileShotSound
         },
+        wakeCloud: [missileWakeCloudProperty],
     },
     f22_qaam: {
         damage: 600.0,
@@ -160,6 +173,7 @@ export const PlayerProperties: {
             'explosion' : ExplosionSound,
             'fire' : MissileShotSound
         },
+        wakeCloud: [missileWakeCloudProperty],
     },
     // Add other entities as needed
 } as const;
@@ -167,7 +181,7 @@ export const PlayerProperties: {
 export const NPCProperties: {
     [key in EntityName]?: PlaneProperty | MissileProperty;
 } = {
-    f22: {
+    npc_f22: {
         hp: 600,
         minPulsion: 10.0,
         defaultPulsion: 50.0,
@@ -191,8 +205,9 @@ export const NPCProperties: {
             'wind': WindSound,
             'explosion' : ExplosionSound,
         },
+        wakeCloud: [...f22EngineWakeCloudProperties, ...f22WingWakeCloudProperties],
     },
-    f22_stdm: {
+    npc_f22_stdm: {
         damage: 300,
         pulsion: 300.0,
         xSpeedDecrease: 0.3,
@@ -211,52 +226,13 @@ export const NPCProperties: {
             'explosion' : ExplosionSound,
             'fire' : MissileShotSound
         },
+        wakeCloud: [missileWakeCloudProperty],
     },
-    f22_6aam: {
-        damage: 600,
-        pulsion: 250.0,
-        xSpeedDecrease: 0.4,
-        ySpeedDecrease: 0.4,
-        zSpeedDecrease: 0.7,
-        rotationSpeed: 60.0,
-        lockRange: 3000,
-        lockAngle: 40,
-        lockNumber: 6,
-        loadTime: 24,
-        loadNumber: 6,
-        totalNumber: 48,
-        firePosition: [[2.0, -3.0, 7], [1.2, -3.0, 7], [0.4, -3.0, 7], [-0.4, -3.0, 7], [-1.2, -3.0, 7], [-2.0, -2.5, 7]],
-        sound: {
-            'speech' : Fox3Sound,
-            'explosion' : ExplosionSound,
-            'fire' : MissileShotSound
-        },
-    },
-    f22_laam: {
-        damage: 1000,
-        pulsion: 600.0,
-        xSpeedDecrease: 0.2,
-        ySpeedDecrease: 0.2,
-        zSpeedDecrease: 0.8,
-        rotationSpeed: 50.0,
-        lockRange: 10000,
-        lockAngle: 60,
-        lockNumber: 1,
-        loadTime: 30,
-        loadNumber: 2,
-        totalNumber: 12,
-        firePosition: [[2.5, -2.5, 7], [-2.5, -2.5, 7]],
-        sound: {
-            'speech' : Fox3Sound,
-            'explosion' : ExplosionSound,
-            'fire' : MissileShotSound
-        },
-    },
-    plane: {
+    npc_plane: {
         hp: 300,
         minPulsion: 1.0,
-        defaultPulsion: 30.0,
-        maxPulsion: 30.0,
+        defaultPulsion: 50.0,
+        maxPulsion: 60.0,
         pulsionSensitivity: 0.0,
         xSpeedDecrease: 0.3,
         ySpeedDecrease: 0.2,
@@ -276,8 +252,9 @@ export const NPCProperties: {
             'wind': WindSound,
             'explosion' : ExplosionSound
         },
+        wakeCloud: [missileWakeCloudProperty],
     },
-    plane_stdm: {
+    npc_plane_stdm: {
         damage: 300,
         pulsion: 200.0,
         xSpeedDecrease: 0.3,
@@ -285,7 +262,7 @@ export const NPCProperties: {
         zSpeedDecrease: 0.6,
         rotationSpeed: 60,
         lockRange: 2000,
-        lockAngle: 30,
+        lockAngle: 40,
         lockNumber: 1,
         loadTime: 6,
         loadNumber: 1,
@@ -296,6 +273,7 @@ export const NPCProperties: {
             'explosion' : ExplosionSound,
             'fire' : MissileShotSound
         },
+        wakeCloud: [missileWakeCloudProperty],
     },
     // Add other entities as needed
 } as const;
