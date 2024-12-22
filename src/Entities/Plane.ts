@@ -18,7 +18,8 @@ import {
 import { updatePlaneAnimations } from '../Utils/AnimationUtils';
 import {SoundEnum} from "../Configs/SoundPaths";
 import {Explosion} from "./Explosion";
-import {WakeCloud} from "./WakeCloud";
+import {WakeCloud, wakeCloudPropertyToWakeCloud} from "./WakeCloud";
+import {property} from "three/src/nodes/core/PropertyNode";
 
 export class Plane extends MovableEntity {
     public name: EntityName;
@@ -181,7 +182,11 @@ export class Plane extends MovableEntity {
         const old_position = this.getPosition();
         super.update(deltaTime);
         const new_position = this.getPosition();
-        new WakeCloud(this.game, old_position, new_position);
+        this.property.wakeCloud.forEach(wake => {
+            let copy = Object.assign({}, wake);
+            copy.opacity = copy.opacity * this.pulsion / this.property.maxPulsion;
+            copy.opacityDecreaseSpeed = copy.opacityDecreaseSpeed * this.pulsion / this.property.maxPulsion;
+            wakeCloudPropertyToWakeCloud(this, old_position, new_position, copy)});
     }
 
     public updateAnimation(deltaTime: number): void {

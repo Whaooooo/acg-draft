@@ -4,6 +4,8 @@ import { ShaderEntity } from "../Core/ShaderEntity";
 import { Game } from "../Game";
 import * as THREE from "three";
 import { CylinderGeometry, ShaderMaterial, UniformsUtils } from "three";
+import {WakeCloudProperty} from "../Configs/WakeCloudProperty";
+import {Entity} from "../Core/Entity";
 
 export class WakeCloud extends ShaderEntity {
     public mesh: THREE.Mesh;
@@ -25,13 +27,17 @@ export class WakeCloud extends ShaderEntity {
         heightIncreaseSpeed: number = 0.5,
         radiusIncreaseSpeed: number = 0.3,
         opacity: number = 0.8,
-        opacityDecreaseSpeed: number = 0.4
+        opacityDecreaseSpeed: number = 0.4,
+        /**
+         * 新增的可选颜色参数，默认为白色。
+         * 你也可以用字符串、数值等形式来传递颜色，然后在此进行转换。
+         **/
+        color: THREE.Color = new THREE.Color(1.0, 1.0, 1.0),
     ) {
-        // 调用父类构造函数，使用'minimal'加载器
         super(game, 'wakecloud', startPoint.clone().add(endPoint).multiplyScalar(0.5), new THREE.Quaternion(), -1);
+
         // 计算起点和终点之间的距离作为初始高度
         this.initialHeight = startPoint.distanceTo(endPoint);
-
 
         this.lifeTime = lifeTime;
         this.initialRadius = initialRadius;
@@ -76,21 +82,24 @@ void main() {
 
         this.fShader = /* glsl */`
 uniform float u_opacity;
+uniform vec3 u_color; // 新增颜色 Uniform
 
 varying float vNoise;
 #include <common>
 #include <logdepthbuf_pars_fragment>
 #include <lights_pars_begin>
+
 void main() {
     #include <logdepthbuf_fragment>
-    // 简单的白色颜色，透明度根据噪声变化
+    // 根据噪声生成的 alpha
     float alpha = u_opacity * (1.0 - vNoise);
-    gl_FragColor = vec4(1.0, 1.0, 1.0, alpha);
+    // 将 u_color 作为输出颜色
+    gl_FragColor = vec4(u_color, alpha);
     #include <colorspace_fragment>
 }
         `;
 
-        // 定义uniforms
+        // 定义 uniforms 并将 color 加入其中
         this.uniforms = UniformsUtils.merge([
             THREE.UniformsLib.lights,
             {
@@ -98,6 +107,7 @@ void main() {
                 u_height: { value: this.initialHeight },
                 u_radius: { value: this.initialRadius },
                 u_opacity: { value: this.opacity },
+                u_color: { value: color }, // 传入颜色
             }
         ]);
 
@@ -116,16 +126,15 @@ void main() {
 
         this.mesh = new THREE.Mesh(geometry, material);
 
-        // 移除初始缩放，大小由着色器控制
-        // this.mesh.scale.set(this.initialRadius, this.initialHeight, this.initialRadius);
-        this.mesh.scale.set(1, 1, 1); // 保持默认缩放
+        // 保持默认缩放，由着色器控制大小
+        this.mesh.scale.set(1, 1, 1);
 
         const group = new THREE.Group();
         group.add(this.mesh);
 
         this._model = group;
 
-        // 设置朝向，从startPoint指向endPoint
+        // 设置朝向，从 startPoint 指向 endPoint
         const direction = new THREE.Vector3().subVectors(endPoint, startPoint).normalize();
         const axis = new THREE.Vector3(0, 1, 0);
         const quaternion = new THREE.Quaternion().setFromUnitVectors(axis, direction);
@@ -149,7 +158,9 @@ void main() {
 
         // 动态调整不透明度
         if (this.uniforms.u_time.value > this.opacityDecreaseStartTime) {
-            this.uniforms.u_opacity.value = this.opacity - this.opacityDecreaseSpeed * (this.uniforms.u_time.value - this.opacityDecreaseStartTime);
+            this.uniforms.u_opacity.value = this.opacity - this.opacityDecreaseSpeed * (
+                this.uniforms.u_time.value - this.opacityDecreaseStartTime
+            );
             this.uniforms.u_opacity.value = Math.max(this.uniforms.u_opacity.value, 0.0); // 防止负值
         }
 
@@ -165,10 +176,27 @@ void main() {
     dispose(): void {
         super.dispose();
         this.mesh.geometry.dispose();
+
         if (this.mesh.material instanceof THREE.Material) {
             this.mesh.material.dispose();
         } else if (this.mesh.material) {
-            this.mesh.material.forEach(material => material.dispose());
+            (this.mesh.material as THREE.Material[]).forEach(material => material.dispose());
         }
     }
+}
+
+export function wakeCloudPropertyToWakeCloud(entity: Entity, startPosition: THREE.Vector3, endPosition: THREE.Vector3, property: WakeCloudProperty) {
+    const displacement = property.displacement.clone().applyQuaternion(entity.getQuaternion());
+    new WakeCloud(
+        entity.game,
+        startPosition.clone().multiplyScalar(property.transformation[0][0]).add(endPosition.clone().multiplyScalar(property.transformation[0][1])).add(displacement),
+        startPosition.clone().multiplyScalar(property.transformation[1][0]).add(endPosition.clone().multiplyScalar(property.transformation[1][1])).add(displacement),
+        property.lifeTime,
+        property.initialRadius,
+        property.heightIncreaseSpeed,
+        property.radiusIncreaseSpeed,
+        property.opacity,
+        property.opacityDecreaseSpeed,
+        property.color,
+    );
 }

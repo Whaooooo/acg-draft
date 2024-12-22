@@ -13,7 +13,17 @@ export const EntityConfigs = {
         loaderType: 'gltf',
         children: ['stdm', '6aam', 'laam', 'qaam'],
     },
+    npc_f22: {
+        path: 'fighter/lockheed-martin-f-22-raptor/test/texturing.glb',
+        loaderType: 'gltf',
+        children: ['stdm'],
+    },
     f22_stdm: {
+        path: 'fighter/lockheed-martin-f-22-raptor/test/stdm.glb',
+        loaderType: 'gltf',
+        children: [],
+    },
+    npc_f22_stdm: {
         path: 'fighter/lockheed-martin-f-22-raptor/test/stdm.glb',
         loaderType: 'gltf',
         children: [],
@@ -33,12 +43,12 @@ export const EntityConfigs = {
         loaderType: 'gltf',
         children: [],
     },
-    plane: {
-        path: 'plane/microplane.glb',
+    npc_plane: {
+        path: 'plane/plane.glb',
         loaderType: 'gltf',
         children: ['stdm',],
     },
-    plane_stdm: {
+    npc_plane_stdm: {
         path: 'fighter/lockheed-martin-f-22-raptor/test/stdm.glb',
         loaderType: 'gltf',
         children: [],
