@@ -6,17 +6,23 @@ import { Entity } from '../Core/Entity';
 import { Game } from '../Game';
 import { EntityName } from '../Configs/EntityPaths';
 import { MissileProperty, PlayerProperties } from '../Configs/EntityProperty';
-import {SoundEnum} from "../Configs/SoundPaths";
-import {Player} from "./Player";
+import { SoundEnum } from "../Configs/SoundPaths";
+import { Player } from "./Player";
 import { applyVelocityDecay, applyThrust } from "../Utils/MoveUtils";
-import {soundPropertyToOption} from "../Configs/SoundProperty";
-import {Explosion} from "./Explosion";
+import { soundPropertyToOption } from "../Configs/SoundProperty";
+import { Explosion } from "./Explosion";
+import { WakeCloud } from "./WakeCloud";
 
 export class Missile extends MovableEntity {
     public target: Entity | null;
     public property: MissileProperty;
     private owner: Entity;
     private missileSoundId: string | null = null; // Store the sound ID
+
+    // 新增属性
+    private targetLost: boolean = false; // 标记是否失去目标
+    private timeSinceTargetLost: number = 0; // 记录自失去目标以来的时间
+    private readonly TIME_BEFORE_DESTROY: number = 2.0; // 2秒后销毁
 
     constructor(
         game: Game,
@@ -59,13 +65,38 @@ export class Missile extends MovableEntity {
         // Check if the missile should continue homing
         if (this.shouldContinueHoming()) {
             this.homeTowardsTarget(deltaTime);
+            // 如果之前标记为失去目标，重置相关状态
+            if (this.targetLost) {
+                this.targetLost = false;
+                this.timeSinceTargetLost = 0;
+            }
         } else {
+            if (!this.targetLost) {
+                // 第一次检测到目标丢失，标记并开始计时
+                this.targetLost = true;
+                this.timeSinceTargetLost = 0;
+            }
+
+            if (this.targetLost) {
+                // 累加时间
+                this.timeSinceTargetLost += deltaTime;
+
+                // 如果超过2秒，无声销毁导弹
+                if (this.timeSinceTargetLost >= this.TIME_BEFORE_DESTROY) {
+                    this.disposeSilently();
+                    return; // 终止后续更新
+                }
+            }
+
             // Target lost; missile flies straight forward
             this.target = null;
         }
 
         // Update the position using parent update method
+        const old_position = this.getPosition();
         super.update(deltaTime);
+        const new_position = this.getPosition();
+        new WakeCloud(this.game, old_position.clone().multiplyScalar(1.1).sub(new_position.clone().multiplyScalar(0.1)), new_position, 5.0, 0.2, 0.5, 1.0, 0.8, 0.16);
     }
 
     private shouldContinueHoming(): boolean {
@@ -75,7 +106,7 @@ export class Missile extends MovableEntity {
 
         const targetPosition = this.target.getPosition();
         const currentPosition = this.getPosition();
-        const toTarget = targetPosition.sub(currentPosition);
+        const toTarget = targetPosition.clone().sub(currentPosition);
         const distanceToTarget = toTarget.length();
 
         // Check if the target is within lockRange
@@ -99,7 +130,7 @@ export class Missile extends MovableEntity {
     private homeTowardsTarget(deltaTime: number): void {
         const targetPosition = this.target!.getPosition();
         const currentPosition = this.getPosition();
-        const toTarget = targetPosition.sub(currentPosition).normalize();
+        const toTarget = targetPosition.clone().sub(currentPosition).normalize();
 
         // Calculate rotation towards the target using rotation speed
         const currentDirection = new THREE.Vector3(0, 0, -1).applyQuaternion(this.getQuaternion()).normalize();
@@ -147,23 +178,26 @@ export class Missile extends MovableEntity {
         return this.owner.getOwnerPlayer();
     }
 
-    public dispose(): void {
+    // 修改后的 dispose 方法，添加参数控制是否播放爆炸声音
+    public dispose(silent: boolean = false): void {
         // Remove missile from projectile map
         this.game.projectileMap.delete(this.entityId);
 
-        const explosionSoundProperty = this.property.sound?.explosion;
-        if (explosionSoundProperty) {
-            const options = soundPropertyToOption(explosionSoundProperty, this);
+        if (!silent) {
+            const explosionSoundProperty = this.property.sound?.explosion;
+            if (explosionSoundProperty) {
+                const options = soundPropertyToOption(explosionSoundProperty, this);
 
-            // Play the sound and store the sound ID if needed
-            this.game.soundManager.playSound(
-                this,
-                explosionSoundProperty.name as SoundEnum,
-                options,
-            );
+                // Play the sound and store the sound ID if needed
+                this.game.soundManager.playSound(
+                    this,
+                    explosionSoundProperty.name as SoundEnum,
+                    options,
+                );
+            }
+
+            new Explosion(this.game, this.getPosition(), this.getQuaternion(), 20, 1.5, 0.05);
         }
-
-        new Explosion(this.game, this.getPosition(), this.getQuaternion(), 20, 1.5, 0.05);
 
         // Stop and remove the missile sound
         if (this.missileSoundId) {
@@ -172,5 +206,10 @@ export class Missile extends MovableEntity {
         }
 
         super.dispose();
+    }
+
+    // 新增无声销毁的方法
+    private disposeSilently(): void {
+        this.dispose(true);
     }
 }

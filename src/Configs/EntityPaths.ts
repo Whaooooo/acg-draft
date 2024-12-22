@@ -47,6 +47,11 @@ export const EntityConfigs = {
         path: 'plane/explosion.png',
         loaderType: 'texture',
         children: [],
+    },
+    wakecloud: {
+        path: 'plane/explosion.png',
+        loaderType: 'minimal',
+        children: [],
     }
     // Add other entities as needed
 } as const;
