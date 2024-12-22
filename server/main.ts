@@ -1,6 +1,7 @@
 import ws from 'ws';
 import crypto from 'crypto';
 import express from 'express';
+import path from 'path';
 
 import { OnlineInputState, KeyNames } from '../src/Configs/KeyBound';
 import { InputSerializer } from '../src/Utils/InputSerializer';
@@ -11,6 +12,14 @@ const rooms: Map<string, Room> = new Map();
 const userRooms: Map<string, Room> = new Map();
 
 const app = express();
+
+const distPath = path.join(__dirname, '../dist');
+app.use(express.static(distPath));
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+});
+
 
 app.use(express.json());
 
