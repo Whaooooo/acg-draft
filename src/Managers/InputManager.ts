@@ -170,6 +170,16 @@ export class InputManager {
         }
     }
 
+    public updatePlayers() {
+        let old_players = this.players;
+        this.players = new Set();
+        old_players.forEach(player => {
+            if (player.isLocalPlayer) {
+                this.players.add(player);
+            }
+        });
+    }
+
     private initEventListeners(): void {
         // Use capture phase to prevent default browser shortcuts
         window.addEventListener('keydown', this.boundPreventBrowserShortcuts, true);

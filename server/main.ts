@@ -1,6 +1,7 @@
 import ws from 'ws';
 import crypto from 'crypto';
 import express from 'express';
+import path from 'path';
 
 import { OnlineInputState, KeyNames } from '../src/Configs/KeyBound';
 import { InputSerializer } from '../src/Utils/InputSerializer';
@@ -11,6 +12,14 @@ const rooms: Map<string, Room> = new Map();
 const userRooms: Map<string, Room> = new Map();
 
 const app = express();
+
+const distPath = path.join(__dirname, '../dist');
+app.use(express.static(distPath));
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+});
+
 
 app.use(express.json());
 
@@ -120,14 +129,18 @@ app.post("/room_status", (req, res) => {
     res.send(JSON.stringify(room.getRoomInfoDetail()));
 });
 
-app.listen(17130, () => {
-    console.log('HTTP Server started on port 17130...');
+app.get("/new_uuid", (req, res) => {
+    res.send(crypto.randomUUID());
+});
+
+app.listen(48001, () => {
+    console.log('HTTP Server started on port 48001...');
 });
 
 
-const server = new ws.Server({ port: 17129 });
+const server = new ws.Server({ port: 48002 });
 
-console.log('Websocket Server started on port 17129...');
+console.log('Websocket Server started on port 48002...');
 
 function handleMessages(user_id: string, room: Room, data: ws.RawData) {
     let message = JSON.parse(data.toString());

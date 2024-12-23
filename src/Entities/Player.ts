@@ -45,10 +45,8 @@ export class Player extends Plane {
         // Initialize input state
         this.inputState = new InputState();
 
-        if (this.isLocalPlayer) {
-            // If this is a local player, register input listener
-            this.game.inputManager.registerPlayer(this);
-        }
+        // If this is a local player, register input listener
+        this.game.inputManager.registerPlayer(this);
     }
 
     public getInputState(): InputState {
