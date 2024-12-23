@@ -119,7 +119,7 @@ void main() {
             fragmentShader: this.fShader,
             transparent: true,
             opacity: this.opacity,
-            side: THREE.DoubleSide,
+            side: THREE.FrontSide,
             depthTest: true,
             depthWrite: false,
         });

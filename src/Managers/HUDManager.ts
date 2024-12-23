@@ -410,7 +410,7 @@ export class HUDManager {
                     } else if (isHighestPriority) {
                         squareColor = isLockedOn ? 'darkred' : 'darkgreen';
                     } else if (isLockedOn) {
-                        squareColor = 'lightred';
+                        squareColor = 'red';
                     } else if (isInPotentialTargets) {
                         squareColor = 'lightgreen';
                     } else {
@@ -516,137 +516,150 @@ export class HUDManager {
          * @param hudOverlay The HUD overlay element for the player.
          * @param svgOverlay The SVG overlay element for the player.
          */
-    private updateLockedMissileIndicatorsForPlayer(player: Player, hudOverlay: HTMLDivElement, svgOverlay: SVGSVGElement): void {
-        // Clear previous locked missile indicators
-        const existingLockedIndicators = hudOverlay.querySelectorAll('.locked-missile-indicator');
-        existingLockedIndicators.forEach(indicator => indicator.remove());
+        private updateLockedMissileIndicatorsForPlayer(
+            player: Player,
+            hudOverlay: HTMLDivElement,
+            svgOverlay: SVGSVGElement
+        ): void {
+            // 1. 清理之前的指示图标
+            const existingLockedIndicators = hudOverlay.querySelectorAll('.locked-missile-indicator');
+            existingLockedIndicators.forEach(indicator => indicator.remove());
 
-        // Get the list of locked missiles for the player
-        const lockedMissiles: Missile[] = this.game.targetManager.getLockedMissileList(player);
+            // 2. 获取锁定该玩家的导弹列表
+            const lockedMissiles: Missile[] = this.game.targetManager.getLockedMissileList(player);
 
-        const camera = this.cameraManager.cameras.get(player);
-        if (!camera) return;
+            // 3. 获取摄像机和视口信息
+            const camera = this.cameraManager.cameras.get(player);
+            if (!camera) return;
+            const viewport = this.cameraManager.getViewportForPlayer(player);
+            const width = viewport.width;
+            const height = viewport.height;
 
-        const viewport = this.cameraManager.getViewportForPlayer(player);
-        const width = viewport.width;
-        const height = viewport.height;
+            lockedMissiles.forEach(missile => {
+                const missileWorldPos = missile.getPosition();
 
-        lockedMissiles.forEach(missile => {
-            const missilePosition = missile.getPosition();
+                // ---- 4.1 摄像机坐标系下的位置，用于计算前后关系、角度等 ----
+                const missileCamPos = missileWorldPos.clone().applyMatrix4(camera.matrixWorldInverse);
 
-            // Project missile position to Normalized Device Coordinates (NDC)
-            const ndc = missilePosition.clone().project(camera);
+                // 摄像机正前方是 -Z，故 z > 0 一般表示在身后
+                const isBehindCamera = missileCamPos.z > 0;
 
-            // Determine if the missile is within the camera's frustum
-            const isInFrustum = ndc.x >= -1 && ndc.x <= 1 && ndc.y >= -1 && ndc.y <= 1 && ndc.z >= -1 && ndc.z <= 1;
+                // ---- 4.2 计算标准化设备坐标 (NDC) 用于“屏幕内”判断 ----
+                const ndc = missileWorldPos.clone().project(camera);
+                const isInFrustum =
+                    !isBehindCamera &&
+                    ndc.x >= -1 && ndc.x <= 1 &&
+                    ndc.y >= -1 && ndc.y <= 1 &&
+                    ndc.z >= -1 && ndc.z <= 1;
 
-            // Convert NDC to screen coordinates
-            const x = (ndc.x * 0.5 + 0.5) * width;
-            const y = (-ndc.y * 0.5 + 0.5) * height;
+                // 转换为屏幕坐标
+                const screenX = (ndc.x * 0.5 + 0.5) * width;
+                const screenY = (-ndc.y * 0.5 + 0.5) * height;
 
-            // Calculate distance from player to missile
-            const distance = missilePosition.distanceTo(player.getPosition());
+                // ---- 4.3 计算三角形大小，可随导弹距离动态调整 ----
+                const distance = missileWorldPos.distanceTo(player.getPosition());
+                const minDiameter = 10;
+                const maxDiameter = 30;
+                const minDistance = 100;
+                const maxDistance = 10000;
+                const clippedDistance = Math.max(minDistance, Math.min(maxDistance, distance));
+                const sizeRatio = (Math.log(clippedDistance) - Math.log(minDistance))
+                    / (Math.log(maxDistance) - Math.log(minDistance));
+                const triangleSize = maxDiameter - (maxDiameter - minDiameter) * sizeRatio;
 
-            // Determine triangle size based on distance (closer = larger)
-            const minDiameter = 10;
-            const maxDiameter = 30;
-            const minDistance = 100;
-            const maxDistance = 10000;
-            const clippedDistance = Math.max(minDistance, Math.min(maxDistance, distance));
-            const sizeRatio = (Math.log(clippedDistance) - Math.log(minDistance)) / (Math.log(maxDistance) - Math.log(minDistance));
-            const triangleSize = maxDiameter - (maxDiameter - minDiameter) * sizeRatio;
+                if (isInFrustum) {
+                    // ============ 5. 屏幕内的导弹，直接画在其投影坐标 x,y ============
+                    const triangle = document.createElement('div');
+                    triangle.classList.add('locked-missile-indicator');
+                    triangle.style.left = `${screenX}px`;
+                    triangle.style.top = `${screenY}px`;
+                    // 设置三角形大小
+                    triangle.style.borderLeftWidth = `${triangleSize / 2}px`;
+                    triangle.style.borderRightWidth = `${triangleSize / 2}px`;
+                    triangle.style.borderBottomWidth = `${triangleSize}px`;
 
-            if (isInFrustum) {
-                // On-screen: Draw triangle at missile's screen position
-                const triangle = document.createElement('div');
-                triangle.classList.add('locked-missile-indicator');
-                triangle.style.left = `${x}px`;
-                triangle.style.top = `${y}px`;
+                    hudOverlay.appendChild(triangle);
 
-                // Adjust triangle size
-                triangle.style.borderLeftWidth = `${triangleSize / 2}px`;
-                triangle.style.borderRightWidth = `${triangleSize / 2}px`;
-                triangle.style.borderBottomWidth = `${triangleSize}px`;
+                } else {
+                    // ============ 6. 屏幕外(含身后)的导弹，通过垂直投影计算交点 ============
+                    // 6.1 计算导弹在摄像机空间的垂直投影
+                    const projection = new THREE.Vector3(missileCamPos.x, missileCamPos.y, 0);
 
-                hudOverlay.appendChild(triangle);
-            } else {
-                // Off-screen: Draw triangle at screen edge pointing towards missile
+                    // 6.2 计算交点
+                    const { x: intersectX, y: intersectY } = this.getIntersectionPoint(
+                        projection.x,
+                        projection.y,
+                        width,
+                        height
+                    );
 
-                // Calculate the angle from the center to the missile
-                const centerX = width / 2;
-                const centerY = height / 2;
-                const deltaX = x - centerX;
-                const deltaY = y - centerY;
-                const angle = Math.atan2(deltaY, deltaX);
+                    // 6.3 创建三角形指示器，放置到 intersectX, intersectY，并根据方向旋转
+                    const triangle = document.createElement('div');
+                    triangle.classList.add('locked-missile-indicator');
+                    triangle.style.left = `${intersectX}px`;
+                    triangle.style.top = `${intersectY}px`;
+                    // 设置三角形大小
+                    triangle.style.borderLeftWidth = `${triangleSize / 2}px`;
+                    triangle.style.borderRightWidth = `${triangleSize / 2}px`;
+                    triangle.style.borderBottomWidth = `${triangleSize}px`;
 
-                // Determine the point on the screen edge
-                const edgeX = centerX + (width / 2) * Math.cos(angle);
-                const edgeY = centerY + (height / 2) * Math.sin(angle);
+                    // 6.4 计算旋转角度，使三角形指向导弹方向
+                    // 方向向量从交点指向导弹的投影点
+                    const direction = new THREE.Vector2(
+                        projection.x,
+                        projection.y
+                    ).normalize();
 
-                // Clamp the position to the screen boundaries
-                const clampedPosition = this.clampToScreenEdge(edgeX, edgeY, width, height);
+                    // 计算角度，atan2 返回值范围 (-PI, PI]
+                    const angleRad = Math.atan2(direction.y, direction.x);
+                    const angleDeg = THREE.MathUtils.radToDeg(angleRad) + 90; // 调整使其指向外部
 
-                const clampedX = clampedPosition.x;
-                const clampedY = clampedPosition.y;
+                    triangle.style.transform = `translate(-50%, -100%) rotate(${angleDeg}deg)`;
 
-                const triangle = document.createElement('div');
-                triangle.classList.add('locked-missile-indicator');
-                triangle.style.left = `${clampedX}px`;
-                triangle.style.top = `${clampedY}px`;
-
-                // Adjust triangle size
-                triangle.style.borderLeftWidth = `${triangleSize / 2}px`;
-                triangle.style.borderRightWidth = `${triangleSize / 2}px`;
-                triangle.style.borderBottomWidth = `${triangleSize}px`;
-
-                // Rotate the triangle to point towards the missile direction
-                const degrees = (angle * 180) / Math.PI + 90; // Adjust rotation to point correctly
-                triangle.style.transform = `translate(-50%, -100%) rotate(${degrees}deg)`;
-
-                hudOverlay.appendChild(triangle);
-            }
-        });
-    }
-
-    /**
-     * Clamps a point to the edges of the screen rectangle.
-     * @param x The x-coordinate.
-     * @param y The y-coordinate.
-     * @param width The viewport width.
-     * @param height The viewport height.
-     * @returns An object with clamped x and y coordinates.
-     */
-    private clampToScreenEdge(x: number, y: number, width: number, height: number): { x: number, y: number } {
-        const halfWidth = width / 2;
-        const halfHeight = height / 2;
-
-        const deltaX = x - halfWidth;
-        const deltaY = y - halfHeight;
-
-        const angle = Math.atan2(deltaY, deltaX);
-
-        // Calculate intersections with the viewport boundaries
-        const tan = Math.tan(angle);
-
-        let clampedX = x;
-        let clampedY = y;
-
-        if (Math.abs(deltaX) > Math.abs(deltaY)) {
-            // Clamp to left or right edge
-            clampedX = deltaX > 0 ? width : 0;
-            clampedY = halfHeight + halfWidth * tan;
-        } else {
-            // Clamp to top or bottom edge
-            clampedY = deltaY > 0 ? height : 0;
-            clampedX = halfWidth + halfHeight / tan;
+                    hudOverlay.appendChild(triangle);
+                }
+            });
         }
 
-        // Ensure the clamped coordinates are within the viewport
-        clampedX = Math.max(0, Math.min(width, clampedX));
-        clampedY = Math.max(0, Math.min(height, clampedY));
+    /**
+     * 计算从屏幕中心到 (x, y) 的连线与屏幕边缘的交点
+     * @param x 导弹在摄像机坐标系下的 X 坐标（垂直投影）
+     * @param y 导弹在摄像机坐标下的 Y 坐标（垂直投影）
+     * @param width 视口宽度
+     * @param height 视口高度
+     * @returns 屏幕边缘的 (x, y) 坐标
+     */
+    private getIntersectionPoint(
+        x: number,
+        y: number,
+        width: number,
+        height: number
+    ): { x: number; y: number } {
+        // 屏幕中心
+        const centerX = width / 2;
+        const centerY = height / 2;
 
-        return { x: clampedX, y: clampedY };
+        // 方向向量从屏幕中心指向投影点
+        const dirX = x;
+        const dirY = y;
+
+        // 如果投影点在屏幕中心，避免除零错误
+        if (dirX === 0 && dirY === 0) {
+            return { x: centerX, y: centerY };
+        }
+
+        // 计算比例因子
+        const scaleX = (width / 2) / Math.abs(dirX);
+        const scaleY = (height / 2) / Math.abs(dirY);
+        const scale = Math.min(scaleX, scaleY);
+
+        // 计算交点
+        const intersectX = dirX * scale + centerX;
+        const intersectY = -dirY * scale + centerY; // y 轴方向需要反转
+
+        return { x: intersectX, y: intersectY };
     }
+
 
     private updateFPSDisplay(): void {
         if (this.lastFrameTime === 0) {

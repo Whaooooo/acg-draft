@@ -154,14 +154,20 @@ export class Game {
 
         // Optionally, add some NPCs for testing
         console.log('Request creating npc');
-        // const npc1 = new NPCPlane(this, 'npc_f22', new THREE.Vector3(0, 4000, -3000));
-        new NPCPlane(this, 'npc_f22', new THREE.Vector3(0, 4000, -3000), undefined, undefined, 0);
-        // new NPCPlane(this, 'npc_f22', new THREE.Vector3(100, 4000, -3000), undefined, undefined, 0);
-        // new NPCPlane(this, 'npc_f22', new THREE.Vector3(200, 4000, -3000), undefined, undefined, 0);
-        // new NPCPlane(this, 'npc_f22', new THREE.Vector3(300, 4000, -3000), undefined, undefined, 0);
-        new NPCPlane(this, 'npc_f22', new THREE.Vector3(100, 4000, 0), undefined, undefined, 1);
-        // new NPCPlane(this, 'npc_f22', new THREE.Vector3(200, 4000, 0), undefined, undefined, 1);
-        // new NPCPlane(this, 'npc_f22', new THREE.Vector3(300, 4000, 0), undefined, undefined, 1);
+        // const npc1 = new NPCPlane(this, 'npc_f22', new THREE.Vector3(0, 4000, -2500));
+        const yQua = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI)
+        new NPCPlane(this, 'npc_plane', new THREE.Vector3(0, 4000, -2500), yQua, undefined, 0);
+        new NPCPlane(this, 'npc_plane', new THREE.Vector3(400, 4000, -2500), yQua, undefined, 0);
+        new NPCPlane(this, 'npc_plane', new THREE.Vector3(-400, 4000, -2500), yQua, undefined, 0);
+        new NPCPlane(this, 'npc_plane', new THREE.Vector3(0, 4200, -2700), yQua, undefined, 0);
+        new NPCPlane(this, 'npc_plane', new THREE.Vector3(400, 4200, -2700), yQua, undefined, 0);
+        new NPCPlane(this, 'npc_plane', new THREE.Vector3(-400, 4200, -2700), yQua, undefined, 0);
+        new NPCPlane(this, 'npc_plane', new THREE.Vector3(0, 4400, -2900), yQua, undefined, 0);
+        new NPCPlane(this, 'npc_plane', new THREE.Vector3(400, 4400, -2900), yQua, undefined, 0);
+        new NPCPlane(this, 'npc_plane', new THREE.Vector3(-400, 4400, -2900), yQua, undefined, 0);
+        new NPCPlane(this, 'npc_f22', new THREE.Vector3(0, 4200, -200), undefined, undefined, 1);
+        new NPCPlane(this, 'npc_f22', new THREE.Vector3(-300, 4200, 200), undefined, undefined, 1);
+        new NPCPlane(this, 'npc_f22', new THREE.Vector3(300, 4200, 200), undefined, undefined, 1);
     }
 
     public loadGame(): void {
