@@ -36,8 +36,8 @@ class Mountain extends THREE.Group {
                 ret = -2;
             }
         }
-        if (ret > 2500) {
-            ret = 2500 + (ret - 2500) * 0.6;
+        if (ret > 2000) {
+            ret = 2000 + (ret - 2000) * 0.5;
         }
         return ret;
     }

@@ -17,6 +17,7 @@ import { MovableEntity } from "./Core/MovableEntity";
 import { nextFrame, receiveFirstMessage, sleep } from './Utils/Wait';
 import { InputSerializer } from './Utils/InputSerializer';
 import { Config } from './Configs/Config';
+import {ensureNPCs} from "./Configs/PostLoopHooks";
 
 export class Game {
     //###################################################
@@ -25,6 +26,7 @@ export class Game {
 
     public clock: THREE.Clock;
     public loadingBar: LoadingBar;
+    public postLoopHooks: CallableFunction[] = [];
 
     public scene: THREE.Scene;
     public cameraManager: CameraManager;
@@ -151,28 +153,31 @@ export class Game {
         }
     }
 
+
+
     private createDebugScene(): void {
         // Create a player
         console.log('Request creating player');
         const player1 = new Player(this, 'f22', new THREE.Vector3(0, 2400, 0), undefined, undefined, 1, 0, true);
-        const player2 = new Player(this, 'f22', new THREE.Vector3(200, 2400, 0), undefined, undefined, 1, 0, false);
+        // const player2 = new Player(this, 'f22', new THREE.Vector3(200, 2400, 0), undefined, undefined, 1, 0, false);
 
         // Optionally, add some NPCs for testing
         console.log('Request creating npc');
-        // const npc1 = new NPCPlane(this, 'npc_f22', new THREE.Vector3(0, 4000, -2500));
-        const yQua = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI)
-        new NPCPlane(this, 'npc_plane', new THREE.Vector3(0, 4000, -2500), yQua, undefined, 0);
-        new NPCPlane(this, 'npc_plane', new THREE.Vector3(400, 4000, -2500), yQua, undefined, 0);
-        new NPCPlane(this, 'npc_plane', new THREE.Vector3(-400, 4000, -2500), yQua, undefined, 0);
-        new NPCPlane(this, 'npc_plane', new THREE.Vector3(0, 4200, -2700), yQua, undefined, 0);
-        new NPCPlane(this, 'npc_plane', new THREE.Vector3(400, 4200, -2700), yQua, undefined, 0);
-        new NPCPlane(this, 'npc_plane', new THREE.Vector3(-400, 4200, -2700), yQua, undefined, 0);
-        new NPCPlane(this, 'npc_plane', new THREE.Vector3(0, 4400, -2900), yQua, undefined, 0);
-        new NPCPlane(this, 'npc_plane', new THREE.Vector3(400, 4400, -2900), yQua, undefined, 0);
-        new NPCPlane(this, 'npc_plane', new THREE.Vector3(-400, 4400, -2900), yQua, undefined, 0);
+        const yQua = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
+        // const npc1 = new NPCPlane(this, 'npc_f22', new THREE.Vector3(0, 4000, -2500), yQua);
+        // new NPCPlane(this, 'npc_plane', new THREE.Vector3(0, 4000, -2500), yQua, undefined, 0);
+        // new NPCPlane(this, 'npc_plane', new THREE.Vector3(400, 4000, -2500), yQua, undefined, 0);
+        // new NPCPlane(this, 'npc_plane', new THREE.Vector3(-400, 4000, -2500), yQua, undefined, 0);
+        // new NPCPlane(this, 'npc_plane', new THREE.Vector3(0, 4200, -2700), yQua, undefined, 0);
+        // new NPCPlane(this, 'npc_plane', new THREE.Vector3(400, 4200, -2700), yQua, undefined, 0);
+        // new NPCPlane(this, 'npc_plane', new THREE.Vector3(-400, 4200, -2700), yQua, undefined, 0);
+        // new NPCPlane(this, 'npc_plane', new THREE.Vector3(0, 4400, -2900), yQua, undefined, 0);
+        // new NPCPlane(this, 'npc_plane', new THREE.Vector3(400, 4400, -2900), yQua, undefined, 0);
+        // new NPCPlane(this, 'npc_plane', new THREE.Vector3(-400, 4400, -2900), yQua, undefined, 0);
         new NPCPlane(this, 'npc_f22', new THREE.Vector3(0, 4200, -200), undefined, undefined, 1);
         new NPCPlane(this, 'npc_f22', new THREE.Vector3(-300, 4200, 200), undefined, undefined, 1);
         new NPCPlane(this, 'npc_f22', new THREE.Vector3(300, 4200, 200), undefined, undefined, 1);
+        this.postLoopHooks.push(ensureNPCs);
     }
 
     public loadGame(): void {
@@ -460,6 +465,8 @@ export class Game {
             this.update(deltaTime);
         }
 
+        this.postLoopHooks.forEach(hook => hook(this));
+
         this.renderToScreen();
     }
 
@@ -558,6 +565,10 @@ export class Game {
                 console.error('Failed to play mission failed sound:', error);
             });
         }
+    }
+
+    public isGameOnline(): boolean {
+        return this.isOnline ? true : false;
     }
 
     public dispose(): void {

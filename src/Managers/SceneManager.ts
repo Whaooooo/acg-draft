@@ -153,8 +153,8 @@ export class SceneManager {
         this.scene.add(water);
         this.water = water;
 
-        // this.cloud = new Cloud({ size: [768, 48, 768], opacity: 0.5, threshold: 0.45, range: 0.15, steps: 100, boxBound: new THREE.Vector3(120000.0, 600.0, 120000.0) }, this.renderer);
-        // this.scene.add(this.cloud);
+        this.cloud = new Cloud({ size: [768, 48, 768], opacity: 0.5, threshold: 0.45, range: 0.15, steps: 100, boxBound: new THREE.Vector3(120000.0, 600.0, 120000.0) }, this.renderer);
+        this.scene.add(this.cloud);
 
         this.mountain = new Mountain();
         this.scene.add(this.mountain);
