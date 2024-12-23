@@ -40,7 +40,7 @@ async function onStartButtonClick() {
 
 async function createRoom() {
     const game = await getGameInstance();
-    let data = await fetch('http://localhost:17130/create_room', {
+    let data = await fetch('./create_room', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -55,7 +55,7 @@ async function createRoom() {
 
 async function joinRoom(roomId: string) {
     const game = await getGameInstance();
-    let data = await fetch(`http://localhost:17130/join_room`, {
+    let data = await fetch(`./join_room`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'

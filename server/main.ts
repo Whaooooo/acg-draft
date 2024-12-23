@@ -129,14 +129,18 @@ app.post("/room_status", (req, res) => {
     res.send(JSON.stringify(room.getRoomInfoDetail()));
 });
 
-app.listen(17130, () => {
-    console.log('HTTP Server started on port 17130...');
+app.get("/new_uuid", (req, res) => {
+    res.send(crypto.randomUUID());
+});
+
+app.listen(48001, () => {
+    console.log('HTTP Server started on port 48001...');
 });
 
 
-const server = new ws.Server({ port: 17129 });
+const server = new ws.Server({ port: 48002 });
 
-console.log('Websocket Server started on port 17129...');
+console.log('Websocket Server started on port 48002...');
 
 function handleMessages(user_id: string, room: Room, data: ws.RawData) {
     let message = JSON.parse(data.toString());

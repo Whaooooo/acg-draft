@@ -16,6 +16,7 @@ import { HUDManager } from "./Managers/HUDManager";
 import { MovableEntity } from "./Core/MovableEntity";
 import { nextFrame, receiveFirstMessage, sleep } from './Utils/Wait';
 import { InputSerializer } from './Utils/InputSerializer';
+import { Config } from './Configs/Config';
 
 export class Game {
     //###################################################
@@ -114,9 +115,13 @@ export class Game {
         // Wait for sound to be ready before starting the game
         this.waitForSoundToBeReady();
 
+        // randomUUID is banned in HTTP
         // this.userId = localStorage.getItem('user_id') || crypto.randomUUID();
         // localStorage.setItem('user_id', this.userId);
-        this.userId = crypto.randomUUID();
+        // this.userId = crypto.randomUUID();
+        fetch('./new_uuid').then(response => response.text()).then(data => {
+            this.userId = data;
+        });
         this.initRoomButtons();
     }
 
@@ -149,8 +154,8 @@ export class Game {
     private createDebugScene(): void {
         // Create a player
         console.log('Request creating player');
-        const player1 = new Player(this, 'f22', new THREE.Vector3(0, 4000, 0), undefined, undefined, 1, 0, true);
-        // const player2 = new Player(this, 'f22', new THREE.Vector3(200, 3000, 0), undefined, undefined, 1, 0, true);
+        const player1 = new Player(this, 'f22', new THREE.Vector3(0, 2400, 0), undefined, undefined, 1, 0, true);
+        const player2 = new Player(this, 'f22', new THREE.Vector3(200, 2400, 0), undefined, undefined, 1, 0, false);
 
         // Optionally, add some NPCs for testing
         console.log('Request creating npc');
@@ -184,6 +189,7 @@ export class Game {
         this.isOnline = false;
 
         this.inputManager.gameStarted = true;
+        this.inputManager.updatePlayers();
 
         // Initialize sounds for players and NPCs
         this.playerMap.forEach(player => player.initializeSound());
@@ -203,7 +209,10 @@ export class Game {
                 this.handleReadyMessage(message.ready_status);
                 break;
             case "start":
-                this.startOnlineGame(message);
+                let scope = this;
+                sleep(1500).then(() => {
+                    scope.startOnlineGame(message);
+                });
                 break;
             case 'end':
                 this.end();
@@ -248,7 +257,9 @@ export class Game {
     }
 
     public async connectToRoom(room_id: string): Promise<void> {
-        const socket = new WebSocket('ws://localhost:17129');
+        const hostName = window.location.hostname;
+        const wsPath = 'ws://' + hostName + ':' + Config.websocketPort;
+        const socket = new WebSocket(wsPath);
         this.socket = socket;
 
         await new Promise((resolve: (value: void) => void) => {
@@ -279,6 +290,7 @@ export class Game {
     }
 
     public async startOnlineGame(message: any): Promise<void> {
+        this.isOnline = true;
         const roomLobby = document.getElementById('room-lobby');
         if (roomLobby) {
             roomLobby.style.display = 'none';
@@ -295,7 +307,8 @@ export class Game {
         this.localPlayer = playerList[playerId];
         console.log(`Player ${playerId} connected`);
 
-
+        this.inputManager.gameStarted = true;
+        this.inputManager.updatePlayers();
 
         // Initialize sounds for players and NPCs
         this.playerMap.forEach(player => player.initializeSound());
@@ -303,7 +316,7 @@ export class Game {
 
         console.log('Start online game loop');
 
-        setInterval(this.collectInput.bind(this), 1000 / 60);
+        setInterval(this.collectInput.bind(this), 1000 / 90);
 
         this.loop();
     }
