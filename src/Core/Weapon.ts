@@ -152,7 +152,7 @@ export class Weapon {
                 const firePositionLocal = new THREE.Vector3(...firePosArray);
                 const firePositionWorld = firePositionLocal
                     .clone()
-                    .applyMatrix4(this.owner.model.matrixWorld);
+                    .applyQuaternion(this.owner.getQuaternion());
 
                 // Create missile
                 const missile = new Missile(
