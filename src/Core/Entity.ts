@@ -135,7 +135,7 @@ export class Entity {
     }
 
     get model(): THREE.Group {
-        //if (!this._model) { throw Error('Entity not loaded'); }
+        if (!this._model) { throw Error('Entity not loaded'); }
         return this._model;
     }
 
