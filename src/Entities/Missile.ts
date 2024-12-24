@@ -124,7 +124,7 @@ export class Missile extends MovableEntity {
      * 判断是否继续追踪目标
      */
     private shouldContinueHoming(): boolean {
-        if (!this.target || this.target.removed) {
+        if (!this.target || this.target._model || this.target.removed) {
             return false;
         }
 

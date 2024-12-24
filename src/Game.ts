@@ -496,8 +496,7 @@ export class Game {
                 }
             })
         } else {
-            this.entityMap.forEach(entity =>{
-            if (entity.ready) {entity.update(deltaTime)}});
+            this.entityMap.forEach(entity =>{{entity.update(deltaTime)}});
         }
 
         // Update camera positions and orientations based on player inputs
