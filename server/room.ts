@@ -3,6 +3,7 @@ import crypto from 'crypto';
 
 import { OnlineInputState, KeyNames } from '../src/Configs/KeyBound';
 import { InputSerializer } from '../src/Utils/InputSerializer';
+import { Replay, replayStorage } from './replay';
 
 enum GameStatus {
     Waiting = 0,
@@ -14,7 +15,10 @@ class Room {
     private userConnections: Map<string, ws> = new Map();
     private userInputs: OnlineInputState[];
     private roomUsers = new Map<string, number>();
-    private gameStatus: GameStatus = GameStatus.Waiting;
+    private historyInputs: Replay;
+    private room_uuid: string;
+
+    public gameStatus: GameStatus = GameStatus.Waiting;
     public userReady: Map<string, boolean> = new Map();
     public UserNum = 2;
 
@@ -26,13 +30,16 @@ class Room {
         for (let i = 0; i < this.UserNum; i++) {
             this.userInputs[i] = InputSerializer.createEmptyInputState();
         }
+        this.room_uuid = crypto.randomUUID();
+        this.historyInputs = new Replay(room_id);
     }
 
     async startGame() {
         let cnt = 0;
         for (let [user_id, connection] of this.userConnections) {
-            connection.send(JSON.stringify({ type: 'start', playerId: cnt }));
+            connection.send(JSON.stringify({ type: 'start', playerId: cnt, roomUUID: this.room_uuid }));
             this.roomUsers.set(user_id, cnt);
+            this.historyInputs.addUser(user_id);
             cnt++;
         }
         this.gameStatus = GameStatus.Started;
@@ -43,7 +50,9 @@ class Room {
         let startTime = Date.now();
         const oneTick = () => {
             tick++;
-            const data = JSON.stringify({ type: 'input', tick: tick, input: this.userInputs.map((input) => InputSerializer.serialize(input)) });
+            const serializedInputs = this.userInputs.map((input) => InputSerializer.serialize(input));
+            this.historyInputs.addInputs(serializedInputs);
+            const data = JSON.stringify({ type: 'input', tick: tick, input: serializedInputs });
             for (let user_id of this.roomUsers.keys()) {
                 const connection = this.userConnections.get(user_id);
                 if (connection === undefined) {
@@ -122,9 +131,11 @@ class Room {
     }
 
     stopGame(reason = '') {
+        replayStorage.addReplay(this.room_uuid, this.historyInputs);
         this.gameStatus = GameStatus.Ended;
         for (let [user_id, connection] of this.userConnections) {
             connection.send(JSON.stringify({ type: 'end', reason: reason }));
+            connection.close();
         }
     }
 

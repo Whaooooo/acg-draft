@@ -152,39 +152,45 @@ function stopBackgroundMusic(): void {
 }
 
 function init(): void {
-    // Add event listener to the Start Game button
-    const startButton = document.getElementById('start-button');
-    if (startButton) {
-        startButton.addEventListener('click', () => {
-            onStartButtonClick();
-        });
-    }
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('replay')) {
+        const roomUUID = params.get('replay');
+        getGameInstance();
+    } else {
+        // Add event listener to the Start Game button
+        const startButton = document.getElementById('start-button');
+        if (startButton) {
+            startButton.addEventListener('click', () => {
+                onStartButtonClick();
+            });
+        }
 
-    const onlineButton = document.getElementById('start-online-button');
-    if (onlineButton) {
-        onlineButton.addEventListener('click', () => {
-            onStartOnlineButtonClick();
-        });
-    }
+        const onlineButton = document.getElementById('start-online-button');
+        if (onlineButton) {
+            onlineButton.addEventListener('click', () => {
+                onStartOnlineButtonClick();
+            });
+        }
 
-    const createRoomButton = document.getElementById('create-room-button');
-    const joinRoomButton = document.getElementById('join-room-button');
-    const backToMainMenuButton = document.getElementById('back-to-main-menu-button');
-    if (createRoomButton) {
-        createRoomButton.addEventListener('click', () => {
-            createRoom();
-        });
-    }
-    if (joinRoomButton) {
-        joinRoomButton.addEventListener('click', () => {
-            let roomId = (document.getElementById('room-id-input') as HTMLInputElement).value;
-            joinRoom(roomId);
-        });
-    }
-    if (backToMainMenuButton) {
-        backToMainMenuButton.addEventListener('click', () => {
-            backToMainMenu();
-        });
+        const createRoomButton = document.getElementById('create-room-button');
+        const joinRoomButton = document.getElementById('join-room-button');
+        const backToMainMenuButton = document.getElementById('back-to-main-menu-button');
+        if (createRoomButton) {
+            createRoomButton.addEventListener('click', () => {
+                createRoom();
+            });
+        }
+        if (joinRoomButton) {
+            joinRoomButton.addEventListener('click', () => {
+                let roomId = (document.getElementById('room-id-input') as HTMLInputElement).value;
+                joinRoom(roomId);
+            });
+        }
+        if (backToMainMenuButton) {
+            backToMainMenuButton.addEventListener('click', () => {
+                backToMainMenu();
+            });
+        }
     }
 
     // Play background music in muted state

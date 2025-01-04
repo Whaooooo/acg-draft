@@ -39,7 +39,7 @@
     
 </div>
 
-<div id="room-lobby" style="display: none;">
+<div id="room-lobby" class="room" style="display: none;">
     <h1>Room Lobby</h1>
     <h2 id="room-id-display">Room ID: <span id="room-id">12345678</span></h2>
 
@@ -63,6 +63,16 @@
     </div>
 </div>
 
+<div id="replay-lobby"  class="room" style="display: none;">
+    <h1>Replay</h1>
+
+    <h2 id="replay-room-id-display">Room ID: <span id="replay-room-id">00000000</span></h2>
+
+    <div style="margin-top: 30px;">
+        <button id="start-replay-button">Start</button>
+    </div>
+</div>
+
 <div id="game-container">
     <!-- The game will be injected here by your scripts -->
 </div>
@@ -71,6 +81,7 @@
 <div id="mission-failed-screen" style="display: none;">
     <h1>Mission Failed</h1>
     <button id="main-menu-button">Main Menu</button>
+    <button id="replay-button">Watch Replay</button>
 </div>
 
 <!-- Hidden Audio Elements -->

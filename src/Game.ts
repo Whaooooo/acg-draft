@@ -17,7 +17,7 @@ import { MovableEntity } from "./Core/MovableEntity";
 import { nextFrame, receiveFirstMessage, sleep } from './Utils/Wait';
 import { InputSerializer } from './Utils/InputSerializer';
 import { Config } from './Configs/Config';
-import {ensureNPCs} from "./Configs/PostLoopHooks";
+import { ensureNPCs } from "./Configs/PostLoopHooks";
 
 export class Game {
     //###################################################
@@ -51,6 +51,7 @@ export class Game {
     private frameCount: number = 0;
 
     private isOnline: boolean = false;
+    private isReplay: boolean = false;
     private isRunning: boolean = true; // Add this flag
 
     private curTick: number = 0;
@@ -58,6 +59,7 @@ export class Game {
     private socket?: WebSocket;
     private InputBuffer: any[] = [];
     private userStatus = false;
+    public roomUUID: string = '';
     public userId: string = '';
 
     //###################################################
@@ -128,6 +130,50 @@ export class Game {
     }
 
     private initRoomButtons() {
+        const params = new URLSearchParams(window.location.search);
+        const roomUUID = params.get('replay');
+        if (roomUUID) {
+            this.isReplay = true;
+            this.isOnline = true;
+
+            const ReplayLobby = document.getElementById('replay-lobby');
+            if (ReplayLobby) {
+                ReplayLobby.style.display = 'flex';
+            }
+
+            const mainMenu = document.getElementById('main-menu');
+            if (mainMenu) {
+                mainMenu.style.display = 'none';
+            }
+            fetch('./replay_info', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    room_uuid: roomUUID
+                })
+            }).then(response => response.json()).then(data => {
+                const room_id = data.room_id;
+                if (room_id) {
+                    const roomIdSpan = document.getElementById('replay-room-id');
+                    if (roomIdSpan) {
+                        roomIdSpan.innerText = room_id;
+                    }
+                }
+                const startButton = document.getElementById('start-replay-button');
+                if (startButton) {
+                    startButton.onclick = () => {
+                        if (ReplayLobby) {
+                            ReplayLobby.style.display = 'none';
+                        }
+                        this.connectToReplay(roomUUID);
+                    }
+                }
+            });
+        }
+
+
         const readyButton = document.getElementById('ready-toggle-button');
         const leaveButton = document.getElementById('leave-room-button');
 
@@ -151,6 +197,13 @@ export class Game {
                 }
             }
         }
+
+        const ReplayButton = document.getElementById('replay-button');
+        if (ReplayButton) {
+            ReplayButton.addEventListener('click', () => {
+                window.location.href = `./?replay=${this.roomUUID}`;
+            });
+        }
     }
 
 
@@ -159,7 +212,7 @@ export class Game {
         // Create a player
         console.log('Request creating player');
         const player1 = new Player(this, 'f22', new THREE.Vector3(0, 2400, 0), undefined, undefined, 1, 0, true);
-        // const player2 = new Player(this, 'f22', new THREE.Vector3(200, 2400, 0), undefined, undefined, 1, 0, false);
+        const player2 = new Player(this, 'f22', new THREE.Vector3(200, 2400, 0), undefined, undefined, 1, 0, false);
 
         // Optionally, add some NPCs for testing
         console.log('Request creating npc');
@@ -300,6 +353,26 @@ export class Game {
         }
     }
 
+    public async connectToReplay(room_uuid: string): Promise<void> {
+        const hostName = window.location.hostname;
+        const wsPath = 'ws://' + hostName + ':' + Config.websocketPort;
+        const socket = new WebSocket(wsPath);
+        this.socket = socket;
+
+        await new Promise((resolve: (value: void) => void) => {
+            socket.onopen = () => {
+                resolve();
+            }
+        });
+        socket.onmessage = (event) => {
+            this.handleMessages(event.data);
+        }
+        socket.send(JSON.stringify({ user_id: this.userId, room_uuid: room_uuid }));
+
+        socket.send(JSON.stringify({ type: 'ready', ready: true }));
+
+    }
+
     public async startOnlineGame(message: any): Promise<void> {
         this.isOnline = true;
         const roomLobby = document.getElementById('room-lobby');
@@ -309,6 +382,7 @@ export class Game {
         document.body.style.cursor = 'none';
 
         const playerId = message.playerId;
+        this.roomUUID = message.roomUUID;
         const playerList = Array.from(this.playerMap.values());
         for (let i = 0; i < playerList.length; i++) {
             playerList[i].isLocalPlayer = false;
@@ -327,7 +401,8 @@ export class Game {
 
         console.log('Start online game loop');
 
-        setInterval(this.collectInput.bind(this), 1000 / 90);
+        if (!this.isReplay)
+            setInterval(this.collectInput.bind(this), 1000 / 90);
 
         this.loop();
     }
@@ -496,8 +571,9 @@ export class Game {
                 }
             })
         } else {
-            this.entityMap.forEach(entity =>{
-            if (entity.ready) {entity.update(deltaTime)}});
+            this.entityMap.forEach(entity => {
+                if (entity.ready) { entity.update(deltaTime) }
+            });
         }
 
         // Update camera positions and orientations based on player inputs
@@ -543,6 +619,15 @@ export class Game {
         const missionFailedScreen = document.getElementById('mission-failed-screen');
         if (missionFailedScreen) {
             missionFailedScreen.style.display = 'flex';
+        }
+
+        const ReplayButton = document.getElementById('replay-button');
+        if (ReplayButton) {
+            if (this.isOnline) {
+                ReplayButton.style.display = 'block';
+            } else {
+                ReplayButton.style.display = 'none';
+            }
         }
 
         // Release pointer lock

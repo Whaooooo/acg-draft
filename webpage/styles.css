@@ -273,6 +273,22 @@ html {
     /* Darker red when hovered */
 }
 
+#start-replay-button {
+    padding: 15px 30px;
+    font-size: 24px;
+    background-color: #28a745;
+    /* Green background for Ready */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#start-replay-button:hover {
+    background-color: #218838;
+    /* Darker green when hovered */
+}
+
 /* HUD 容器 */
 .hud-container {
     position: absolute;
