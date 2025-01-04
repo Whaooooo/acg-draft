@@ -178,6 +178,9 @@ export class Player extends Plane {
     public dispose(): void {
         if (this.isLocalPlayer) {
             this.game.inputManager.unregisterPlayer(this);
+            if (this.game.isGameOnline()) {
+                this.game.socket?.send(JSON.stringify({ type: 'end' }));
+            }
         }
         this.game.playerMap.delete(this.entityId);
         super.dispose();

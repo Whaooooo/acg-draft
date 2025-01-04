@@ -17,6 +17,7 @@ class Room {
     private roomUsers = new Map<string, number>();
     private historyInputs: Replay;
     private room_uuid: string;
+    private userAlive: Map<string, boolean> = new Map();
 
     public gameStatus: GameStatus = GameStatus.Waiting;
     public userReady: Map<string, boolean> = new Map();
@@ -40,6 +41,7 @@ class Room {
             connection.send(JSON.stringify({ type: 'start', playerId: cnt, roomUUID: this.room_uuid }));
             this.roomUsers.set(user_id, cnt);
             this.historyInputs.addUser(user_id);
+            this.userAlive.set(user_id, true);
             cnt++;
         }
         this.gameStatus = GameStatus.Started;
@@ -65,6 +67,23 @@ class Room {
                 for (let i = 0; i < this.UserNum; i++) {
                     this.userInputs[i][key] = false;
                 }
+            }
+
+            if (tick > 60 * 60 * 15) {
+                this.stopGame('Time out');
+                return;
+            }
+
+            let hasAlive = false;
+            for (let [user_id, alive] of this.userAlive) {
+                if (alive) {
+                    hasAlive = true;
+                    break;
+                }
+            }
+            if (!hasAlive) {
+                this.stopGame('All players dead');
+                return;
             }
 
             const nextTickTime = tick * 1000 / 60 - (Date.now() - startTime);
@@ -93,12 +112,19 @@ class Room {
         this.userConnections.get(user_id)?.close();
         this.userConnections.delete(user_id);
         this.userReady.delete(user_id);
+        this.roomUsers.delete(user_id);
         switch (this.gameStatus) {
             case GameStatus.Waiting:
                 this.sendRoomStatus();
                 break;
             case GameStatus.Started:
-                this.stopGame('User left');
+                const alive = this.userAlive.get(user_id);
+                if (alive === undefined) {
+                    return false;
+                }
+                if (alive) {
+                    this.stopGame('User left');
+                }
                 break;
         }
         return true;
@@ -181,6 +207,8 @@ class Room {
                 if (this.checkAllReady()) {
                     this.startGame();
                 }
+            case 'end':
+                this.userAlive.set(user_id, false);
         }
     }
 

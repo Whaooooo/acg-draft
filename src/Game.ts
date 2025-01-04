@@ -56,7 +56,7 @@ export class Game {
 
     private curTick: number = 0;
     private localPlayer?: Player;
-    private socket?: WebSocket;
+    public socket?: WebSocket;
     private InputBuffer: any[] = [];
     private userStatus = false;
     public roomUUID: string = '';
