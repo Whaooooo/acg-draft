@@ -153,6 +153,14 @@ html {
 }
 
 #room-lobby {
+    z-index: 20;
+}
+
+#replay-lobby {
+    z-index: 21;
+}
+
+.room {
     position: absolute;
     width: 100%;
     height: 100%;
@@ -162,17 +170,16 @@ html {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    z-index: 20;
 }
 
-#room-lobby h1 {
+.room h1 {
     color: #fff;
     font-size: 48px;
     margin-bottom: 10px;
     text-shadow: 2px 2px 5px black;
 }
 
-#room-lobby h2 {
+.room h2 {
     color: #fff;
     font-size: 32px;
     margin-bottom: 20px;
@@ -271,6 +278,22 @@ html {
 #ready-toggle-button.ready:hover {
     background-color: #c23e2a;
     /* Darker red when hovered */
+}
+
+#start-replay-button {
+    padding: 15px 30px;
+    font-size: 24px;
+    background-color: #28a745;
+    /* Green background for Ready */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#start-replay-button:hover {
+    background-color: #218838;
+    /* Darker green when hovered */
 }
 
 /* HUD 容器 */
