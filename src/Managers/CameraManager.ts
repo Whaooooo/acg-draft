@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { Player } from '../Entities/Player';
 import { ViewMode } from '../Enums/ViewMode';
 import { Game } from '../Game';
+import { Config } from '../Configs/Config';
 
 /**
  * Interface to store camera controls for each player.
@@ -90,7 +91,7 @@ export class CameraManager {
         if (!player.isLocalPlayer) return;
 
         const camera = new THREE.PerspectiveCamera(
-            75,
+            Config.fov,
             window.innerWidth / window.innerHeight,
             0.1,
             100000

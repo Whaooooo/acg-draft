@@ -50,6 +50,8 @@ export class Game {
     private lastFrameTime: number = 0;
     private frameCount: number = 0;
 
+    private frameHistory: number[] = [];
+
     private isOnline: boolean = false;
     private isReplay: boolean = false;
     private isRunning: boolean = true; // Add this flag
@@ -253,6 +255,7 @@ export class Game {
         this.isOnline = false;
 
         this.inputManager.gameStarted = true;
+        this.playerMap.forEach(player => { if (!player.isLocalPlayer) player.dispose(); });
         this.inputManager.updatePlayers();
 
         // Initialize sounds for players and NPCs
@@ -494,8 +497,15 @@ export class Game {
 
     private async loop(): Promise<void> {
         while (this.isRunning) {
-            this.loopOnce();
             await nextFrame();
+            if (this.frameHistory.length > 10) {
+                const nextFrameTime = this.frameHistory[0] + 1000 / Config.fps * this.frameHistory.length;
+                const delta = nextFrameTime - performance.now();
+                if (delta > 10)
+                    continue;
+            }
+            this.loopOnce();
+
         }
     }
 
@@ -503,6 +513,10 @@ export class Game {
         if (this.lastFrameTime === 0)
             this.lastFrameTime = performance.now();
         this.frameCount++;
+        this.frameHistory.push(performance.now());
+        if (this.frameHistory.length > 30) {
+            this.frameHistory.shift();
+        }
         if (this.frameCount >= 30 || (this.frameCount >= 4 && performance.now() - this.lastFrameTime >= 2000)) {
             const fps = this.frameCount / ((performance.now() - this.lastFrameTime) / 1000);
             this.frameCount = 0;

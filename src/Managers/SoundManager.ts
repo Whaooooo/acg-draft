@@ -5,7 +5,7 @@ import { SoundPaths, SoundEnum } from '../Configs/SoundPaths';
 import { Config } from '../Configs/Config';
 import { Player } from '../Entities/Player';
 import { Entity } from '../Core/Entity';
-import {Game} from "../Game";
+import { Game } from "../Game";
 
 export class SoundManager {
     public game: Game;
@@ -144,7 +144,7 @@ export class SoundManager {
 
             sound.setBuffer(buffer);
             sound.setLoop(options?.loop ?? false);
-            sound.setVolume(options?.volume ?? 1);
+            sound.setVolume((options?.volume ?? 1) * Config.bgmVolume);
 
             if (options?.autoplay !== false) {
                 sound.play();
@@ -176,7 +176,7 @@ export class SoundManager {
     public setVolumeById(soundId: string, volume: number): void {
         const sound = this.namedSounds.get(soundId);
         if (sound) {
-            sound.setVolume(volume);
+            sound.setVolume(volume * Config.bgmVolume);
         } else {
             console.warn(`Sound with ID '${soundId}' not found.`);
         }
