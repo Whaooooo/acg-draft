@@ -7,6 +7,7 @@ import { OnlineInputState, KeyNames } from '../src/Configs/KeyBound';
 import { InputSerializer } from '../src/Utils/InputSerializer';
 import { Room, GameStatus } from './room';
 import { receiveNextMessage } from './utils';
+import { replayStorage } from './replay';
 
 const rooms: Map<string, Room> = new Map();
 const userRooms: Map<string, Room> = new Map();
@@ -37,6 +38,20 @@ app.get("/room_info", (req, res) => {
     }
     res.send(JSON.stringify(room_info));
 });
+
+app.post("/replay_info", (req, res) => {
+    if (req.body.room_uuid === undefined) {
+        res.status(400).send('Room UUID not provided');
+        return;
+    }
+    const room_uuid = req.body.room_uuid;
+    const replay = replayStorage.getReplay(room_uuid);
+    if (replay === undefined) {
+        res.status(400).send('Replay not found');
+        return;
+    }
+    res.send(JSON.stringify(replay.getInfo()));
+})
 
 app.post("/create_room", (req, res) => {
     if (req.body.user_id === undefined) {
@@ -160,25 +175,76 @@ server.on('connection', (socket) => {
             return;
         }
 
+        let room_uuid = first_message.room_uuid;
+        if (room_uuid) {
+            // Replay connection
+            let replay = replayStorage.getReplay(room_uuid);
+            if (replay === undefined) {
+                socket.close();
+                return;
+            }
 
-        let room = userRooms.get(user_id);
-        if (room === undefined) {
-            socket.close();
-            return;
+            let status = GameStatus.Waiting;
+            let tick = 0;
+            let startTime = Date.now();
+            const oneTick = () => {
+                if (status === GameStatus.Ended) {
+                    return;
+                }
+
+                const inputs = replay.inputs[tick];
+                if (inputs === undefined) {
+                    status = GameStatus.Ended;
+                    socket.send(JSON.stringify({ type: 'end' }));
+                    socket.close();
+                    return;
+                }
+                const data = JSON.stringify({ type: 'input', tick: tick, input: inputs });
+                socket.send(data);
+
+                tick++;
+                const nextTickTime = tick * 1000 / 60 - (Date.now() - startTime);
+                if (nextTickTime < 1) {
+                    setTimeout(oneTick, 1);
+                } else {
+                    setTimeout(oneTick, nextTickTime);
+                }
+            }
+
+            socket.on('message', (data) => {
+                let message = JSON.parse(data.toString());
+                if (message.type === 'ready' && status === GameStatus.Waiting) {
+                    status = GameStatus.Started;
+                    socket.send(JSON.stringify({ type: 'start', playerId: 0, roomUUID: room_uuid }));
+                    setImmediate(oneTick);
+                }
+            });
+            socket.on('close', () => {
+                status = GameStatus.Ended;
+            });
+        } else {
+            let room = userRooms.get(user_id);
+            if (room === undefined) {
+                socket.close();
+                return;
+            }
+
+            room.addConnection(user_id, socket);
+
+            // socket.send(JSON.stringify({ type: 'uuid', data: user_id }));
+            let ping_task = setInterval(() => { socket.ping(); }, 10000);
+
+            socket.on('message', (data) => handleMessages(user_id, room, data));
+
+            socket.on('close', () => {
+                clearInterval(ping_task);
+                room.removeUser(user_id);
+                userRooms.delete(user_id);
+                if (room.gameStatus === GameStatus.Ended) {
+                    rooms.delete(room.room_id);
+                }
+                console.log('Client disconnected');
+            });
         }
-
-        room.addConnection(user_id, socket);
-
-        // socket.send(JSON.stringify({ type: 'uuid', data: user_id }));
-        let ping_task = setInterval(() => { socket.ping(); }, 10000);
-
-        socket.on('message', (data) => handleMessages(user_id, room, data));
-
-        socket.on('close', () => {
-            clearInterval(ping_task);
-            room.removeUser(user_id);
-            userRooms.delete(user_id);
-            console.log('Client disconnected');
-        });
     });
 });

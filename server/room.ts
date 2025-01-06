@@ -3,6 +3,7 @@ import crypto from 'crypto';
 
 import { OnlineInputState, KeyNames } from '../src/Configs/KeyBound';
 import { InputSerializer } from '../src/Utils/InputSerializer';
+import { Replay, replayStorage } from './replay';
 
 enum GameStatus {
     Waiting = 0,
@@ -14,7 +15,11 @@ class Room {
     private userConnections: Map<string, ws> = new Map();
     private userInputs: OnlineInputState[];
     private roomUsers = new Map<string, number>();
-    private gameStatus: GameStatus = GameStatus.Waiting;
+    private historyInputs: Replay;
+    private room_uuid: string;
+    private userAlive: Map<string, boolean> = new Map();
+
+    public gameStatus: GameStatus = GameStatus.Waiting;
     public userReady: Map<string, boolean> = new Map();
     public UserNum = 2;
 
@@ -26,13 +31,17 @@ class Room {
         for (let i = 0; i < this.UserNum; i++) {
             this.userInputs[i] = InputSerializer.createEmptyInputState();
         }
+        this.room_uuid = crypto.randomUUID();
+        this.historyInputs = new Replay(room_id);
     }
 
     async startGame() {
         let cnt = 0;
         for (let [user_id, connection] of this.userConnections) {
-            connection.send(JSON.stringify({ type: 'start', playerId: cnt }));
+            connection.send(JSON.stringify({ type: 'start', playerId: cnt, roomUUID: this.room_uuid }));
             this.roomUsers.set(user_id, cnt);
+            this.historyInputs.addUser(user_id);
+            this.userAlive.set(user_id, true);
             cnt++;
         }
         this.gameStatus = GameStatus.Started;
@@ -43,7 +52,9 @@ class Room {
         let startTime = Date.now();
         const oneTick = () => {
             tick++;
-            const data = JSON.stringify({ type: 'input', tick: tick, input: this.userInputs.map((input) => InputSerializer.serialize(input)) });
+            const serializedInputs = this.userInputs.map((input) => InputSerializer.serialize(input));
+            this.historyInputs.addInputs(serializedInputs);
+            const data = JSON.stringify({ type: 'input', tick: tick, input: serializedInputs });
             for (let user_id of this.roomUsers.keys()) {
                 const connection = this.userConnections.get(user_id);
                 if (connection === undefined) {
@@ -56,6 +67,23 @@ class Room {
                 for (let i = 0; i < this.UserNum; i++) {
                     this.userInputs[i][key] = false;
                 }
+            }
+
+            if (tick > 60 * 60 * 15) {
+                this.stopGame('Time out');
+                return;
+            }
+
+            let hasAlive = false;
+            for (let [user_id, alive] of this.userAlive) {
+                if (alive) {
+                    hasAlive = true;
+                    break;
+                }
+            }
+            if (!hasAlive) {
+                this.stopGame('All players dead');
+                return;
             }
 
             const nextTickTime = tick * 1000 / 60 - (Date.now() - startTime);
@@ -84,12 +112,19 @@ class Room {
         this.userConnections.get(user_id)?.close();
         this.userConnections.delete(user_id);
         this.userReady.delete(user_id);
+        this.roomUsers.delete(user_id);
         switch (this.gameStatus) {
             case GameStatus.Waiting:
                 this.sendRoomStatus();
                 break;
             case GameStatus.Started:
-                this.stopGame('User left');
+                const alive = this.userAlive.get(user_id);
+                if (alive === undefined) {
+                    return false;
+                }
+                if (alive) {
+                    this.stopGame('User left');
+                }
                 break;
         }
         return true;
@@ -122,9 +157,11 @@ class Room {
     }
 
     stopGame(reason = '') {
+        replayStorage.addReplay(this.room_uuid, this.historyInputs);
         this.gameStatus = GameStatus.Ended;
         for (let [user_id, connection] of this.userConnections) {
             connection.send(JSON.stringify({ type: 'end', reason: reason }));
+            connection.close();
         }
     }
 
@@ -170,6 +207,8 @@ class Room {
                 if (this.checkAllReady()) {
                     this.startGame();
                 }
+            case 'end':
+                this.userAlive.set(user_id, false);
         }
     }
 

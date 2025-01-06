@@ -126,6 +126,7 @@ export class InputState {
 
 export class InputManager {
     private players: Set<Player> = new Set();
+    private allPlayers: Set<Player> = new Set();
     private pointerLocked: boolean = false;
 
     // Bound event handlers
@@ -156,6 +157,7 @@ export class InputManager {
 
     public registerPlayer(player: Player): void {
         this.players.add(player);
+        this.allPlayers.add(player);
         if (this.players.size === 1) {
             // First local player added, initialize event listeners
             this.initEventListeners();
@@ -164,6 +166,7 @@ export class InputManager {
 
     public unregisterPlayer(player: Player): void {
         this.players.delete(player);
+        this.allPlayers.delete(player);
         if (this.players.size === 0) {
             // No more local players, remove event listeners
             this.removeEventListeners();
@@ -171,9 +174,8 @@ export class InputManager {
     }
 
     public updatePlayers() {
-        let old_players = this.players;
         this.players = new Set();
-        old_players.forEach(player => {
+        this.allPlayers.forEach(player => {
             if (player.isLocalPlayer) {
                 this.players.add(player);
             }

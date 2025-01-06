@@ -1,6 +1,7 @@
 // src/main.ts
 
 import { Game } from './Game';
+import { Config } from './Configs/Config';
 
 let gameInstance: Game | null = null; // Keep a reference to the game instance
 
@@ -152,39 +153,89 @@ function stopBackgroundMusic(): void {
 }
 
 function init(): void {
-    // Add event listener to the Start Game button
-    const startButton = document.getElementById('start-button');
-    if (startButton) {
-        startButton.addEventListener('click', () => {
-            onStartButtonClick();
-        });
-    }
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('replay')) {
+        const roomUUID = params.get('replay');
+        getGameInstance();
+    } else {
+        // Add event listener to the Start Game button
+        const startButton = document.getElementById('start-button');
+        if (startButton) {
+            startButton.addEventListener('click', () => {
+                onStartButtonClick();
+            });
+        }
 
-    const onlineButton = document.getElementById('start-online-button');
-    if (onlineButton) {
-        onlineButton.addEventListener('click', () => {
-            onStartOnlineButtonClick();
-        });
-    }
+        const onlineButton = document.getElementById('start-online-button');
+        if (onlineButton) {
+            onlineButton.addEventListener('click', () => {
+                onStartOnlineButtonClick();
+            });
+        }
 
-    const createRoomButton = document.getElementById('create-room-button');
-    const joinRoomButton = document.getElementById('join-room-button');
-    const backToMainMenuButton = document.getElementById('back-to-main-menu-button');
-    if (createRoomButton) {
-        createRoomButton.addEventListener('click', () => {
-            createRoom();
-        });
-    }
-    if (joinRoomButton) {
-        joinRoomButton.addEventListener('click', () => {
-            let roomId = (document.getElementById('room-id-input') as HTMLInputElement).value;
-            joinRoom(roomId);
-        });
-    }
-    if (backToMainMenuButton) {
-        backToMainMenuButton.addEventListener('click', () => {
-            backToMainMenu();
-        });
+        const createRoomButton = document.getElementById('create-room-button');
+        const joinRoomButton = document.getElementById('join-room-button');
+        const backToMainMenuButton = document.getElementById('back-to-main-menu-button');
+        if (createRoomButton) {
+            createRoomButton.addEventListener('click', () => {
+                createRoom();
+            });
+        }
+        if (joinRoomButton) {
+            joinRoomButton.addEventListener('click', () => {
+                let roomId = (document.getElementById('room-id-input') as HTMLInputElement).value;
+                joinRoom(roomId);
+            });
+        }
+        if (backToMainMenuButton) {
+            backToMainMenuButton.addEventListener('click', () => {
+                backToMainMenu();
+            });
+        }
+
+        const settingsPage = document.getElementById('settings-page');
+        const settingsButton = document.getElementById('settings-button');
+        const closeSettingsButton = document.getElementById('close-settings-button');
+        if (settingsPage) {
+            if (settingsButton) {
+                settingsButton.addEventListener('click', () => {
+                    settingsPage.style.display = 'flex';
+                });
+            }
+            if (closeSettingsButton) {
+                closeSettingsButton.addEventListener('click', () => {
+                    settingsPage.style.display = 'none';
+                });
+            }
+            const volumeSlider = document.getElementById('volume-slider') as HTMLInputElement;
+            const volumeValue = document.getElementById('volume-value') as HTMLSpanElement;
+            const fpsSelect = document.getElementById('fps-select') as HTMLSelectElement;
+            const fpsValue = document.getElementById('fps-value') as HTMLSpanElement;
+            const fovSlider = document.getElementById('fov-slider') as HTMLInputElement;
+            const fovValue = document.getElementById('fov-value') as HTMLSpanElement;
+
+            volumeSlider.value = (Config.bgmVolume * 100).toString();
+            volumeValue.textContent = volumeSlider.value;
+            fpsSelect.value = Config.fps.toString();
+            fpsValue.textContent = fpsSelect.value;
+            fovSlider.value = Config.fov.toString();
+            fovValue.textContent = fovSlider.value;
+
+            volumeSlider.addEventListener('input', () => {
+                volumeValue.textContent = volumeSlider.value;
+                Config.bgmVolume = parseFloat(volumeSlider.value) / 100;
+                (document.getElementById('bgm') as HTMLAudioElement).volume = Config.bgmVolume;
+            });
+            fpsSelect.addEventListener('change', () => {
+                const selectedFps = fpsSelect.value;
+                fpsValue.textContent = selectedFps;
+                Config.fps = parseInt(selectedFps);
+            });
+            fovSlider.addEventListener('input', () => {
+                fovValue.textContent = fovSlider.value;
+                Config.fov = parseInt(fovSlider.value);
+            });
+        }
     }
 
     // Play background music in muted state
