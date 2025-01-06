@@ -7,7 +7,7 @@ export function ensureNPCs(game: Game): void {
     if (game.isGameOnline()) {return;}
     // 计算 iFFNumber 为 0 的 NPC 数量
     const npcIFF0 = Array.from(game.npcPlaneMap.values()).filter(npc => npc.iFFNumber === 0);
-    const requiredNPCs = 4;
+    const requiredNPCs = Math.ceil(1 + (game.clock.elapsedTime - 1) / (Math.log2(1.01 + game.clock.elapsedTime * 5)));
 
     if (npcIFF0.length < requiredNPCs) {
         const needed = requiredNPCs - npcIFF0.length;
