@@ -316,7 +316,7 @@ class Cloud extends THREE.Group {
 
         const boxBound = options.boxBound !== undefined ? options.boxBound : new THREE.Vector3(1.0, 1.0, 1.0);
         const geometry = new THREE.BoxGeometry(boxBound.x * 0.9, boxBound.y * 0.9, boxBound.z * 0.9);
-        const height = 6000;
+        const height = 4000;
 
         const scope = this;
         this.isCloud = true;

@@ -4,8 +4,8 @@ import { ShaderEntity } from "../Core/ShaderEntity";
 import { Game } from "../Game";
 import * as THREE from "three";
 import { CylinderGeometry, ShaderMaterial, UniformsUtils } from "three";
-import {WakeCloudProperty} from "../Configs/WakeCloudProperty";
-import {Entity} from "../Core/Entity";
+import { WakeCloudProperty } from "../Configs/WakeCloudProperty";
+import { Entity } from "../Core/Entity";
 
 export class WakeCloud extends ShaderEntity {
     public mesh: THREE.Mesh;
@@ -186,6 +186,7 @@ void main() {
 }
 
 export function wakeCloudPropertyToWakeCloud(entity: Entity, startPosition: THREE.Vector3, endPosition: THREE.Vector3, property: WakeCloudProperty) {
+    // return;
     const displacement = property.displacement.clone().applyQuaternion(entity.getQuaternion());
     new WakeCloud(
         entity.game,
