@@ -124,7 +124,8 @@ export class Missile extends MovableEntity {
      * 判断是否继续追踪目标
      */
     private shouldContinueHoming(): boolean {
-        if (!this.target || this.target._model || this.target.removed) {
+        if (!this.target || this.target.removed) {
+            console.log("Missile target does not exist")
             return false;
         }
 
@@ -135,6 +136,7 @@ export class Missile extends MovableEntity {
 
         // Check if the target is within lockRange
         if (distanceToTarget > this.property.lockRange) {
+            console.log("Missile target out of range")
             return false;
         }
 
@@ -146,6 +148,7 @@ export class Missile extends MovableEntity {
         const angleToTarget = currentDirection.angleTo(directionToTarget) * (180 / Math.PI); // Convert to degrees
 
         if (angleToTarget > this.property.lockAngle) {
+            console.log("Missile target out of angle")
             return false;
         }
 
